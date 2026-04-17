@@ -8,7 +8,7 @@ abstract class ProfileRepository {
   /// Returns all profiles in the system.
   Future<List<Profile>> getAll();
 
-  /// Returns all profiles of a given type.
+  /// Returns all profiles that include the given type in their profileTypes list.
   Future<List<Profile>> getByType(ProfileType type);
 
   /// Returns all junior profiles linked to a given parent/guardian.

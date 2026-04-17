@@ -3,9 +3,15 @@ import 'enums.dart';
 
 class Profile extends Equatable {
   final String id;
-  final String fullName;
+  final String firstName;
+  final String lastName;
   final DateTime dateOfBirth;
-  final ProfileType profileType;
+
+  /// A profile can hold more than one role — e.g. a person who is both an
+  /// adult student and a coach.  At least one type is always present.
+  final List<ProfileType> profileTypes;
+
+  final String? gender;
 
   // Address
   final String addressLine1;
@@ -28,20 +34,35 @@ class Profile extends Equatable {
   final String? allergiesOrMedicalNotes;
   final bool photoVideoConsent;
 
+  // Admin-only notes (not visible to the member)
+  final String? notes;
+
+  // Which notification channels the member has opted into
+  final List<NotificationChannel> communicationPreferences;
+
   // System fields
   final DateTime registrationDate;
   final bool isActive;
   final String? fcmToken;
   final String? pinHash;
 
-  // Junior only — ref to parent/guardian profileId
+  // Family links (juniors only)
+  /// Primary parent/guardian profile ID.
   final String? parentProfileId;
+
+  /// Optional second parent/guardian profile ID.
+  final String? secondParentProfileId;
+
+  /// Which parent profile is the paying member for this junior.
+  final String? payingParentId;
 
   const Profile({
     required this.id,
-    required this.fullName,
+    required this.firstName,
+    required this.lastName,
     required this.dateOfBirth,
-    required this.profileType,
+    required this.profileTypes,
+    this.gender,
     required this.addressLine1,
     this.addressLine2,
     required this.city,
@@ -55,23 +76,35 @@ class Profile extends Equatable {
     required this.emergencyContactPhone,
     this.allergiesOrMedicalNotes,
     required this.photoVideoConsent,
+    this.notes,
+    this.communicationPreferences = const [],
     required this.registrationDate,
     required this.isActive,
     this.fcmToken,
     this.pinHash,
     this.parentProfileId,
+    this.secondParentProfileId,
+    this.payingParentId,
   });
 
-  bool get isJunior => profileType == ProfileType.juniorStudent;
-  bool get isAdult => profileType == ProfileType.adultStudent;
-  bool get isCoach => profileType == ProfileType.coach;
-  bool get isParentGuardian => profileType == ProfileType.parentGuardian;
+  // ── Computed ───────────────────────────────────────────────────────────────
+
+  String get fullName => '$firstName $lastName';
+
+  bool get isJunior => profileTypes.contains(ProfileType.juniorStudent);
+  bool get isAdult => profileTypes.contains(ProfileType.adultStudent);
+  bool get isCoach => profileTypes.contains(ProfileType.coach);
+  bool get isParentGuardian => profileTypes.contains(ProfileType.parentGuardian);
+
+  // ── copyWith ───────────────────────────────────────────────────────────────
 
   Profile copyWith({
     String? id,
-    String? fullName,
+    String? firstName,
+    String? lastName,
     DateTime? dateOfBirth,
-    ProfileType? profileType,
+    List<ProfileType>? profileTypes,
+    String? gender,
     String? addressLine1,
     String? addressLine2,
     String? city,
@@ -85,17 +118,23 @@ class Profile extends Equatable {
     String? emergencyContactPhone,
     String? allergiesOrMedicalNotes,
     bool? photoVideoConsent,
+    String? notes,
+    List<NotificationChannel>? communicationPreferences,
     DateTime? registrationDate,
     bool? isActive,
     String? fcmToken,
     String? pinHash,
     String? parentProfileId,
+    String? secondParentProfileId,
+    String? payingParentId,
   }) {
     return Profile(
       id: id ?? this.id,
-      fullName: fullName ?? this.fullName,
+      firstName: firstName ?? this.firstName,
+      lastName: lastName ?? this.lastName,
       dateOfBirth: dateOfBirth ?? this.dateOfBirth,
-      profileType: profileType ?? this.profileType,
+      profileTypes: profileTypes ?? this.profileTypes,
+      gender: gender ?? this.gender,
       addressLine1: addressLine1 ?? this.addressLine1,
       addressLine2: addressLine2 ?? this.addressLine2,
       city: city ?? this.city,
@@ -105,25 +144,58 @@ class Profile extends Equatable {
       phone: phone ?? this.phone,
       email: email ?? this.email,
       emergencyContactName: emergencyContactName ?? this.emergencyContactName,
-      emergencyContactRelationship: emergencyContactRelationship ?? this.emergencyContactRelationship,
-      emergencyContactPhone: emergencyContactPhone ?? this.emergencyContactPhone,
-      allergiesOrMedicalNotes: allergiesOrMedicalNotes ?? this.allergiesOrMedicalNotes,
+      emergencyContactRelationship:
+          emergencyContactRelationship ?? this.emergencyContactRelationship,
+      emergencyContactPhone:
+          emergencyContactPhone ?? this.emergencyContactPhone,
+      allergiesOrMedicalNotes:
+          allergiesOrMedicalNotes ?? this.allergiesOrMedicalNotes,
       photoVideoConsent: photoVideoConsent ?? this.photoVideoConsent,
+      notes: notes ?? this.notes,
+      communicationPreferences:
+          communicationPreferences ?? this.communicationPreferences,
       registrationDate: registrationDate ?? this.registrationDate,
       isActive: isActive ?? this.isActive,
       fcmToken: fcmToken ?? this.fcmToken,
       pinHash: pinHash ?? this.pinHash,
       parentProfileId: parentProfileId ?? this.parentProfileId,
+      secondParentProfileId:
+          secondParentProfileId ?? this.secondParentProfileId,
+      payingParentId: payingParentId ?? this.payingParentId,
     );
   }
 
+  // ── Equatable ──────────────────────────────────────────────────────────────
+
   @override
   List<Object?> get props => [
-        id, fullName, dateOfBirth, profileType,
-        addressLine1, addressLine2, city, county, postcode, country,
-        phone, email,
-        emergencyContactName, emergencyContactRelationship, emergencyContactPhone,
-        allergiesOrMedicalNotes, photoVideoConsent,
-        registrationDate, isActive, fcmToken, pinHash, parentProfileId,
+        id,
+        firstName,
+        lastName,
+        dateOfBirth,
+        profileTypes,
+        gender,
+        addressLine1,
+        addressLine2,
+        city,
+        county,
+        postcode,
+        country,
+        phone,
+        email,
+        emergencyContactName,
+        emergencyContactRelationship,
+        emergencyContactPhone,
+        allergiesOrMedicalNotes,
+        photoVideoConsent,
+        notes,
+        communicationPreferences,
+        registrationDate,
+        isActive,
+        fcmToken,
+        pinHash,
+        parentProfileId,
+        secondParentProfileId,
+        payingParentId,
       ];
 }
