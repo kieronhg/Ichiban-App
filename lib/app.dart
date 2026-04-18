@@ -12,8 +12,8 @@ class IchibanApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = flavor == AppFlavor.admin
-        ? AppRouter.adminRouter()
-        : AppRouter.studentRouter();
+        ? AppRouter.adminRouter(ref: ref)
+        : AppRouter.studentRouter(ref: ref);
 
     return MaterialApp.router(
       title: 'Ichiban',
