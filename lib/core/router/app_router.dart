@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../domain/entities/profile.dart';
+import '../../presentation/features/profiles/student_profile_screen.dart';
 import '../../presentation/features/profiles/profile_detail_screen.dart';
 import '../../presentation/features/profiles/profile_form_screen.dart';
 import '../../presentation/features/profiles/profile_list_screen.dart';
@@ -131,6 +132,13 @@ class AppRouter {
             path: RouteNames.studentGrades,
             name: 'studentGrades',
             builder: (_, state) => const _PlaceholderScreen('My Grades'),
+          ),
+          GoRoute(
+            path: RouteNames.studentProfile,
+            name: 'studentProfile',
+            builder: (_, state) => StudentProfileScreen(
+              profileId: state.pathParameters['id'] ?? '',
+            ),
           ),
         ],
       );
