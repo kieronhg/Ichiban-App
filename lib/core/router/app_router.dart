@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+
+import '../../domain/entities/profile.dart';
+import '../../presentation/features/profiles/profile_detail_screen.dart';
+import '../../presentation/features/profiles/profile_form_screen.dart';
+import '../../presentation/features/profiles/profile_list_screen.dart';
 import 'route_names.dart';
 
 // Placeholder screens — replaced during feature implementation phases
@@ -22,52 +27,79 @@ class AppRouter {
   AppRouter._();
 
   static GoRouter adminRouter() => GoRouter(
-        initialLocation: RouteNames.adminLogin,
+        initialLocation: RouteNames.adminDashboard,
         routes: [
           GoRoute(
             path: RouteNames.adminLogin,
             name: 'adminLogin',
-            builder: (_, __) => const _PlaceholderScreen('Admin Login'),
+            builder: (_, state) => const _PlaceholderScreen('Admin Login'),
           ),
           GoRoute(
             path: RouteNames.adminDashboard,
             name: 'adminDashboard',
-            builder: (_, __) => const _PlaceholderScreen('Dashboard'),
+            builder: (_, state) => const _PlaceholderScreen('Dashboard'),
           ),
+
+          // ── Profiles ────────────────────────────────────────────────
           GoRoute(
             path: RouteNames.adminProfiles,
             name: 'adminProfiles',
-            builder: (_, __) => const _PlaceholderScreen('Profiles'),
+            builder: (_, state) => const ProfileListScreen(),
+            routes: [
+              GoRoute(
+                path: 'create',
+                name: 'adminProfileCreate',
+                builder: (_, state) => const ProfileFormScreen(),
+              ),
+              GoRoute(
+                path: ':id',
+                name: 'adminProfileDetail',
+                builder: (_, state) => ProfileDetailScreen(
+                  profileId: state.pathParameters['id']!,
+                ),
+                routes: [
+                  GoRoute(
+                    path: 'edit',
+                    name: 'adminProfileEdit',
+                    builder: (_, state) => ProfileFormScreen(
+                      existingProfile: state.extra as Profile?,
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
+
+          // ── Other admin routes (placeholder) ────────────────────────
           GoRoute(
             path: RouteNames.adminDisciplines,
             name: 'adminDisciplines',
-            builder: (_, __) => const _PlaceholderScreen('Disciplines'),
+            builder: (_, state) => const _PlaceholderScreen('Disciplines'),
           ),
           GoRoute(
             path: RouteNames.adminAttendance,
             name: 'adminAttendance',
-            builder: (_, __) => const _PlaceholderScreen('Attendance'),
+            builder: (_, state) => const _PlaceholderScreen('Attendance'),
           ),
           GoRoute(
             path: RouteNames.adminGrading,
             name: 'adminGrading',
-            builder: (_, __) => const _PlaceholderScreen('Grading'),
+            builder: (_, state) => const _PlaceholderScreen('Grading'),
           ),
           GoRoute(
             path: RouteNames.adminMemberships,
             name: 'adminMemberships',
-            builder: (_, __) => const _PlaceholderScreen('Memberships'),
+            builder: (_, state) => const _PlaceholderScreen('Memberships'),
           ),
           GoRoute(
             path: RouteNames.adminPayments,
             name: 'adminPayments',
-            builder: (_, __) => const _PlaceholderScreen('Payments'),
+            builder: (_, state) => const _PlaceholderScreen('Payments'),
           ),
           GoRoute(
             path: RouteNames.adminSettings,
             name: 'adminSettings',
-            builder: (_, __) => const _PlaceholderScreen('Settings'),
+            builder: (_, state) => const _PlaceholderScreen('Settings'),
           ),
         ],
       );
@@ -78,27 +110,27 @@ class AppRouter {
           GoRoute(
             path: RouteNames.studentSelect,
             name: 'studentSelect',
-            builder: (_, __) => const _PlaceholderScreen('Select Student'),
+            builder: (_, state) => const _PlaceholderScreen('Select Student'),
           ),
           GoRoute(
             path: RouteNames.studentPin,
             name: 'studentPin',
-            builder: (_, __) => const _PlaceholderScreen('Enter PIN'),
+            builder: (_, state) => const _PlaceholderScreen('Enter PIN'),
           ),
           GoRoute(
             path: RouteNames.studentHome,
             name: 'studentHome',
-            builder: (_, __) => const _PlaceholderScreen('Student Home'),
+            builder: (_, state) => const _PlaceholderScreen('Student Home'),
           ),
           GoRoute(
             path: RouteNames.studentAttendance,
             name: 'studentAttendance',
-            builder: (_, __) => const _PlaceholderScreen('My Attendance'),
+            builder: (_, state) => const _PlaceholderScreen('My Attendance'),
           ),
           GoRoute(
             path: RouteNames.studentGrades,
             name: 'studentGrades',
-            builder: (_, __) => const _PlaceholderScreen('My Grades'),
+            builder: (_, state) => const _PlaceholderScreen('My Grades'),
           ),
         ],
       );

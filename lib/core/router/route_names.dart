@@ -10,6 +10,7 @@ class RouteNames {
   static const String adminProfiles = '/admin/profiles';
   static const String adminProfileCreate = '/admin/profiles/create';
   static const String adminProfileDetail = '/admin/profiles/:id';
+  static const String adminProfileEdit = '/admin/profiles/:id/edit';
   static const String adminDisciplines = '/admin/disciplines';
   static const String adminEnrollment = '/admin/enrollment';
   static const String adminAttendance = '/admin/attendance';
