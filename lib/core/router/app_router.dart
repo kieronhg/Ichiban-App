@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/providers/auth_providers.dart';
+import '../../core/providers/student_session_provider.dart';
 import '../../domain/entities/profile.dart';
-import '../../presentation/features/profiles/student_profile_screen.dart';
+import '../../presentation/features/auth/admin_login_screen.dart';
+import '../../presentation/features/auth/student_select_screen.dart';
+import '../../presentation/features/auth/pin_entry_screen.dart';
 import '../../presentation/features/profiles/profile_detail_screen.dart';
 import '../../presentation/features/profiles/profile_form_screen.dart';
 import '../../presentation/features/profiles/profile_list_screen.dart';
+import '../../presentation/features/profiles/student_profile_screen.dart';
 import 'route_names.dart';
 
 // Placeholder screens — replaced during feature implementation phases
@@ -27,13 +33,38 @@ class _PlaceholderScreen extends StatelessWidget {
 class AppRouter {
   AppRouter._();
 
-  static GoRouter adminRouter() => GoRouter(
+  // ── Admin router ───────────────────────────────────────────────────────
+
+  static GoRouter adminRouter({required WidgetRef ref}) => GoRouter(
         initialLocation: RouteNames.adminDashboard,
+        redirect: (context, state) {
+          final isAuthenticated = ref.read(isAdminAuthenticatedProvider);
+          final isAuthLoading =
+              ref.read(authStateProvider).isLoading;
+          final onLoginPage =
+              state.matchedLocation == RouteNames.adminLogin;
+
+          // Still resolving auth state — don't redirect yet
+          if (isAuthLoading) return null;
+
+          // Not authenticated → send to login (unless already there)
+          if (!isAuthenticated && !onLoginPage) {
+            return RouteNames.adminLogin;
+          }
+
+          // Authenticated + on login page → send to dashboard
+          if (isAuthenticated && onLoginPage) {
+            return RouteNames.adminDashboard;
+          }
+
+          return null;
+        },
+        refreshListenable: _AuthChangeNotifier(ref),
         routes: [
           GoRoute(
             path: RouteNames.adminLogin,
             name: 'adminLogin',
-            builder: (_, state) => const _PlaceholderScreen('Admin Login'),
+            builder: (_, state) => const AdminLoginScreen(),
           ),
           GoRoute(
             path: RouteNames.adminDashboard,
@@ -41,7 +72,7 @@ class AppRouter {
             builder: (_, state) => const _PlaceholderScreen('Dashboard'),
           ),
 
-          // ── Profiles ────────────────────────────────────────────────
+          // ── Profiles ──────────────────────────────────────────────
           GoRoute(
             path: RouteNames.adminProfiles,
             name: 'adminProfiles',
@@ -71,7 +102,7 @@ class AppRouter {
             ],
           ),
 
-          // ── Other admin routes (placeholder) ────────────────────────
+          // ── Other admin routes (placeholder) ───────────────────────
           GoRoute(
             path: RouteNames.adminDisciplines,
             name: 'adminDisciplines',
@@ -105,18 +136,43 @@ class AppRouter {
         ],
       );
 
-  static GoRouter studentRouter() => GoRouter(
+  // ── Student router ─────────────────────────────────────────────────────
+
+  static GoRouter studentRouter({required WidgetRef ref}) => GoRouter(
         initialLocation: RouteNames.studentSelect,
+        redirect: (context, state) {
+          final session = ref.read(studentSessionProvider);
+          final location = state.matchedLocation;
+
+          final onSelect = location == RouteNames.studentSelect;
+          final onPin = location == RouteNames.studentPin;
+
+          if (!session.isProfileSelected) {
+            // No profile picked — must go to select screen
+            return onSelect ? null : RouteNames.studentSelect;
+          }
+
+          if (!session.isAuthenticated) {
+            // Profile selected but PIN not yet entered
+            return onPin ? null : RouteNames.studentPin;
+          }
+
+          // Fully authenticated — don't let them go back to select/pin
+          if (onSelect || onPin) return RouteNames.studentHome;
+
+          return null;
+        },
+        refreshListenable: _StudentSessionChangeNotifier(ref),
         routes: [
           GoRoute(
             path: RouteNames.studentSelect,
             name: 'studentSelect',
-            builder: (_, state) => const _PlaceholderScreen('Select Student'),
+            builder: (_, state) => const StudentSelectScreen(),
           ),
           GoRoute(
             path: RouteNames.studentPin,
             name: 'studentPin',
-            builder: (_, state) => const _PlaceholderScreen('Enter PIN'),
+            builder: (_, state) => const PinEntryScreen(),
           ),
           GoRoute(
             path: RouteNames.studentHome,
@@ -137,9 +193,29 @@ class AppRouter {
             path: RouteNames.studentProfile,
             name: 'studentProfile',
             builder: (_, state) => StudentProfileScreen(
-              profileId: state.pathParameters['id'] ?? '',
+              // Profile ID comes from the active session, not the route
+              profileId:
+                  ref.read(studentSessionProvider).profileId ?? '',
             ),
           ),
         ],
       );
+}
+
+// ── Riverpod → Listenable bridges ─────────────────────────────────────────
+
+/// Notifies go_router's [refreshListenable] whenever Firebase auth state
+/// changes, triggering re-evaluation of the admin router's redirect.
+class _AuthChangeNotifier extends ChangeNotifier {
+  _AuthChangeNotifier(WidgetRef ref) {
+    ref.listen(authStateProvider, (prev, next) => notifyListeners());
+  }
+}
+
+/// Notifies go_router's [refreshListenable] whenever the student session
+/// changes, triggering re-evaluation of the student router's redirect.
+class _StudentSessionChangeNotifier extends ChangeNotifier {
+  _StudentSessionChangeNotifier(WidgetRef ref) {
+    ref.listen(studentSessionProvider, (prev, next) => notifyListeners());
+  }
 }
