@@ -6,11 +6,26 @@ class ProfileConverter {
   ProfileConverter._();
 
   static Profile fromMap(String id, Map<String, dynamic> map) {
+    // profileTypes is stored as a List<String> in Firestore
+    final rawTypes = (map['profileTypes'] as List<dynamic>?) ?? [];
+    final profileTypes = rawTypes
+        .map((t) => ProfileType.values.byName(t as String))
+        .toList();
+
+    // communicationPreferences is stored as a List<String> in Firestore
+    final rawPrefs =
+        (map['communicationPreferences'] as List<dynamic>?) ?? [];
+    final communicationPreferences = rawPrefs
+        .map((p) => NotificationChannel.values.byName(p as String))
+        .toList();
+
     return Profile(
       id: id,
-      fullName: map['fullName'] as String,
+      firstName: map['firstName'] as String,
+      lastName: map['lastName'] as String,
       dateOfBirth: (map['dateOfBirth'] as Timestamp).toDate(),
-      profileType: ProfileType.values.byName(map['profileType'] as String),
+      profileTypes: profileTypes,
+      gender: map['gender'] as String?,
       addressLine1: map['addressLine1'] as String,
       addressLine2: map['addressLine2'] as String?,
       city: map['city'] as String,
@@ -20,23 +35,31 @@ class ProfileConverter {
       phone: map['phone'] as String,
       email: map['email'] as String,
       emergencyContactName: map['emergencyContactName'] as String,
-      emergencyContactRelationship: map['emergencyContactRelationship'] as String,
+      emergencyContactRelationship:
+          map['emergencyContactRelationship'] as String,
       emergencyContactPhone: map['emergencyContactPhone'] as String,
       allergiesOrMedicalNotes: map['allergiesOrMedicalNotes'] as String?,
       photoVideoConsent: map['photoVideoConsent'] as bool,
+      notes: map['notes'] as String?,
+      communicationPreferences: communicationPreferences,
       registrationDate: (map['registrationDate'] as Timestamp).toDate(),
       isActive: map['isActive'] as bool,
       fcmToken: map['fcmToken'] as String?,
       pinHash: map['pinHash'] as String?,
       parentProfileId: map['parentProfileId'] as String?,
+      secondParentProfileId: map['secondParentProfileId'] as String?,
+      payingParentId: map['payingParentId'] as String?,
     );
   }
 
   static Map<String, dynamic> toMap(Profile profile) {
     return {
-      'fullName': profile.fullName,
+      'firstName': profile.firstName,
+      'lastName': profile.lastName,
       'dateOfBirth': Timestamp.fromDate(profile.dateOfBirth),
-      'profileType': profile.profileType.name,
+      'profileTypes':
+          profile.profileTypes.map((t) => t.name).toList(),
+      'gender': profile.gender,
       'addressLine1': profile.addressLine1,
       'addressLine2': profile.addressLine2,
       'city': profile.city,
@@ -50,11 +73,16 @@ class ProfileConverter {
       'emergencyContactPhone': profile.emergencyContactPhone,
       'allergiesOrMedicalNotes': profile.allergiesOrMedicalNotes,
       'photoVideoConsent': profile.photoVideoConsent,
+      'notes': profile.notes,
+      'communicationPreferences':
+          profile.communicationPreferences.map((p) => p.name).toList(),
       'registrationDate': Timestamp.fromDate(profile.registrationDate),
       'isActive': profile.isActive,
       'fcmToken': profile.fcmToken,
       'pinHash': profile.pinHash,
       'parentProfileId': profile.parentProfileId,
+      'secondParentProfileId': profile.secondParentProfileId,
+      'payingParentId': profile.payingParentId,
     };
   }
 }

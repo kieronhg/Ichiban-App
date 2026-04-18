@@ -19,7 +19,7 @@ class FirestoreProfileRepository implements ProfileRepository {
   @override
   Future<List<Profile>> getByType(ProfileType type) async {
     final snap = await FirestoreCollections.profiles()
-        .where('profileType', isEqualTo: type.name)
+        .where('profileTypes', arrayContains: type.name)
         .get();
     return snap.docs.map((d) => d.data()).toList();
   }
