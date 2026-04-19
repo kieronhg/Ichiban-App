@@ -3,10 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 // ── Session state ──────────────────────────────────────────────────────────
 
 class StudentSession {
-  const StudentSession({
-    this.profileId,
-    this.isAuthenticated = false,
-  });
+  const StudentSession({this.profileId, this.isAuthenticated = false});
 
   /// The profile ID selected on the student select screen.
   /// Null means no profile has been chosen yet.
@@ -17,10 +14,7 @@ class StudentSession {
 
   bool get isProfileSelected => profileId != null;
 
-  StudentSession copyWith({
-    String? profileId,
-    bool? isAuthenticated,
-  }) {
+  StudentSession copyWith({String? profileId, bool? isAuthenticated}) {
     return StudentSession(
       profileId: profileId ?? this.profileId,
       isAuthenticated: isAuthenticated ?? this.isAuthenticated,
@@ -62,5 +56,5 @@ class StudentSessionNotifier extends Notifier<StudentSession> {
 
 final studentSessionProvider =
     NotifierProvider<StudentSessionNotifier, StudentSession>(
-  StudentSessionNotifier.new,
-);
+      StudentSessionNotifier.new,
+    );

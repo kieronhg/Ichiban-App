@@ -58,18 +58,21 @@ class _ProfileFormScreenState extends ConsumerState<ProfileFormScreen> {
     _county = TextEditingController(text: p?.county ?? '');
     _postcode = TextEditingController(text: p?.postcode ?? '');
     _country = TextEditingController(text: p?.country ?? 'United Kingdom');
-    _emergencyName =
-        TextEditingController(text: p?.emergencyContactName ?? '');
-    _emergencyRelationship =
-        TextEditingController(text: p?.emergencyContactRelationship ?? '');
-    _emergencyPhone =
-        TextEditingController(text: p?.emergencyContactPhone ?? '');
-    _medicalNotes =
-        TextEditingController(text: p?.allergiesOrMedicalNotes ?? '');
+    _emergencyName = TextEditingController(text: p?.emergencyContactName ?? '');
+    _emergencyRelationship = TextEditingController(
+      text: p?.emergencyContactRelationship ?? '',
+    );
+    _emergencyPhone = TextEditingController(
+      text: p?.emergencyContactPhone ?? '',
+    );
+    _medicalNotes = TextEditingController(
+      text: p?.allergiesOrMedicalNotes ?? '',
+    );
     _notes = TextEditingController(text: p?.notes ?? '');
     _parentId = TextEditingController(text: p?.parentProfileId ?? '');
-    _secondParentId =
-        TextEditingController(text: p?.secondParentProfileId ?? '');
+    _secondParentId = TextEditingController(
+      text: p?.secondParentProfileId ?? '',
+    );
     _payingParentId = TextEditingController(text: p?.payingParentId ?? '');
 
     // Load existing profile into the notifier after first frame
@@ -83,10 +86,24 @@ class _ProfileFormScreenState extends ConsumerState<ProfileFormScreen> {
   @override
   void dispose() {
     for (final c in [
-      _firstName, _lastName, _phone, _email,
-      _addressLine1, _addressLine2, _city, _county, _postcode, _country,
-      _emergencyName, _emergencyRelationship, _emergencyPhone,
-      _medicalNotes, _notes, _parentId, _secondParentId, _payingParentId,
+      _firstName,
+      _lastName,
+      _phone,
+      _email,
+      _addressLine1,
+      _addressLine2,
+      _city,
+      _county,
+      _postcode,
+      _country,
+      _emergencyName,
+      _emergencyRelationship,
+      _emergencyPhone,
+      _medicalNotes,
+      _notes,
+      _parentId,
+      _secondParentId,
+      _payingParentId,
     ]) {
       c.dispose();
     }
@@ -114,13 +131,10 @@ class _ProfileFormScreenState extends ConsumerState<ProfileFormScreen> {
   Widget build(BuildContext context) {
     final formState = ref.watch(profileFormNotifierProvider);
     final notifier = ref.read(profileFormNotifierProvider.notifier);
-    final isJunior =
-        formState.profileTypes.contains(ProfileType.juniorStudent);
+    final isJunior = formState.profileTypes.contains(ProfileType.juniorStudent);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(_isEditing ? 'Edit Profile' : 'New Profile'),
-      ),
+      appBar: AppBar(title: Text(_isEditing ? 'Edit Profile' : 'New Profile')),
       body: Form(
         key: _formKey,
         child: ListView(
@@ -155,11 +169,16 @@ class _ProfileFormScreenState extends ConsumerState<ProfileFormScreen> {
                   label: 'Gender (optional)',
                   value: formState.gender,
                   items: const [
-                    DropdownMenuItem(value: null, child: Text('Prefer not to say')),
+                    DropdownMenuItem(
+                      value: null,
+                      child: Text('Prefer not to say'),
+                    ),
                     DropdownMenuItem(value: 'Male', child: Text('Male')),
                     DropdownMenuItem(value: 'Female', child: Text('Female')),
                     DropdownMenuItem(
-                        value: 'Non-binary', child: Text('Non-binary')),
+                      value: 'Non-binary',
+                      child: Text('Non-binary'),
+                    ),
                   ],
                   onChanged: notifier.setGender,
                 ),
@@ -174,21 +193,23 @@ class _ProfileFormScreenState extends ConsumerState<ProfileFormScreen> {
                 const Text(
                   'Select one or more roles for this person.',
                   style: TextStyle(
-                      color: AppColors.textSecondary, fontSize: 13),
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                  ),
                 ),
                 const SizedBox(height: 10),
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
                   children: ProfileType.values.map((t) {
-                    final selected =
-                        formState.profileTypes.contains(t);
+                    final selected = formState.profileTypes.contains(t);
                     return FilterChip(
                       label: Text(_typeLabel(t)),
                       selected: selected,
                       onSelected: (v) {
-                        final updated =
-                            List<ProfileType>.from(formState.profileTypes);
+                        final updated = List<ProfileType>.from(
+                          formState.profileTypes,
+                        );
                         v ? updated.add(t) : updated.remove(t);
                         notifier.setProfileTypes(updated);
                       },
@@ -206,8 +227,7 @@ class _ProfileFormScreenState extends ConsumerState<ProfileFormScreen> {
                     padding: const EdgeInsets.only(top: 6),
                     child: Text(
                       'At least one type is required.',
-                      style: TextStyle(
-                          color: AppColors.error, fontSize: 12),
+                      style: TextStyle(color: AppColors.error, fontSize: 12),
                     ),
                   ),
               ],
@@ -327,8 +347,8 @@ class _ProfileFormScreenState extends ConsumerState<ProfileFormScreen> {
                   controller: _medicalNotes,
                   label: 'Allergies / medical notes (optional)',
                   maxLines: 3,
-                  onChanged: (v) => notifier
-                      .setAllergiesOrMedicalNotes(v.isEmpty ? null : v),
+                  onChanged: (v) =>
+                      notifier.setAllergiesOrMedicalNotes(v.isEmpty ? null : v),
                 ),
                 const SizedBox(height: 12),
                 SwitchListTile(
@@ -361,8 +381,8 @@ class _ProfileFormScreenState extends ConsumerState<ProfileFormScreen> {
                   _field(
                     controller: _secondParentId,
                     label: 'Second Parent / Guardian profile ID (optional)',
-                    onChanged: (v) => notifier
-                        .setSecondParentProfileId(v.isEmpty ? null : v),
+                    onChanged: (v) =>
+                        notifier.setSecondParentProfileId(v.isEmpty ? null : v),
                   ),
                   const SizedBox(height: 12),
                   _field(
@@ -389,8 +409,9 @@ class _ProfileFormScreenState extends ConsumerState<ProfileFormScreen> {
               title: 'Communication Preferences',
               children: [
                 ...NotificationChannel.values.map((channel) {
-                  final selected = formState.communicationPreferences
-                      .contains(channel);
+                  final selected = formState.communicationPreferences.contains(
+                    channel,
+                  );
                   return CheckboxListTile(
                     contentPadding: EdgeInsets.zero,
                     title: Text(_channelLabel(channel)),
@@ -398,7 +419,8 @@ class _ProfileFormScreenState extends ConsumerState<ProfileFormScreen> {
                     activeColor: AppColors.accent,
                     onChanged: (v) {
                       final updated = List<NotificationChannel>.from(
-                          formState.communicationPreferences);
+                        formState.communicationPreferences,
+                      );
                       (v ?? false)
                           ? updated.add(channel)
                           : updated.remove(channel);
@@ -418,8 +440,7 @@ class _ProfileFormScreenState extends ConsumerState<ProfileFormScreen> {
                   controller: _notes,
                   label: 'Internal notes (not visible to member)',
                   maxLines: 4,
-                  onChanged: (v) =>
-                      notifier.setNotes(v.isEmpty ? null : v),
+                  onChanged: (v) => notifier.setNotes(v.isEmpty ? null : v),
                 ),
               ],
             ),
@@ -431,8 +452,7 @@ class _ProfileFormScreenState extends ConsumerState<ProfileFormScreen> {
                 padding: const EdgeInsets.only(bottom: 12),
                 child: Text(
                   formState.errorMessage!,
-                  style:
-                      const TextStyle(color: AppColors.error, fontSize: 13),
+                  style: const TextStyle(color: AppColors.error, fontSize: 13),
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -447,8 +467,9 @@ class _ProfileFormScreenState extends ConsumerState<ProfileFormScreen> {
                       height: 20,
                       width: 20,
                       child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: AppColors.textOnAccent),
+                        strokeWidth: 2,
+                        color: AppColors.textOnAccent,
+                      ),
                     )
                   : Text(_isEditing ? 'Save Changes' : 'Create Profile'),
             ),
@@ -460,16 +481,16 @@ class _ProfileFormScreenState extends ConsumerState<ProfileFormScreen> {
   }
 
   String _typeLabel(ProfileType t) => switch (t) {
-        ProfileType.adultStudent => 'Adult Student',
-        ProfileType.juniorStudent => 'Junior Student',
-        ProfileType.coach => 'Coach',
-        ProfileType.parentGuardian => 'Parent / Guardian',
-      };
+    ProfileType.adultStudent => 'Adult Student',
+    ProfileType.juniorStudent => 'Junior Student',
+    ProfileType.coach => 'Coach',
+    ProfileType.parentGuardian => 'Parent / Guardian',
+  };
 
   String _channelLabel(NotificationChannel c) => switch (c) {
-        NotificationChannel.push => 'Push notifications',
-        NotificationChannel.email => 'Email',
-      };
+    NotificationChannel.push => 'Push notifications',
+    NotificationChannel.email => 'Email',
+  };
 }
 
 // ── Form helpers ───────────────────────────────────────────────────────────
@@ -485,8 +506,7 @@ class _FormSection extends StatelessWidget {
     return Card(
       elevation: 0,
       color: AppColors.surface,
-      shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -495,10 +515,10 @@ class _FormSection extends StatelessWidget {
             Text(
               title,
               style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: AppColors.accent,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.5,
-                  ),
+                color: AppColors.accent,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.5,
+              ),
             ),
             const SizedBox(height: 14),
             ...children,
@@ -578,7 +598,8 @@ class _DatePickerField extends StatelessWidget {
             onTap: () async {
               final picked = await showDatePicker(
                 context: context,
-                initialDate: value ??
+                initialDate:
+                    value ??
                     DateTime.now().subtract(const Duration(days: 365 * 18)),
                 firstDate: DateTime(1920),
                 lastDate: DateTime.now(),
@@ -650,14 +671,12 @@ class _GdprConsentSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final policyVersionAsync = ref.watch(privacyPolicyVersionProvider);
-    final currentVersion =
-        policyVersionAsync.value ?? '…';
+    final currentVersion = policyVersionAsync.value ?? '…';
 
     return Card(
       elevation: 0,
       color: AppColors.surface,
-      shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -666,10 +685,10 @@ class _GdprConsentSection extends ConsumerWidget {
             Text(
               'Data Processing Consent',
               style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: AppColors.accent,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.5,
-                  ),
+                color: AppColors.accent,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.5,
+              ),
             ),
             const SizedBox(height: 10),
 
@@ -677,26 +696,31 @@ class _GdprConsentSection extends ConsumerWidget {
             if (isEditing && formState.dataProcessingConsent) ...[
               Container(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 12, vertical: 10),
+                  horizontal: 12,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.success.withAlpha(25),
                   borderRadius: BorderRadius.circular(8),
-                  border:
-                      Border.all(color: AppColors.success.withAlpha(80)),
+                  border: Border.all(color: AppColors.success.withAlpha(80)),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.verified_outlined,
-                        size: 18, color: AppColors.success),
+                    Icon(
+                      Icons.verified_outlined,
+                      size: 18,
+                      color: AppColors.success,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         'Consent given'
                         '${formState.dataProcessingConsentVersion != null ? ' — policy v${formState.dataProcessingConsentVersion}' : ''}.',
                         style: TextStyle(
-                            color: AppColors.success,
-                            fontWeight: FontWeight.w500,
-                            fontSize: 13),
+                          color: AppColors.success,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 13,
+                        ),
                       ),
                     ),
                   ],
@@ -706,19 +730,16 @@ class _GdprConsentSection extends ConsumerWidget {
               Text(
                 'To withdraw consent use the Right to Erasure process, '
                 'not this form.',
-                style: TextStyle(
-                    color: AppColors.textSecondary, fontSize: 12),
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
               ),
             ]
-
             // Create mode (or edit with no consent yet): show checkbox
             else ...[
               Text(
                 'The member must give explicit consent before their '
                 'profile can be created. Confirm below that consent has '
                 'been obtained.',
-                style: TextStyle(
-                    color: AppColors.textSecondary, fontSize: 13),
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
               ),
               const SizedBox(height: 8),
               CheckboxListTile(
@@ -739,7 +760,8 @@ class _GdprConsentSection extends ConsumerWidget {
                   // Stamp the current policy version when consent is given;
                   // clear it if the checkbox is unchecked
                   notifier.setDataProcessingConsentVersion(
-                      checked ? policyVersionAsync.value : null);
+                    checked ? policyVersionAsync.value : null,
+                  );
                 },
                 controlAffinity: ListTileControlAffinity.leading,
               ),
@@ -748,8 +770,7 @@ class _GdprConsentSection extends ConsumerWidget {
                   padding: const EdgeInsets.only(top: 4, left: 12),
                   child: Text(
                     'Consent is required to create a profile.',
-                    style: TextStyle(
-                        color: AppColors.error, fontSize: 12),
+                    style: TextStyle(color: AppColors.error, fontSize: 12),
                   ),
                 ),
             ],

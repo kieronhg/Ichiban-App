@@ -61,25 +61,26 @@ class _StudentSelectScreenState extends ConsumerState<StudentSelectScreen> {
                 ),
                 contentPadding: const EdgeInsets.symmetric(vertical: 0),
               ),
-              onChanged: (v) =>
-                  setState(() => _searchQuery = v.toLowerCase()),
+              onChanged: (v) => setState(() => _searchQuery = v.toLowerCase()),
             ),
           ),
         ),
       ),
       body: profilesAsync.when(
-        loading: () =>
-            const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),
         data: (profiles) {
           final active = profiles.where((p) => p.isActive).toList();
-          final filtered = _searchQuery.isEmpty
-              ? active
-              : active
-                  .where((p) =>
-                      p.fullName.toLowerCase().contains(_searchQuery))
-                  .toList()
-            ..sort((a, b) => a.lastName.compareTo(b.lastName));
+          final filtered =
+              _searchQuery.isEmpty
+                    ? active
+                    : active
+                          .where(
+                            (p) =>
+                                p.fullName.toLowerCase().contains(_searchQuery),
+                          )
+                          .toList()
+                ..sort((a, b) => a.lastName.compareTo(b.lastName));
 
           if (filtered.isEmpty) {
             return Center(
@@ -94,8 +95,7 @@ class _StudentSelectScreenState extends ConsumerState<StudentSelectScreen> {
 
           return GridView.builder(
             padding: const EdgeInsets.all(16),
-            gridDelegate:
-                const SliverGridDelegateWithFixedCrossAxisCount(
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 3,
               crossAxisSpacing: 12,
               mainAxisSpacing: 12,
@@ -177,10 +177,7 @@ class _ProfileCard extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 12,
-                ),
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
               ),
             ),
           ],

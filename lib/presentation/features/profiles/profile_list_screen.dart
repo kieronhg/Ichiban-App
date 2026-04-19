@@ -60,7 +60,8 @@ class _ProfileListScreenState extends ConsumerState<ProfileListScreen> {
                     ),
                     contentPadding: const EdgeInsets.symmetric(vertical: 0),
                   ),
-                  onChanged: (v) => setState(() => _searchQuery = v.toLowerCase()),
+                  onChanged: (v) =>
+                      setState(() => _searchQuery = v.toLowerCase()),
                 ),
               ),
               SizedBox(
@@ -74,11 +75,13 @@ class _ProfileListScreenState extends ConsumerState<ProfileListScreen> {
                       selected: _typeFilter == null,
                       onTap: () => setState(() => _typeFilter = null),
                     ),
-                    ...ProfileType.values.map((t) => _TypeChip(
-                          label: _typelabel(t),
-                          selected: _typeFilter == t,
-                          onTap: () => setState(() => _typeFilter = t),
-                        )),
+                    ...ProfileType.values.map(
+                      (t) => _TypeChip(
+                        label: _typelabel(t),
+                        selected: _typeFilter == t,
+                        onTap: () => setState(() => _typeFilter = t),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -97,8 +100,11 @@ class _ProfileListScreenState extends ConsumerState<ProfileListScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.people_outline,
-                      size: 64, color: AppColors.textSecondary),
+                  Icon(
+                    Icons.people_outline,
+                    size: 64,
+                    color: AppColors.textSecondary,
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     _searchQuery.isNotEmpty || _typeFilter != null
@@ -106,8 +112,8 @@ class _ProfileListScreenState extends ConsumerState<ProfileListScreen> {
                         : 'No profiles yet.\nTap + to add the first one.',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ],
               ),
@@ -137,21 +143,21 @@ class _ProfileListScreenState extends ConsumerState<ProfileListScreen> {
 
   List<Profile> _applyFilters(List<Profile> profiles) {
     return profiles.where((p) {
-      final matchesSearch = _searchQuery.isEmpty ||
+      final matchesSearch =
+          _searchQuery.isEmpty ||
           p.fullName.toLowerCase().contains(_searchQuery);
       final matchesType =
           _typeFilter == null || p.profileTypes.contains(_typeFilter);
       return matchesSearch && matchesType;
-    }).toList()
-      ..sort((a, b) => a.lastName.compareTo(b.lastName));
+    }).toList()..sort((a, b) => a.lastName.compareTo(b.lastName));
   }
 
   String _typelabel(ProfileType t) => switch (t) {
-        ProfileType.adultStudent => 'Adult',
-        ProfileType.juniorStudent => 'Junior',
-        ProfileType.coach => 'Coach',
-        ProfileType.parentGuardian => 'Parent',
-      };
+    ProfileType.adultStudent => 'Adult',
+    ProfileType.juniorStudent => 'Junior',
+    ProfileType.coach => 'Coach',
+    ProfileType.parentGuardian => 'Parent',
+  };
 }
 
 class _TypeChip extends StatelessWidget {
@@ -234,11 +240,15 @@ class _ProfileTile extends StatelessWidget {
   }
 
   String _typeLabels(List<ProfileType> types) {
-    return types.map((t) => switch (t) {
-          ProfileType.adultStudent => 'Adult Student',
-          ProfileType.juniorStudent => 'Junior Student',
-          ProfileType.coach => 'Coach',
-          ProfileType.parentGuardian => 'Parent / Guardian',
-        }).join(' · ');
+    return types
+        .map(
+          (t) => switch (t) {
+            ProfileType.adultStudent => 'Adult Student',
+            ProfileType.juniorStudent => 'Junior Student',
+            ProfileType.coach => 'Coach',
+            ProfileType.parentGuardian => 'Parent / Guardian',
+          },
+        )
+        .join(' · ');
   }
 }

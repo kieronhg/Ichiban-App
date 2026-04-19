@@ -13,10 +13,18 @@ class RouteNames {
   static const String adminProfileEdit = '/admin/profiles/:id/edit';
   static const String adminDisciplines = '/admin/disciplines';
   static const String adminDisciplineCreate = '/admin/disciplines/create';
-  static const String adminDisciplineDetail = '/admin/disciplines/:disciplineId';
-  static const String adminDisciplineEdit = '/admin/disciplines/:disciplineId/edit';
-  static const String adminRankCreate = '/admin/disciplines/:disciplineId/ranks/create';
-  static const String adminRankEdit = '/admin/disciplines/:disciplineId/ranks/:rankId/edit';
+  static const String adminDisciplineDetail =
+      '/admin/disciplines/:disciplineId';
+  static const String adminDisciplineEdit =
+      '/admin/disciplines/:disciplineId/edit';
+  static const String adminRankCreate =
+      '/admin/disciplines/:disciplineId/ranks/create';
+  static const String adminRankEdit =
+      '/admin/disciplines/:disciplineId/ranks/:rankId/edit';
+  static const String adminProfileEnrol = '/admin/profiles/:id/enrol';
+  static const String adminDisciplineBulkEnrol =
+      '/admin/disciplines/:disciplineId/bulk-enrol';
+  static const String adminBulkEnrolPreview = '/admin/bulk-enrol/preview';
   static const String adminEnrollment = '/admin/enrollment';
   static const String adminAttendance = '/admin/attendance';
   static const String adminGrading = '/admin/grading';

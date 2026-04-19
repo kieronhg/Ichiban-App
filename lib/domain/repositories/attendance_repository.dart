@@ -14,7 +14,9 @@ abstract class AttendanceRepository {
   Future<String> createSession(AttendanceSession session);
 
   /// Watches sessions for a discipline in real time.
-  Stream<List<AttendanceSession>> watchSessionsForDiscipline(String disciplineId);
+  Stream<List<AttendanceSession>> watchSessionsForDiscipline(
+    String disciplineId,
+  );
 
   // ── Records ───────────────────────────────────────────────
 

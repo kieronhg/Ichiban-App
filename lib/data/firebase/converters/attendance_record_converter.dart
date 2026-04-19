@@ -12,7 +12,9 @@ class AttendanceRecordConverter {
       studentId: map['studentId'] as String,
       disciplineId: map['disciplineId'] as String,
       sessionDate: (map['sessionDate'] as Timestamp).toDate(),
-      checkInMethod: CheckInMethod.values.byName(map['checkInMethod'] as String),
+      checkInMethod: CheckInMethod.values.byName(
+        map['checkInMethod'] as String,
+      ),
       checkedInByProfileId: map['checkedInByProfileId'] as String?,
       timestamp: (map['timestamp'] as Timestamp).toDate(),
     );

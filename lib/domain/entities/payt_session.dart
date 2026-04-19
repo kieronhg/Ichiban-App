@@ -72,8 +72,17 @@ class PaytSession extends Equatable {
 
   @override
   List<Object?> get props => [
-        id, profileId, disciplineId, sessionDate,
-        attendanceRecordId, paymentMethod, paymentStatus, paidAt,
-        amount, recordedByAdminId, createdAt, notes,
-      ];
+    id,
+    profileId,
+    disciplineId,
+    sessionDate,
+    attendanceRecordId,
+    paymentMethod,
+    paymentStatus,
+    paidAt,
+    amount,
+    recordedByAdminId,
+    createdAt,
+    notes,
+  ];
 }

@@ -35,10 +35,14 @@ class FirestoreMembershipRepository implements MembershipRepository {
     final cutoff = now.add(Duration(days: withinDays));
     final snap = await FirestoreCollections.memberships()
         .where('status', isEqualTo: MembershipStatus.active.name)
-        .where('subscriptionRenewalDate',
-            isGreaterThanOrEqualTo: Timestamp.fromDate(now))
-        .where('subscriptionRenewalDate',
-            isLessThanOrEqualTo: Timestamp.fromDate(cutoff))
+        .where(
+          'subscriptionRenewalDate',
+          isGreaterThanOrEqualTo: Timestamp.fromDate(now),
+        )
+        .where(
+          'subscriptionRenewalDate',
+          isLessThanOrEqualTo: Timestamp.fromDate(cutoff),
+        )
         .get();
     return snap.docs.map((d) => d.data()).toList();
   }
@@ -49,10 +53,8 @@ class FirestoreMembershipRepository implements MembershipRepository {
     final cutoff = now.add(Duration(days: withinDays));
     final snap = await FirestoreCollections.memberships()
         .where('status', isEqualTo: MembershipStatus.trial.name)
-        .where('trialEndDate',
-            isGreaterThanOrEqualTo: Timestamp.fromDate(now))
-        .where('trialEndDate',
-            isLessThanOrEqualTo: Timestamp.fromDate(cutoff))
+        .where('trialEndDate', isGreaterThanOrEqualTo: Timestamp.fromDate(now))
+        .where('trialEndDate', isLessThanOrEqualTo: Timestamp.fromDate(cutoff))
         .get();
     return snap.docs.map((d) => d.data()).toList();
   }
@@ -65,16 +67,14 @@ class FirestoreMembershipRepository implements MembershipRepository {
 
   @override
   Future<void> update(Membership membership) async {
-    await FirestoreCollections.memberships()
-        .doc(membership.id)
-        .set(membership);
+    await FirestoreCollections.memberships().doc(membership.id).set(membership);
   }
 
   @override
   Future<void> updateStatus(String id, MembershipStatus status) async {
-    await FirestoreCollections.memberships()
-        .doc(id)
-        .update({'status': status.name});
+    await FirestoreCollections.memberships().doc(id).update({
+      'status': status.name,
+    });
   }
 
   @override
@@ -89,7 +89,9 @@ class FirestoreMembershipRepository implements MembershipRepository {
     // Re-fetch to get the updated count and recalculate tier
     final snap = await ref.get();
     final updated = snap.data()!;
-    final newTier = Membership.deriveFamilyTier(updated.memberProfileIds.length);
+    final newTier = Membership.deriveFamilyTier(
+      updated.memberProfileIds.length,
+    );
     await ref.update({'familyPricingTier': newTier.name});
   }
 
@@ -105,15 +107,17 @@ class FirestoreMembershipRepository implements MembershipRepository {
     // Re-fetch to get the updated count and recalculate tier
     final snap = await ref.get();
     final updated = snap.data()!;
-    final newTier = Membership.deriveFamilyTier(updated.memberProfileIds.length);
+    final newTier = Membership.deriveFamilyTier(
+      updated.memberProfileIds.length,
+    );
     await ref.update({'familyPricingTier': newTier.name});
   }
 
   @override
   Stream<List<Membership>> watchAll() {
-    return FirestoreCollections.memberships()
-        .snapshots()
-        .map((snap) => snap.docs.map((d) => d.data()).toList());
+    return FirestoreCollections.memberships().snapshots().map(
+      (snap) => snap.docs.map((d) => d.data()).toList(),
+    );
   }
 
   @override

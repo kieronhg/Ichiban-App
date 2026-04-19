@@ -9,7 +9,8 @@ class FirestoreAttendanceRepository implements AttendanceRepository {
 
   @override
   Future<List<AttendanceSession>> getSessionsForDiscipline(
-      String disciplineId) async {
+    String disciplineId,
+  ) async {
     final snap = await FirestoreCollections.attendanceSessions()
         .where('disciplineId', isEqualTo: disciplineId)
         .orderBy('sessionDate', descending: true)
@@ -19,21 +20,22 @@ class FirestoreAttendanceRepository implements AttendanceRepository {
 
   @override
   Future<AttendanceSession?> getSessionById(String sessionId) async {
-    final snap =
-        await FirestoreCollections.attendanceSessions().doc(sessionId).get();
+    final snap = await FirestoreCollections.attendanceSessions()
+        .doc(sessionId)
+        .get();
     return snap.data();
   }
 
   @override
   Future<String> createSession(AttendanceSession session) async {
-    final ref =
-        await FirestoreCollections.attendanceSessions().add(session);
+    final ref = await FirestoreCollections.attendanceSessions().add(session);
     return ref.id;
   }
 
   @override
   Stream<List<AttendanceSession>> watchSessionsForDiscipline(
-      String disciplineId) {
+    String disciplineId,
+  ) {
     return FirestoreCollections.attendanceSessions()
         .where('disciplineId', isEqualTo: disciplineId)
         .orderBy('sessionDate', descending: true)
@@ -44,8 +46,7 @@ class FirestoreAttendanceRepository implements AttendanceRepository {
   // ── Records ───────────────────────────────────────────────────────────────
 
   @override
-  Future<List<AttendanceRecord>> getRecordsForSession(
-      String sessionId) async {
+  Future<List<AttendanceRecord>> getRecordsForSession(String sessionId) async {
     final snap = await FirestoreCollections.attendanceRecords()
         .where('sessionId', isEqualTo: sessionId)
         .get();
@@ -53,8 +54,7 @@ class FirestoreAttendanceRepository implements AttendanceRepository {
   }
 
   @override
-  Future<List<AttendanceRecord>> getRecordsForStudent(
-      String studentId) async {
+  Future<List<AttendanceRecord>> getRecordsForStudent(String studentId) async {
     final snap = await FirestoreCollections.attendanceRecords()
         .where('studentId', isEqualTo: studentId)
         .orderBy('sessionDate', descending: true)
@@ -64,7 +64,9 @@ class FirestoreAttendanceRepository implements AttendanceRepository {
 
   @override
   Future<List<AttendanceRecord>> getRecordsForStudentAndDiscipline(
-      String studentId, String disciplineId) async {
+    String studentId,
+    String disciplineId,
+  ) async {
     final snap = await FirestoreCollections.attendanceRecords()
         .where('studentId', isEqualTo: studentId)
         .where('disciplineId', isEqualTo: disciplineId)
@@ -78,8 +80,9 @@ class FirestoreAttendanceRepository implements AttendanceRepository {
   /// Queries all active memberships, collects member IDs, then checks
   /// each for recent attendance records.
   @override
-  Future<List<String>> getNonAttendingMemberIds(
-      {required int withinDays}) async {
+  Future<List<String>> getNonAttendingMemberIds({
+    required int withinDays,
+  }) async {
     final cutoff = DateTime.now().subtract(Duration(days: withinDays));
 
     // Get all active membership member IDs
@@ -99,8 +102,10 @@ class FirestoreAttendanceRepository implements AttendanceRepository {
     for (final memberId in allMemberIds) {
       final recentSnap = await FirestoreCollections.attendanceRecords()
           .where('studentId', isEqualTo: memberId)
-          .where('sessionDate',
-              isGreaterThanOrEqualTo: Timestamp.fromDate(cutoff))
+          .where(
+            'sessionDate',
+            isGreaterThanOrEqualTo: Timestamp.fromDate(cutoff),
+          )
           .limit(1)
           .get();
       if (recentSnap.docs.isEmpty) {
@@ -113,8 +118,7 @@ class FirestoreAttendanceRepository implements AttendanceRepository {
 
   @override
   Future<String> createRecord(AttendanceRecord record) async {
-    final ref =
-        await FirestoreCollections.attendanceRecords().add(record);
+    final ref = await FirestoreCollections.attendanceRecords().add(record);
     return ref.id;
   }
 

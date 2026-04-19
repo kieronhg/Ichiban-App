@@ -11,11 +11,9 @@ class GetProfilesUseCase {
   Stream<List<Profile>> watchAll() => _repo.watchAll();
 
   /// Watches all profiles that include [type] in their profileTypes list.
-  Stream<List<Profile>> watchByType(ProfileType type) =>
-      _repo.watchAll().map(
-        (profiles) =>
-            profiles.where((p) => p.profileTypes.contains(type)).toList(),
-      );
+  Stream<List<Profile>> watchByType(ProfileType type) => _repo.watchAll().map(
+    (profiles) => profiles.where((p) => p.profileTypes.contains(type)).toList(),
+  );
 
   /// Returns all junior profiles linked to [parentProfileId].
   Future<List<Profile>> getJuniorsForParent(String parentProfileId) =>

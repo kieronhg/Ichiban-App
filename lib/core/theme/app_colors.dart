@@ -4,9 +4,9 @@ class AppColors {
   AppColors._();
 
   // Brand
-  static const Color primary = Color(0xFF1A1A2E);       // Deep navy
+  static const Color primary = Color(0xFF1A1A2E); // Deep navy
   static const Color primaryVariant = Color(0xFF16213E);
-  static const Color accent = Color(0xFFE94560);        // Red — martial arts energy
+  static const Color accent = Color(0xFFE94560); // Red — martial arts energy
   static const Color accentVariant = Color(0xFFC73652);
 
   // Backgrounds

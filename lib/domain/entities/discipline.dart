@@ -39,6 +39,12 @@ class Discipline extends Equatable {
   }
 
   @override
-  List<Object?> get props =>
-      [id, name, description, isActive, createdByAdminId, createdAt];
+  List<Object?> get props => [
+    id,
+    name,
+    description,
+    isActive,
+    createdByAdminId,
+    createdAt,
+  ];
 }

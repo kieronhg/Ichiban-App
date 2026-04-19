@@ -18,10 +18,12 @@ class MembershipConverter {
       trialStartDate: (map['trialStartDate'] as Timestamp?)?.toDate(),
       trialEndDate: (map['trialEndDate'] as Timestamp?)?.toDate(),
       membershipStartDate: (map['membershipStartDate'] as Timestamp?)?.toDate(),
-      subscriptionRenewalDate:
-          (map['subscriptionRenewalDate'] as Timestamp?)?.toDate(),
+      subscriptionRenewalDate: (map['subscriptionRenewalDate'] as Timestamp?)
+          ?.toDate(),
       status: MembershipStatus.values.byName(map['status'] as String),
-      paymentMethod: PaymentMethod.values.byName(map['paymentMethod'] as String),
+      paymentMethod: PaymentMethod.values.byName(
+        map['paymentMethod'] as String,
+      ),
       stripeCustomerId: map['stripeCustomerId'] as String?,
       stripeSubscriptionId: map['stripeSubscriptionId'] as String?,
       createdByAdminId: map['createdByAdminId'] as String,

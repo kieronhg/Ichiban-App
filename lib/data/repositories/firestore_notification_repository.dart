@@ -20,9 +20,9 @@ class FirestoreNotificationRepository implements NotificationRepository {
 
   @override
   Future<void> markRead(String id) async {
-    await FirestoreCollections.notificationLogs()
-        .doc(id)
-        .update({'isRead': true});
+    await FirestoreCollections.notificationLogs().doc(id).update({
+      'isRead': true,
+    });
   }
 
   @override

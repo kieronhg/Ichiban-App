@@ -44,23 +44,24 @@ class _RankFormScreenState extends ConsumerState<RankFormScreen> {
     final r = widget.existingRank;
     _nameCtrl = TextEditingController(text: r?.name ?? '');
     _colourCtrl = TextEditingController(
-        text: r?.colourHex?.replaceAll('#', '') ?? '');
-    _monCountCtrl =
-        TextEditingController(text: r?.monCount?.toString() ?? '');
+      text: r?.colourHex?.replaceAll('#', '') ?? '',
+    );
+    _monCountCtrl = TextEditingController(text: r?.monCount?.toString() ?? '');
     _minAttendanceCtrl = TextEditingController(
-        text: r?.minAttendanceForGrading?.toString() ?? '');
+      text: r?.minAttendanceForGrading?.toString() ?? '',
+    );
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final notifier = ref.read(rankFormNotifierProvider.notifier);
-      if (r != null) {
-        notifier.load(r);
-      } else {
-        notifier.init(
-          disciplineId: widget.disciplineId,
-          nextDisplayOrder: widget.nextDisplayOrder,
-        );
-      }
-    });
+    // Initialise the form notifier synchronously so the first build already
+    // has the correct rankType (needed for DropdownButtonFormField.initialValue).
+    final notifier = ref.read(rankFormNotifierProvider.notifier);
+    if (r != null) {
+      notifier.load(r);
+    } else {
+      notifier.init(
+        disciplineId: widget.disciplineId,
+        nextDisplayOrder: widget.nextDisplayOrder,
+      );
+    }
   }
 
   @override
@@ -98,9 +99,7 @@ class _RankFormScreenState extends ConsumerState<RankFormScreen> {
     final showMonCount = formState.rankType == RankType.mon;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(_isEditing ? 'Edit Rank' : 'New Rank'),
-      ),
+      appBar: AppBar(title: Text(_isEditing ? 'Edit Rank' : 'New Rank')),
       body: Form(
         key: _formKey,
         child: ListView(
@@ -129,7 +128,7 @@ class _RankFormScreenState extends ConsumerState<RankFormScreen> {
 
                 // Rank type
                 DropdownButtonFormField<RankType>(
-                  value: formState.rankType,
+                  initialValue: formState.rankType,
                   decoration: const InputDecoration(
                     labelText: 'Rank Type',
                     border: OutlineInputBorder(),
@@ -137,10 +136,12 @@ class _RankFormScreenState extends ConsumerState<RankFormScreen> {
                     fillColor: AppColors.background,
                   ),
                   items: RankType.values
-                      .map((t) => DropdownMenuItem(
-                            value: t,
-                            child: Text(_rankTypeLabel(t)),
-                          ))
+                      .map(
+                        (t) => DropdownMenuItem(
+                          value: t,
+                          child: Text(_rankTypeLabel(t)),
+                        ),
+                      )
                       .toList(),
                   onChanged: (v) {
                     if (v != null) {
@@ -170,16 +171,18 @@ class _RankFormScreenState extends ConsumerState<RankFormScreen> {
                           border: OutlineInputBorder(),
                           filled: true,
                           fillColor: AppColors.background,
-                          hintText: '0 = pass, 1 = good, 2 = excellent, 3 = exceptional',
+                          hintText:
+                              '0 = pass, 1 = good, 2 = excellent, 3 = exceptional',
                           helperText:
                               'Number of mons / tabs shown on the belt.',
                         ),
                         keyboardType: TextInputType.number,
                         inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly
+                          FilteringTextInputFormatter.digitsOnly,
                         ],
-                        onChanged: (v) => notifier
-                            .setMonCount(v.isEmpty ? null : int.tryParse(v)),
+                        onChanged: (v) => notifier.setMonCount(
+                          v.isEmpty ? null : int.tryParse(v),
+                        ),
                         validator: (v) {
                           if (!showMonCount) return null;
                           if (v == null || v.isEmpty) return null;
@@ -220,11 +223,12 @@ class _RankFormScreenState extends ConsumerState<RankFormScreen> {
                         textCapitalization: TextCapitalization.characters,
                         inputFormatters: [
                           FilteringTextInputFormatter.allow(
-                              RegExp(r'[0-9a-fA-F]')),
+                            RegExp(r'[0-9a-fA-F]'),
+                          ),
                           LengthLimitingTextInputFormatter(6),
                         ],
-                        onChanged: (v) => notifier.setColourHex(
-                            v.isEmpty ? null : '#$v'),
+                        onChanged: (v) =>
+                            notifier.setColourHex(v.isEmpty ? null : '#$v'),
                         validator: (v) {
                           if (v == null || v.isEmpty) return null;
                           if (v.length != 6) {
@@ -261,7 +265,8 @@ class _RankFormScreenState extends ConsumerState<RankFormScreen> {
                   keyboardType: TextInputType.number,
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   onChanged: (v) => notifier.setMinAttendanceForGrading(
-                      v.isEmpty ? null : int.tryParse(v)),
+                    v.isEmpty ? null : int.tryParse(v),
+                  ),
                   validator: (v) {
                     if (v == null || v.isEmpty) return null;
                     final n = int.tryParse(v);
@@ -279,8 +284,7 @@ class _RankFormScreenState extends ConsumerState<RankFormScreen> {
                 padding: const EdgeInsets.only(bottom: 12),
                 child: Text(
                   formState.errorMessage!,
-                  style: const TextStyle(
-                      color: AppColors.error, fontSize: 13),
+                  style: const TextStyle(color: AppColors.error, fontSize: 13),
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -295,7 +299,9 @@ class _RankFormScreenState extends ConsumerState<RankFormScreen> {
                       height: 20,
                       width: 20,
                       child: CircularProgressIndicator(
-                          strokeWidth: 2, color: AppColors.textOnAccent),
+                        strokeWidth: 2,
+                        color: AppColors.textOnAccent,
+                      ),
                     )
                   : Text(_isEditing ? 'Save Changes' : 'Add Rank'),
             ),
@@ -307,11 +313,11 @@ class _RankFormScreenState extends ConsumerState<RankFormScreen> {
   }
 
   String _rankTypeLabel(RankType t) => switch (t) {
-        RankType.kyu => 'Kyu',
-        RankType.dan => 'Dan',
-        RankType.mon => 'Mon / Tab',
-        RankType.ungraded => 'Ungraded',
-      };
+    RankType.kyu => 'Kyu',
+    RankType.dan => 'Dan',
+    RankType.mon => 'Mon / Tab',
+    RankType.ungraded => 'Ungraded',
+  };
 }
 
 // ── Colour preview swatch ──────────────────────────────────────────────────
@@ -333,8 +339,7 @@ class _ColourPreview extends StatelessWidget {
         border: Border.all(color: Colors.black26),
       ),
       child: colour == null
-          ? const Icon(Icons.format_color_reset,
-              color: AppColors.textSecondary)
+          ? const Icon(Icons.format_color_reset, color: AppColors.textSecondary)
           : null,
     );
   }
@@ -370,10 +375,10 @@ class _FormSection extends StatelessWidget {
             Text(
               title,
               style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: AppColors.accent,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.5,
-                  ),
+                color: AppColors.accent,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.5,
+              ),
             ),
             const SizedBox(height: 14),
             ...children,

@@ -31,16 +31,14 @@ class FirestoreDisciplineRepository implements DisciplineRepository {
 
   @override
   Future<void> update(Discipline discipline) async {
-    await FirestoreCollections.disciplines()
-        .doc(discipline.id)
-        .set(discipline);
+    await FirestoreCollections.disciplines().doc(discipline.id).set(discipline);
   }
 
   @override
   Stream<List<Discipline>> watchAll() {
-    return FirestoreCollections.disciplines()
-        .snapshots()
-        .map((snap) => snap.docs.map((d) => d.data()).toList());
+    return FirestoreCollections.disciplines().snapshots().map(
+      (snap) => snap.docs.map((d) => d.data()).toList(),
+    );
   }
 
   @override

@@ -52,7 +52,13 @@ class AttendanceRecord extends Equatable {
 
   @override
   List<Object?> get props => [
-        id, sessionId, studentId, disciplineId, sessionDate,
-        checkInMethod, checkedInByProfileId, timestamp,
-      ];
+    id,
+    sessionId,
+    studentId,
+    disciplineId,
+    sessionDate,
+    checkInMethod,
+    checkedInByProfileId,
+    timestamp,
+  ];
 }

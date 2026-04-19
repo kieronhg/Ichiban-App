@@ -11,22 +11,19 @@ class FirestoreEmailTemplateRepository implements EmailTemplateRepository {
 
   @override
   Future<EmailTemplate?> getByKey(String key) async {
-    final snap =
-        await FirestoreCollections.emailTemplates().doc(key).get();
+    final snap = await FirestoreCollections.emailTemplates().doc(key).get();
     return snap.data();
   }
 
   @override
   Future<void> update(EmailTemplate template) async {
-    await FirestoreCollections.emailTemplates()
-        .doc(template.key)
-        .set(template);
+    await FirestoreCollections.emailTemplates().doc(template.key).set(template);
   }
 
   @override
   Stream<List<EmailTemplate>> watchAll() {
-    return FirestoreCollections.emailTemplates()
-        .snapshots()
-        .map((snap) => snap.docs.map((d) => d.data()).toList());
+    return FirestoreCollections.emailTemplates().snapshots().map(
+      (snap) => snap.docs.map((d) => d.data()).toList(),
+    );
   }
 }

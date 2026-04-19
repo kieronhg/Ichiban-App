@@ -70,15 +70,16 @@ final activeDisciplineListProvider = StreamProvider<List<Discipline>>(
 /// Single discipline by ID, live. Emits null if not found.
 /// Derived from the all-disciplines stream to avoid an extra Firestore
 /// listener per detail screen.
-final disciplineProvider = StreamProvider.family<Discipline?, String>(
-  (ref, id) => ref.watch(disciplineListProvider.stream).map(
-        (list) => list.where((d) => d.id == id).firstOrNull,
-      ),
-);
+final disciplineProvider = StreamProvider.family<Discipline?, String>((
+  ref,
+  id,
+) async* {
+  final list = ref.watch(disciplineListProvider).asData?.value ?? [];
+  yield list.where((d) => d.id == id).firstOrNull;
+});
 
 /// All ranks for a discipline, ordered by displayOrder ascending, live.
-final rankListProvider =
-    StreamProvider.family<List<Rank>, String>(
+final rankListProvider = StreamProvider.family<List<Rank>, String>(
   (ref, disciplineId) =>
       ref.watch(getRanksUseCaseProvider).watchForDiscipline(disciplineId),
 );
@@ -124,8 +125,8 @@ class DisciplineFormNotifier extends Notifier<DisciplineFormState> {
 
 final disciplineFormNotifierProvider =
     NotifierProvider.autoDispose<DisciplineFormNotifier, DisciplineFormState>(
-  DisciplineFormNotifier.new,
-);
+      DisciplineFormNotifier.new,
+    );
 
 // ── Discipline form state ──────────────────────────────────────────────────
 
@@ -149,13 +150,13 @@ class DisciplineFormState {
   bool get isEditing => id.isNotEmpty;
 
   factory DisciplineFormState.empty() => const DisciplineFormState(
-        id: '',
-        name: '',
-        description: null,
-        isActive: true,
-        isSaving: false,
-        errorMessage: null,
-      );
+    id: '',
+    name: '',
+    description: null,
+    isActive: true,
+    isSaving: false,
+    errorMessage: null,
+  );
 
   factory DisciplineFormState.fromDiscipline(Discipline d) =>
       DisciplineFormState(
@@ -170,15 +171,15 @@ class DisciplineFormState {
   /// Converts form state back to a [Discipline] for persistence.
   /// An empty [id] signals a new discipline — Firestore will generate one.
   Discipline toDiscipline({required String adminId}) => Discipline(
-        id: id,
-        name: name.trim(),
-        description: description?.trim().isEmpty == true
-            ? null
-            : description?.trim(),
-        isActive: isActive,
-        createdByAdminId: adminId,
-        createdAt: DateTime.now(), // will be stamped by use case on create
-      );
+    id: id,
+    name: name.trim(),
+    description: description?.trim().isEmpty == true
+        ? null
+        : description?.trim(),
+    isActive: isActive,
+    createdByAdminId: adminId,
+    createdAt: DateTime.now(), // will be stamped by use case on create
+  );
 
   DisciplineFormState copyWith({
     String? id,
@@ -251,8 +252,8 @@ class RankFormNotifier extends Notifier<RankFormState> {
 
 final rankFormNotifierProvider =
     NotifierProvider.autoDispose<RankFormNotifier, RankFormState>(
-  RankFormNotifier.new,
-);
+      RankFormNotifier.new,
+    );
 
 // ── Rank form state ────────────────────────────────────────────────────────
 
@@ -288,44 +289,44 @@ class RankFormState {
   bool get isEditing => id.isNotEmpty;
 
   factory RankFormState.empty() => const RankFormState(
-        id: '',
-        disciplineId: '',
-        name: '',
-        colourHex: null,
-        rankType: RankType.kyu,
-        monCount: null,
-        minAttendanceForGrading: null,
-        displayOrder: 0,
-        isSaving: false,
-        errorMessage: null,
-      );
+    id: '',
+    disciplineId: '',
+    name: '',
+    colourHex: null,
+    rankType: RankType.kyu,
+    monCount: null,
+    minAttendanceForGrading: null,
+    displayOrder: 0,
+    isSaving: false,
+    errorMessage: null,
+  );
 
   factory RankFormState.fromRank(Rank r) => RankFormState(
-        id: r.id,
-        disciplineId: r.disciplineId,
-        name: r.name,
-        colourHex: r.colourHex,
-        rankType: r.rankType,
-        monCount: r.monCount,
-        minAttendanceForGrading: r.minAttendanceForGrading,
-        displayOrder: r.displayOrder,
-        isSaving: false,
-        errorMessage: null,
-      );
+    id: r.id,
+    disciplineId: r.disciplineId,
+    name: r.name,
+    colourHex: r.colourHex,
+    rankType: r.rankType,
+    monCount: r.monCount,
+    minAttendanceForGrading: r.minAttendanceForGrading,
+    displayOrder: r.displayOrder,
+    isSaving: false,
+    errorMessage: null,
+  );
 
   /// Converts form state back to a [Rank] for persistence.
   /// An empty [id] signals a new rank — Firestore will generate one.
   Rank toRank() => Rank(
-        id: id,
-        disciplineId: disciplineId,
-        name: name.trim(),
-        displayOrder: displayOrder,
-        colourHex: colourHex?.trim().isEmpty == true ? null : colourHex?.trim(),
-        rankType: rankType,
-        monCount: monCount,
-        minAttendanceForGrading: minAttendanceForGrading,
-        createdAt: DateTime.now(), // will be stamped by use case on create
-      );
+    id: id,
+    disciplineId: disciplineId,
+    name: name.trim(),
+    displayOrder: displayOrder,
+    colourHex: colourHex?.trim().isEmpty == true ? null : colourHex?.trim(),
+    rankType: rankType,
+    monCount: monCount,
+    minAttendanceForGrading: minAttendanceForGrading,
+    createdAt: DateTime.now(), // will be stamped by use case on create
+  );
 
   /// Nullable int fields ([monCount], [minAttendanceForGrading]) accept
   /// [_absent] as a sentinel meaning "keep existing value".  Passing `null`

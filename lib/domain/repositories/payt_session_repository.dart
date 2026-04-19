@@ -22,5 +22,8 @@ abstract class PaytSessionRepository {
   });
 
   /// Links an attendance record to a PAYT session after check-in.
-  Future<void> linkAttendanceRecord(String sessionId, String attendanceRecordId);
+  Future<void> linkAttendanceRecord(
+    String sessionId,
+    String attendanceRecordId,
+  );
 }

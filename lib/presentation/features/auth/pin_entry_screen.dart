@@ -31,16 +31,16 @@ class _PinEntryScreenState extends ConsumerState<PinEntryScreen>
       vsync: this,
       duration: const Duration(milliseconds: 400),
     );
-    _shakeAnimation = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween(begin: 0, end: -12), weight: 1),
-      TweenSequenceItem(tween: Tween(begin: -12, end: 12), weight: 2),
-      TweenSequenceItem(tween: Tween(begin: 12, end: -8), weight: 2),
-      TweenSequenceItem(tween: Tween(begin: -8, end: 8), weight: 2),
-      TweenSequenceItem(tween: Tween(begin: 8, end: 0), weight: 1),
-    ]).animate(CurvedAnimation(
-      parent: _shakeController,
-      curve: Curves.easeInOut,
-    ));
+    _shakeAnimation =
+        TweenSequence<double>([
+          TweenSequenceItem(tween: Tween(begin: 0, end: -12), weight: 1),
+          TweenSequenceItem(tween: Tween(begin: -12, end: 12), weight: 2),
+          TweenSequenceItem(tween: Tween(begin: 12, end: -8), weight: 2),
+          TweenSequenceItem(tween: Tween(begin: -8, end: 8), weight: 2),
+          TweenSequenceItem(tween: Tween(begin: 8, end: 0), weight: 1),
+        ]).animate(
+          CurvedAnimation(parent: _shakeController, curve: Curves.easeInOut),
+        );
   }
 
   @override
@@ -119,9 +119,9 @@ class _PinEntryScreenState extends ConsumerState<PinEntryScreen>
             // ── Greeting ────────────────────────────────────────────────
             Text(
               profileName.isNotEmpty ? 'Hi, $profileName' : 'Enter your PIN',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
@@ -150,14 +150,14 @@ class _PinEntryScreenState extends ConsumerState<PinEntryScreen>
                       color: _hasError
                           ? AppColors.error
                           : filled
-                              ? AppColors.primary
-                              : AppColors.surfaceVariant,
+                          ? AppColors.primary
+                          : AppColors.surfaceVariant,
                       border: Border.all(
                         color: _hasError
                             ? AppColors.error
                             : filled
-                                ? AppColors.primary
-                                : AppColors.textSecondary,
+                            ? AppColors.primary
+                            : AppColors.textSecondary,
                         width: 1.5,
                       ),
                     ),
@@ -170,9 +170,10 @@ class _PinEntryScreenState extends ConsumerState<PinEntryScreen>
               Text(
                 'Incorrect PIN. Please try again.',
                 style: TextStyle(
-                    color: AppColors.error,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500),
+                  color: AppColors.error,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ],
 
@@ -203,7 +204,8 @@ class _PinEntryScreenState extends ConsumerState<PinEntryScreen>
                                   width: 24,
                                   height: 24,
                                   child: CircularProgressIndicator(
-                                      strokeWidth: 2),
+                                    strokeWidth: 2,
+                                  ),
                                 ),
                               )
                             : IconButton(

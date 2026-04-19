@@ -23,9 +23,7 @@ class CreateRankUseCase {
       throw ArgumentError('minAttendanceForGrading must be 0 or greater.');
     }
 
-    final stamped = rank.copyWith(
-      createdAt: DateTime.now(),
-    );
+    final stamped = rank.copyWith(createdAt: DateTime.now());
 
     return _repo.create(stamped);
   }

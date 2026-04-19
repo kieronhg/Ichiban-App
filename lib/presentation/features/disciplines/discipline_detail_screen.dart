@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/providers/discipline_providers.dart';
+import '../../../core/providers/enrollment_providers.dart';
+import '../../../core/providers/profile_providers.dart';
 import '../../../domain/entities/discipline.dart';
+import '../../../domain/entities/enrollment.dart';
 import '../../../domain/entities/enums.dart';
 import '../../../domain/entities/rank.dart';
 
@@ -18,9 +22,8 @@ class DisciplineDetailScreen extends ConsumerWidget {
     final disciplineAsync = ref.watch(disciplineProvider(disciplineId));
 
     return disciplineAsync.when(
-      loading: () => const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      ),
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (e, _) => Scaffold(
         appBar: AppBar(),
         body: Center(child: Text('Error: $e')),
@@ -48,8 +51,7 @@ class _DisciplineDetailView extends ConsumerStatefulWidget {
       _DisciplineDetailViewState();
 }
 
-class _DisciplineDetailViewState
-    extends ConsumerState<_DisciplineDetailView> {
+class _DisciplineDetailViewState extends ConsumerState<_DisciplineDetailView> {
   bool _reordering = false;
 
   Future<void> _reorder(List<Rank> ranks, int oldIndex, int newIndex) async {
@@ -59,10 +61,9 @@ class _DisciplineDetailViewState
       final reordered = [...ranks];
       final moved = reordered.removeAt(oldIndex);
       reordered.insert(newIndex, moved);
-      await ref.read(reorderRanksUseCaseProvider).call(
-            widget.discipline.id,
-            reordered.map((r) => r.id).toList(),
-          );
+      await ref
+          .read(reorderRanksUseCaseProvider)
+          .call(widget.discipline.id, reordered.map((r) => r.id).toList());
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -77,8 +78,7 @@ class _DisciplineDetailViewState
     }
   }
 
-  Future<void> _confirmDelete(
-      BuildContext context, Rank rank) async {
+  Future<void> _confirmDelete(BuildContext context, Rank rank) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
@@ -121,8 +121,7 @@ class _DisciplineDetailViewState
 
   @override
   Widget build(BuildContext context) {
-    final ranksAsync =
-        ref.watch(rankListProvider(widget.discipline.id));
+    final ranksAsync = ref.watch(rankListProvider(widget.discipline.id));
     final discipline = widget.discipline;
 
     return Scaffold(
@@ -140,85 +139,100 @@ class _DisciplineDetailViewState
           ),
         ],
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ── Discipline info ──────────────────────────────────────────
-          if (!discipline.isActive)
-            _InfoBanner(
-              color: AppColors.error,
-              icon: Icons.block,
-              message: 'This discipline is inactive.',
-            ),
-          if (discipline.description != null)
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Discipline info ────────────────────────────────────────
+            if (!discipline.isActive)
+              _InfoBanner(
+                color: AppColors.error,
+                icon: Icons.block,
+                message: 'This discipline is inactive.',
+              ),
+            if (discipline.description != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                child: Text(
+                  discipline.description!,
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+
+            // ── Rank list header ───────────────────────────────────────
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-              child: Text(
-                discipline.description!,
-                style: TextStyle(
-                    color: AppColors.textSecondary, fontSize: 14),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+              child: Row(
+                children: [
+                  Text(
+                    'Rank Ladder',
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      color: AppColors.accent,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '(drag to reorder)',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  if (_reordering) ...[
+                    const SizedBox(width: 8),
+                    const SizedBox(
+                      height: 14,
+                      width: 14,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  ],
+                ],
               ),
             ),
+            const Divider(height: 1, indent: 16),
 
-          // ── Rank list header ─────────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-            child: Row(
-              children: [
-                Text(
-                  'Rank Ladder',
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                        color: AppColors.accent,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.5,
-                      ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  '(drag to reorder)',
-                  style: TextStyle(
-                      fontSize: 12, color: AppColors.textSecondary),
-                ),
-                if (_reordering) ...[
-                  const SizedBox(width: 8),
-                  const SizedBox(
-                    height: 14,
-                    width: 14,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          const Divider(height: 1, indent: 16),
-
-          // ── Rank list ────────────────────────────────────────────────
-          Expanded(
-            child: ranksAsync.when(
-              loading: () =>
-                  const Center(child: CircularProgressIndicator()),
+            // ── Rank list ──────────────────────────────────────────────
+            ranksAsync.when(
+              loading: () => const Padding(
+                padding: EdgeInsets.all(32),
+                child: Center(child: CircularProgressIndicator()),
+              ),
               error: (e, _) => Center(child: Text('Error: $e')),
               data: (ranks) {
                 if (ranks.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.military_tech_outlined,
-                            size: 48, color: AppColors.textSecondary),
-                        const SizedBox(height: 12),
-                        Text(
-                          'No ranks yet.\nTap + to add the first rank.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: AppColors.textSecondary),
-                        ),
-                      ],
+                  return Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.military_tech_outlined,
+                            size: 48,
+                            color: AppColors.textSecondary,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'No ranks yet.\nTap + to add the first rank.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: AppColors.textSecondary),
+                          ),
+                        ],
+                      ),
                     ),
                   );
                 }
 
+                // shrinkWrap so the rank list sizes to its content inside
+                // the outer SingleChildScrollView
                 return ReorderableListView.builder(
-                  padding: const EdgeInsets.only(bottom: 80),
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
                   itemCount: ranks.length,
                   onReorder: (oldIndex, newIndex) =>
                       _reorder(ranks, oldIndex, newIndex),
@@ -238,8 +252,13 @@ class _DisciplineDetailViewState
                 );
               },
             ),
-          ),
-        ],
+
+            // ── Enrolled Students section ──────────────────────────────
+            _EnrolledStudentsSection(discipline: discipline),
+
+            const SizedBox(height: 96), // space for FAB
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
@@ -290,7 +309,10 @@ class _RankTile extends StatelessWidget {
             const SizedBox(width: 6),
             Text(
               '${rank.minAttendanceForGrading} sessions min',
-              style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+              style: const TextStyle(
+                fontSize: 11,
+                color: AppColors.textSecondary,
+              ),
             ),
           ],
         ],
@@ -318,7 +340,10 @@ class _RankTile extends StatelessWidget {
                 value: _RankAction.delete,
                 child: ListTile(
                   leading: Icon(Icons.delete_outline, color: AppColors.error),
-                  title: Text('Delete', style: TextStyle(color: AppColors.error)),
+                  title: Text(
+                    'Delete',
+                    style: TextStyle(color: AppColors.error),
+                  ),
                   contentPadding: EdgeInsets.zero,
                   dense: true,
                 ),
@@ -354,8 +379,11 @@ class _BeltSwatch extends StatelessWidget {
         border: Border.all(color: Colors.black12),
       ),
       child: colour == null
-          ? const Icon(Icons.format_color_reset,
-              size: 16, color: AppColors.textSecondary)
+          ? const Icon(
+              Icons.format_color_reset,
+              size: 16,
+              color: AppColors.textSecondary,
+            )
           : null,
     );
   }
@@ -396,18 +424,18 @@ class _RankTypeChip extends StatelessWidget {
   }
 
   String _label(RankType t) => switch (t) {
-        RankType.kyu => 'Kyu',
-        RankType.dan => 'Dan',
-        RankType.mon => 'Mon',
-        RankType.ungraded => 'Ungraded',
-      };
+    RankType.kyu => 'Kyu',
+    RankType.dan => 'Dan',
+    RankType.mon => 'Mon',
+    RankType.ungraded => 'Ungraded',
+  };
 
   Color _colour(RankType t) => switch (t) {
-        RankType.kyu => AppColors.info,
-        RankType.dan => AppColors.primary,
-        RankType.mon => AppColors.success,
-        RankType.ungraded => AppColors.textSecondary,
-      };
+    RankType.kyu => AppColors.info,
+    RankType.dan => AppColors.primary,
+    RankType.mon => AppColors.success,
+    RankType.ungraded => AppColors.textSecondary,
+  };
 }
 
 // ── Mon count badge ────────────────────────────────────────────────────────
@@ -426,6 +454,168 @@ class _MonCountBadge extends StatelessWidget {
         (_) => const Icon(Icons.circle, size: 6, color: AppColors.accent),
       ),
     );
+  }
+}
+
+// ── Enrolled Students section ─────────────────────────────────────────────
+
+class _EnrolledStudentsSection extends ConsumerWidget {
+  const _EnrolledStudentsSection({required this.discipline});
+
+  final Discipline discipline;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final enrollmentsAsync = ref.watch(
+      enrollmentsForDisciplineProvider(discipline.id),
+    );
+    final ranks =
+        ref.watch(rankListProvider(discipline.id)).asData?.value ?? [];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 24, 16, 4),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Enrolled Students',
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    color: AppColors.accent,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+              OutlinedButton.icon(
+                onPressed: () => context.pushNamed(
+                  'adminDisciplineBulkEnrol',
+                  pathParameters: {'disciplineId': discipline.id},
+                ),
+                icon: const Icon(Icons.upload_file, size: 16),
+                label: const Text('Bulk Enrol via CSV'),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  textStyle: const TextStyle(fontSize: 13),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const Divider(height: 1, indent: 16),
+        enrollmentsAsync.when(
+          loading: () => const Padding(
+            padding: EdgeInsets.all(24),
+            child: Center(child: CircularProgressIndicator()),
+          ),
+          error: (e, _) => Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text('Error loading students: $e'),
+          ),
+          data: (enrollments) {
+            if (enrollments.isEmpty) {
+              return Padding(
+                padding: const EdgeInsets.all(24),
+                child: Center(
+                  child: Text(
+                    'No students currently enrolled.',
+                    style: TextStyle(color: AppColors.textSecondary),
+                  ),
+                ),
+              );
+            }
+            return Column(
+              children: enrollments
+                  .map((e) => _EnrolledStudentRow(enrollment: e, ranks: ranks))
+                  .toList(),
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _EnrolledStudentRow extends ConsumerWidget {
+  const _EnrolledStudentRow({required this.enrollment, required this.ranks});
+
+  final Enrollment enrollment;
+  final List<Rank> ranks;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final profileAsync = ref.watch(profileProvider(enrollment.studentId));
+    final currentRank = ranks
+        .where((r) => r.id == enrollment.currentRankId)
+        .firstOrNull;
+
+    final studentName = profileAsync.when(
+      loading: () => '…',
+      error: (_, _) => enrollment.studentId,
+      data: (p) => p?.fullName ?? enrollment.studentId,
+    );
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Row(
+        children: [
+          // Belt swatch
+          Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              color:
+                  _parseHex(currentRank?.colourHex) ??
+                  AppColors.textSecondary.withAlpha(60),
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: AppColors.textSecondary.withAlpha(60),
+                width: 1,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  studentName,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w500,
+                    fontSize: 14,
+                  ),
+                ),
+                Text(
+                  currentRank?.name ?? enrollment.currentRankId,
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Text(
+            'Since ${DateFormat('d MMM yyyy').format(enrollment.enrollmentDate)}',
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static Color? _parseHex(String? hex) {
+    if (hex == null || hex.isEmpty) return null;
+    final clean = hex.replaceAll('#', '').trim();
+    if (clean.length != 6) return null;
+    final value = int.tryParse('FF$clean', radix: 16);
+    return value != null ? Color(value) : null;
   }
 }
 
@@ -456,9 +646,10 @@ class _InfoBanner extends StatelessWidget {
         children: [
           Icon(icon, color: color, size: 18),
           const SizedBox(width: 8),
-          Text(message,
-              style:
-                  TextStyle(color: color, fontWeight: FontWeight.w500)),
+          Text(
+            message,
+            style: TextStyle(color: color, fontWeight: FontWeight.w500),
+          ),
         ],
       ),
     );

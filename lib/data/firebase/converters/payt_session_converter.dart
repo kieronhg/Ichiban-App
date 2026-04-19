@@ -12,8 +12,12 @@ class PaytSessionConverter {
       disciplineId: map['disciplineId'] as String,
       sessionDate: (map['sessionDate'] as Timestamp).toDate(),
       attendanceRecordId: map['attendanceRecordId'] as String?,
-      paymentMethod: PaymentMethod.values.byName(map['paymentMethod'] as String),
-      paymentStatus: PaytPaymentStatus.values.byName(map['paymentStatus'] as String),
+      paymentMethod: PaymentMethod.values.byName(
+        map['paymentMethod'] as String,
+      ),
+      paymentStatus: PaytPaymentStatus.values.byName(
+        map['paymentStatus'] as String,
+      ),
       paidAt: (map['paidAt'] as Timestamp?)?.toDate(),
       amount: (map['amount'] as num).toDouble(),
       recordedByAdminId: map['recordedByAdminId'] as String?,
@@ -30,7 +34,9 @@ class PaytSessionConverter {
       'attendanceRecordId': session.attendanceRecordId,
       'paymentMethod': session.paymentMethod.name,
       'paymentStatus': session.paymentStatus.name,
-      'paidAt': session.paidAt != null ? Timestamp.fromDate(session.paidAt!) : null,
+      'paidAt': session.paidAt != null
+          ? Timestamp.fromDate(session.paidAt!)
+          : null,
       'amount': session.amount,
       'recordedByAdminId': session.recordedByAdminId,
       'createdAt': Timestamp.fromDate(session.createdAt),

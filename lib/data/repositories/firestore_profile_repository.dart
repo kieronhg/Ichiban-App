@@ -46,16 +46,14 @@ class FirestoreProfileRepository implements ProfileRepository {
 
   @override
   Future<void> deactivate(String id) async {
-    await FirestoreCollections.profiles()
-        .doc(id)
-        .update({'isActive': false});
+    await FirestoreCollections.profiles().doc(id).update({'isActive': false});
   }
 
   @override
   Stream<List<Profile>> watchAll() {
-    return FirestoreCollections.profiles()
-        .snapshots()
-        .map((snap) => snap.docs.map((d) => d.data()).toList());
+    return FirestoreCollections.profiles().snapshots().map(
+      (snap) => snap.docs.map((d) => d.data()).toList(),
+    );
   }
 
   @override

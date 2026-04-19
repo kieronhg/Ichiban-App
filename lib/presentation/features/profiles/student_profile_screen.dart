@@ -65,17 +65,16 @@ class _StudentProfileView extends StatelessWidget {
               const SizedBox(height: 12),
               Text(
                 profile.fullName,
-                style: Theme.of(context)
-                    .textTheme
-                    .headlineSmall
-                    ?.copyWith(fontWeight: FontWeight.bold),
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 4),
               Text(
                 _typeLabels(profile.profileTypes),
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
+                  color: AppColors.textSecondary,
+                ),
               ),
             ],
           ),
@@ -86,12 +85,15 @@ class _StudentProfileView extends StatelessWidget {
         _SectionCard(
           title: 'Personal',
           children: [
-            _Row('Date of birth',
-                DateFormat('d MMMM yyyy').format(profile.dateOfBirth)),
-            if (profile.gender != null)
-              _Row('Gender', profile.gender!),
-            _Row('Member since',
-                DateFormat('d MMMM yyyy').format(profile.registrationDate)),
+            _Row(
+              'Date of birth',
+              DateFormat('d MMMM yyyy').format(profile.dateOfBirth),
+            ),
+            if (profile.gender != null) _Row('Gender', profile.gender!),
+            _Row(
+              'Member since',
+              DateFormat('d MMMM yyyy').format(profile.registrationDate),
+            ),
           ],
         ),
         const SizedBox(height: 12),
@@ -128,8 +130,10 @@ class _StudentProfileView extends StatelessWidget {
             ),
             if (profile.allergiesOrMedicalNotes != null &&
                 profile.allergiesOrMedicalNotes!.isNotEmpty)
-              _Row('Allergies / medical notes',
-                  profile.allergiesOrMedicalNotes!),
+              _Row(
+                'Allergies / medical notes',
+                profile.allergiesOrMedicalNotes!,
+              ),
           ],
         ),
         const SizedBox(height: 24),
@@ -139,9 +143,9 @@ class _StudentProfileView extends StatelessWidget {
           child: Text(
             'To update your details, please speak to a member of staff.',
             textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
           ),
         ),
         const SizedBox(height: 24),
@@ -150,21 +154,23 @@ class _StudentProfileView extends StatelessWidget {
   }
 
   String _formatAddress(Profile p) => [
-        p.addressLine1,
-        if (p.addressLine2 != null) p.addressLine2!,
-        p.city,
-        p.county,
-        p.postcode,
-        p.country,
-      ].join(', ');
+    p.addressLine1,
+    if (p.addressLine2 != null) p.addressLine2!,
+    p.city,
+    p.county,
+    p.postcode,
+    p.country,
+  ].join(', ');
 
   String _typeLabels(List<ProfileType> types) => types
-      .map((t) => switch (t) {
-            ProfileType.adultStudent => 'Adult Student',
-            ProfileType.juniorStudent => 'Junior Student',
-            ProfileType.coach => 'Coach',
-            ProfileType.parentGuardian => 'Parent / Guardian',
-          })
+      .map(
+        (t) => switch (t) {
+          ProfileType.adultStudent => 'Adult Student',
+          ProfileType.juniorStudent => 'Junior Student',
+          ProfileType.coach => 'Coach',
+          ProfileType.parentGuardian => 'Parent / Guardian',
+        },
+      )
       .join(' · ');
 }
 
@@ -181,8 +187,7 @@ class _SectionCard extends StatelessWidget {
     return Card(
       elevation: 0,
       color: AppColors.surface,
-      shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -191,10 +196,10 @@ class _SectionCard extends StatelessWidget {
             child: Text(
               title,
               style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: AppColors.accent,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.5,
-                  ),
+                color: AppColors.accent,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.5,
+              ),
             ),
           ),
           const Divider(height: 1),
@@ -223,14 +228,15 @@ class _Row extends StatelessWidget {
             child: Text(
               label,
               style: const TextStyle(
-                  color: AppColors.textSecondary, fontSize: 13),
+                color: AppColors.textSecondary,
+                fontSize: 13,
+              ),
             ),
           ),
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(
-                  fontWeight: FontWeight.w500, fontSize: 13),
+              style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
             ),
           ),
         ],

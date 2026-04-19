@@ -4,15 +4,10 @@ class AppSettingConverter {
   AppSettingConverter._();
 
   static AppSetting fromMap(String key, Map<String, dynamic> map) {
-    return AppSetting(
-      key: key,
-      value: map['value'],
-    );
+    return AppSetting(key: key, value: map['value']);
   }
 
   static Map<String, dynamic> toMap(AppSetting setting) {
-    return {
-      'value': setting.value,
-    };
+    return {'value': setting.value};
   }
 }
