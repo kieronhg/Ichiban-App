@@ -18,9 +18,16 @@ class CreateProfileUseCase {
     if (profile.profileTypes.isEmpty) {
       throw ArgumentError('At least one profile type must be selected.');
     }
+    if (!profile.dataProcessingConsent) {
+      throw ArgumentError(
+          'Data processing consent must be given before a profile can be created.');
+    }
 
+    final now = DateTime.now();
     final stamped = profile.copyWith(
-      registrationDate: DateTime.now(),
+      dataProcessingConsentDate:
+          profile.dataProcessingConsentDate ?? now,
+      registrationDate: now,
     );
 
     return _repo.create(stamped);

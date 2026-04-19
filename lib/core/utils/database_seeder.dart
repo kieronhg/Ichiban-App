@@ -4,13 +4,14 @@ import '../../domain/entities/app_setting.dart';
 import '../../domain/entities/email_template.dart';
 import '../../domain/entities/discipline.dart';
 import '../../domain/entities/rank.dart';
+import '../../domain/entities/enums.dart';
 import '../../data/firebase/firestore_collections.dart';
 
 /// One-time database seeder.
 ///
 /// Seeds the following Firestore collections with default data:
 ///   - membershipPricing    (8 documents)
-///   - appSettings          (5 documents)
+///   - appSettings          (8 documents — includes GDPR settings)
 ///   - emailTemplates       (4 documents)
 ///   - disciplines          (5 documents + rank subcollections)
 ///
@@ -20,6 +21,10 @@ import '../../data/firebase/firestore_collections.dart';
 /// Usage: called from the Admin app Settings screen via a one-time setup button.
 class DatabaseSeeder {
   DatabaseSeeder._();
+
+  /// Placeholder admin ID used for seeded disciplines.
+  /// Replace with real admin profile ID after first admin account is created.
+  static const _seedAdminId = 'SEED_ADMIN';
 
   static Future<void> seed() async {
     await _seedMembershipPricing();
@@ -61,11 +66,17 @@ class DatabaseSeeder {
     if (snap.docs.isNotEmpty) return;
 
     const settings = {
+      // Dojo identity
+      'dojoName': 'Ichiban',
+      'dojoEmail': '',
+      // Lapse & trial reminders
       'lapseReminderPreDueDays': 5,
       'lapseReminderPostDueDays': 5,
       'trialExpiryReminderDays': 2,
-      'dojoName': 'Ichiban',
-      'dojoEmail': '',
+      // GDPR
+      'privacyPolicyVersion': '1.0',
+      'gdprRetentionMonths': 12,
+      'financialRetentionYears': 7,
     };
 
     final batch = FirebaseFirestore.instance.batch();
@@ -146,29 +157,32 @@ class DatabaseSeeder {
     if (snap.docs.isNotEmpty) return;
 
     for (final data in _disciplineSeedData) {
-      // Create discipline document with auto-generated ID
       final disciplineRef = FirestoreCollections.disciplines().doc();
+      final now = DateTime.now();
       final discipline = Discipline(
         id: disciplineRef.id,
-        name: data['name'] as String,
-        description: data['description'] as String?,
+        name: data.name,
+        description: data.description,
         isActive: true,
+        createdByAdminId: _seedAdminId,
+        createdAt: now,
       );
 
       final batch = FirebaseFirestore.instance.batch();
       batch.set(disciplineRef, discipline);
 
-      // Create rank subcollection documents
-      final ranks = data['ranks'] as List<_RankSeed>;
-      for (int i = 0; i < ranks.length; i++) {
+      for (final r in data.ranks) {
         final rankRef =
             FirestoreCollections.ranks(disciplineRef.id).doc();
         final rank = Rank(
           id: rankRef.id,
           disciplineId: disciplineRef.id,
-          name: ranks[i].name,
-          displayOrder: i,
-          colourHex: ranks[i].colourHex,
+          name: r.name,
+          displayOrder: r.displayOrder,
+          colourHex: r.colourHex,
+          rankType: r.rankType,
+          monCount: r.monCount,
+          createdAt: now,
         );
         batch.set(rankRef, rank);
       }
@@ -180,87 +194,164 @@ class DatabaseSeeder {
   // ── Seed Data ──────────────────────────────────────────────────────────────
 
   static final _disciplineSeedData = [
-    {
-      'name': 'Karate',
-      'description': 'Traditional Japanese striking art.',
-      'ranks': [
-        _RankSeed('9th Kyu', '#FFFFFF'),
-        _RankSeed('8th Kyu', '#FFEB3B'),
-        _RankSeed('7th Kyu', '#FF9800'),
-        _RankSeed('6th Kyu', '#F44336'),
-        _RankSeed('5th Kyu', '#FFEB3B'),
-        _RankSeed('4th Kyu', '#4CAF50'),
-        _RankSeed('3rd Kyu', '#9C27B0'),
-        _RankSeed('2nd Kyu', '#795548'),
-        _RankSeed('1st Kyu', '#795548'),
-        _RankSeed('1st Dan (Shodan)', '#212121'),
-        _RankSeed('2nd Dan (Nidan)', '#212121'),
-        _RankSeed('3rd Dan (Sandan)', '#212121'),
+    // ── Karate ───────────────────────────────────────────────────────────────
+    _DisciplineSeed(
+      name: 'Karate',
+      description: 'Traditional Japanese striking art.',
+      ranks: [
+        _RankSeed(1,  '9th Kyu',              '#FFFFFF', RankType.kyu),
+        _RankSeed(2,  '8th Kyu',              '#FF0000', RankType.kyu),
+        _RankSeed(3,  '7th Kyu',              '#FFD700', RankType.kyu),
+        _RankSeed(4,  '6th Kyu',              '#FFA500', RankType.kyu),
+        _RankSeed(5,  '5th Kyu',              '#008000', RankType.kyu),
+        _RankSeed(6,  '4th Kyu',              '#0000FF', RankType.kyu),
+        _RankSeed(7,  '3rd Kyu',              '#800080', RankType.kyu),
+        _RankSeed(8,  '2nd Kyu',              '#8B4513', RankType.kyu),
+        _RankSeed(9,  '1st Kyu',              '#6B3410', RankType.kyu),
+        _RankSeed(10, '1st Dan',              '#000000', RankType.dan),
+        _RankSeed(11, '2nd Dan',              '#000000', RankType.dan),
+        _RankSeed(12, '3rd Dan',              '#000000', RankType.dan),
+        _RankSeed(13, '4th Dan',              '#000000', RankType.dan),
+        _RankSeed(14, '5th Dan',              '#000000', RankType.dan),
       ],
-    },
-    {
-      'name': 'Judo',
-      'description': 'Olympic grappling and throwing art.',
-      'ranks': [
-        _RankSeed('6th Kyu', '#FFFFFF'),
-        _RankSeed('5th Kyu', '#FFEB3B'),
-        _RankSeed('4th Kyu', '#FF9800'),
-        _RankSeed('3rd Kyu', '#4CAF50'),
-        _RankSeed('2nd Kyu', '#2196F3'),
-        _RankSeed('1st Kyu', '#795548'),
-        _RankSeed('1st Dan', '#212121'),
-        _RankSeed('2nd Dan', '#212121'),
-        _RankSeed('3rd Dan', '#212121'),
+    ),
+
+    // ── Judo ─────────────────────────────────────────────────────────────────
+    _DisciplineSeed(
+      name: 'Judo',
+      description: 'Olympic grappling and throwing art.',
+      ranks: [
+        // Junior Mon grades (ages 8–17)
+        _RankSeed(1,  '1st Mon',              '#FF0000', RankType.mon, monCount: 0),
+        _RankSeed(2,  '2nd Mon',              '#FF0000', RankType.mon, monCount: 1),
+        _RankSeed(3,  '3rd Mon',              '#FF0000', RankType.mon, monCount: 2),
+        _RankSeed(4,  '4th Mon',              '#FFD700', RankType.mon, monCount: 0),
+        _RankSeed(5,  '5th Mon',              '#FFD700', RankType.mon, monCount: 1),
+        _RankSeed(6,  '6th Mon',              '#FFD700', RankType.mon, monCount: 2),
+        _RankSeed(7,  '7th Mon',              '#FFA500', RankType.mon, monCount: 0),
+        _RankSeed(8,  '8th Mon',              '#FFA500', RankType.mon, monCount: 1),
+        _RankSeed(9,  '9th Mon',              '#FFA500', RankType.mon, monCount: 2),
+        _RankSeed(10, '10th Mon',             '#008000', RankType.mon, monCount: 0),
+        _RankSeed(11, '11th Mon',             '#008000', RankType.mon, monCount: 1),
+        _RankSeed(12, '12th Mon',             '#008000', RankType.mon, monCount: 2),
+        _RankSeed(13, '13th Mon',             '#0000FF', RankType.mon, monCount: 0),
+        _RankSeed(14, '14th Mon',             '#0000FF', RankType.mon, monCount: 1),
+        _RankSeed(15, '15th Mon',             '#0000FF', RankType.mon, monCount: 2),
+        _RankSeed(16, '16th Mon',             '#8B4513', RankType.mon, monCount: 0),
+        _RankSeed(17, '17th Mon',             '#8B4513', RankType.mon, monCount: 1),
+        _RankSeed(18, '18th Mon',             '#8B4513', RankType.mon, monCount: 2),
+        // Adult Kyu grades
+        _RankSeed(19, '6th Kyu',              '#FF0000', RankType.kyu),
+        _RankSeed(20, '5th Kyu',              '#FFD700', RankType.kyu),
+        _RankSeed(21, '4th Kyu',              '#FFA500', RankType.kyu),
+        _RankSeed(22, '3rd Kyu',              '#008000', RankType.kyu),
+        _RankSeed(23, '2nd Kyu',              '#0000FF', RankType.kyu),
+        _RankSeed(24, '1st Kyu',              '#8B4513', RankType.kyu),
+        // Dan grades
+        _RankSeed(25, '1st Dan',              '#000000', RankType.dan),
+        _RankSeed(26, '2nd Dan',              '#000000', RankType.dan),
+        _RankSeed(27, '3rd Dan',              '#000000', RankType.dan),
+        _RankSeed(28, '4th Dan',              '#000000', RankType.dan),
+        _RankSeed(29, '5th Dan',              '#000000', RankType.dan),
       ],
-    },
-    {
-      'name': 'Jujitsu',
-      'description': 'Traditional Japanese grappling art.',
-      'ranks': [
-        _RankSeed('White Belt', '#FFFFFF'),
-        _RankSeed('Yellow Belt', '#FFEB3B'),
-        _RankSeed('Orange Belt', '#FF9800'),
-        _RankSeed('Green Belt', '#4CAF50'),
-        _RankSeed('Blue Belt', '#2196F3'),
-        _RankSeed('Purple Belt', '#9C27B0'),
-        _RankSeed('Brown Belt', '#795548'),
-        _RankSeed('Black Belt', '#212121'),
+    ),
+
+    // ── Jujitsu ───────────────────────────────────────────────────────────────
+    _DisciplineSeed(
+      name: 'Jujitsu',
+      description: 'Traditional Japanese grappling art.',
+      ranks: [
+        _RankSeed(1,  '8th Kyu',              '#FFFFFF', RankType.kyu),
+        _RankSeed(2,  '7th Kyu',              '#FFD700', RankType.kyu, monCount: 0),
+        _RankSeed(3,  '7th Kyu (good)',        '#FFD700', RankType.kyu, monCount: 1),
+        _RankSeed(4,  '7th Kyu (excellent)',   '#FFD700', RankType.kyu, monCount: 2),
+        _RankSeed(5,  '7th Kyu (exceptional)', '#FFD700', RankType.kyu, monCount: 3),
+        _RankSeed(6,  '6th Kyu',              '#FFA500', RankType.kyu, monCount: 0),
+        _RankSeed(7,  '6th Kyu (good)',        '#FFA500', RankType.kyu, monCount: 1),
+        _RankSeed(8,  '6th Kyu (excellent)',   '#FFA500', RankType.kyu, monCount: 2),
+        _RankSeed(9,  '6th Kyu (exceptional)', '#FFA500', RankType.kyu, monCount: 3),
+        _RankSeed(10, '5th Kyu',              '#008000', RankType.kyu),
+        _RankSeed(11, '4th Kyu',              '#800080', RankType.kyu),
+        _RankSeed(12, '3rd Kyu',              '#ADD8E6', RankType.kyu),
+        _RankSeed(13, '2nd Kyu',              '#00008B', RankType.kyu),
+        _RankSeed(14, '1st Kyu',              '#8B4513', RankType.kyu),
+        _RankSeed(15, '1st Dan',              '#000000', RankType.dan),
+        _RankSeed(16, '2nd Dan',              '#000000', RankType.dan),
+        _RankSeed(17, '3rd Dan',              '#000000', RankType.dan),
+        _RankSeed(18, '4th Dan',              '#000000', RankType.dan),
+        _RankSeed(19, '5th Dan',              '#000000', RankType.dan),
       ],
-    },
-    {
-      'name': 'Aikido',
-      'description': 'Japanese martial art focused on redirecting force.',
-      'ranks': [
-        _RankSeed('5th Kyu', '#FFFFFF'),
-        _RankSeed('4th Kyu', '#FFEB3B'),
-        _RankSeed('3rd Kyu', '#FF9800'),
-        _RankSeed('2nd Kyu', '#4CAF50'),
-        _RankSeed('1st Kyu', '#795548'),
-        _RankSeed('1st Dan (Shodan)', '#212121'),
-        _RankSeed('2nd Dan (Nidan)', '#212121'),
-        _RankSeed('3rd Dan (Sandan)', '#212121'),
+    ),
+
+    // ── Aikido ────────────────────────────────────────────────────────────────
+    _DisciplineSeed(
+      name: 'Aikido',
+      description: 'Japanese martial art focused on redirecting force.',
+      ranks: [
+        _RankSeed(1,  'Ungraded',             '#FF0000', RankType.ungraded),
+        _RankSeed(2,  '6th Kyu',              '#FFFFFF', RankType.kyu),
+        _RankSeed(3,  '5th Kyu',              '#FFD700', RankType.kyu),
+        _RankSeed(4,  '4th Kyu',              '#FFA500', RankType.kyu),
+        _RankSeed(5,  '3rd Kyu',              '#008000', RankType.kyu),
+        _RankSeed(6,  '2nd Kyu',              '#0000FF', RankType.kyu),
+        _RankSeed(7,  '1st Kyu',              '#8B4513', RankType.kyu),
+        _RankSeed(8,  '1st Dan',              '#000000', RankType.dan),
+        _RankSeed(9,  '2nd Dan',              '#000000', RankType.dan),
+        _RankSeed(10, '3rd Dan',              '#000000', RankType.dan),
+        _RankSeed(11, '4th Dan',              '#000000', RankType.dan),
+        _RankSeed(12, '5th Dan',              '#000000', RankType.dan),
       ],
-    },
-    {
-      'name': 'Kendo',
-      'description': 'Japanese sword art using bamboo shinai.',
-      'ranks': [
-        _RankSeed('6th Kyu', '#FFFFFF'),
-        _RankSeed('5th Kyu', '#FFFFFF'),
-        _RankSeed('4th Kyu', '#FFFFFF'),
-        _RankSeed('3rd Kyu', '#FFFFFF'),
-        _RankSeed('2nd Kyu', '#FFFFFF'),
-        _RankSeed('1st Kyu', '#FFFFFF'),
-        _RankSeed('1st Dan', '#212121'),
-        _RankSeed('2nd Dan', '#212121'),
-        _RankSeed('3rd Dan', '#212121'),
+    ),
+
+    // ── Kendo ─────────────────────────────────────────────────────────────────
+    _DisciplineSeed(
+      name: 'Kendo',
+      description:
+          'Japanese sword art using bamboo shinai. '
+          'Note: belt colours are UI placeholders only — '
+          'Kendo has no physical belt colours.',
+      ranks: [
+        _RankSeed(1,  '6th Kyu',              '#FFFFFF', RankType.kyu),
+        _RankSeed(2,  '5th Kyu',              '#FFFFFF', RankType.kyu),
+        _RankSeed(3,  '4th Kyu',              '#FFFFFF', RankType.kyu),
+        _RankSeed(4,  '3rd Kyu',              '#FFFFFF', RankType.kyu),
+        _RankSeed(5,  '2nd Kyu',              '#FFFFFF', RankType.kyu),
+        _RankSeed(6,  '1st Kyu',              '#FFFFFF', RankType.kyu),
+        _RankSeed(7,  '1st Dan',              '#000000', RankType.dan),
+        _RankSeed(8,  '2nd Dan',              '#000000', RankType.dan),
+        _RankSeed(9,  '3rd Dan',              '#000000', RankType.dan),
+        _RankSeed(10, '4th Dan',              '#000000', RankType.dan),
+        _RankSeed(11, '5th Dan',              '#000000', RankType.dan),
       ],
-    },
+    ),
   ];
 }
 
-class _RankSeed {
+// ── Internal seed helpers ──────────────────────────────────────────────────
+
+class _DisciplineSeed {
   final String name;
-  final String colourHex;
-  const _RankSeed(this.name, this.colourHex);
+  final String? description;
+  final List<_RankSeed> ranks;
+  const _DisciplineSeed({
+    required this.name,
+    this.description,
+    required this.ranks,
+  });
+}
+
+class _RankSeed {
+  final int displayOrder;
+  final String name;
+  final String? colourHex;
+  final RankType rankType;
+  final int? monCount;
+
+  const _RankSeed(
+    this.displayOrder,
+    this.name,
+    this.colourHex,
+    this.rankType, {
+    this.monCount,
+  });
 }
