@@ -8,6 +8,7 @@ import '../../domain/use_cases/profile/get_profile_use_case.dart';
 import '../../domain/use_cases/profile/get_profiles_use_case.dart';
 import '../../domain/use_cases/profile/set_pin_use_case.dart';
 import '../../domain/use_cases/profile/update_profile_use_case.dart';
+import 'app_settings_providers.dart';
 import 'repository_providers.dart';
 
 // ── Use-case providers ─────────────────────────────────────────────────────
@@ -99,6 +100,10 @@ class ProfileFormNotifier extends Notifier<ProfileFormState> {
       state = state.copyWith(secondParentProfileId: v);
   void setPayingParentId(String? v) =>
       state = state.copyWith(payingParentId: v);
+  void setDataProcessingConsent(bool v) =>
+      state = state.copyWith(dataProcessingConsent: v);
+  void setDataProcessingConsentVersion(String? v) =>
+      state = state.copyWith(dataProcessingConsentVersion: v);
 
   /// Creates or updates the profile. Returns the profile ID.
   Future<String> save() async {
@@ -154,6 +159,10 @@ class ProfileFormState {
     required this.parentProfileId,
     required this.secondParentProfileId,
     required this.payingParentId,
+    required this.dataProcessingConsent,
+    required this.dataProcessingConsentVersion,
+    required this.registrationDate,
+    required this.isActive,
     required this.isSaving,
     required this.errorMessage,
   });
@@ -182,6 +191,15 @@ class ProfileFormState {
   final String? parentProfileId;
   final String? secondParentProfileId;
   final String? payingParentId;
+
+  // GDPR consent
+  final bool dataProcessingConsent;
+  final String? dataProcessingConsentVersion;
+
+  // Preserved system fields (edit mode)
+  final DateTime? registrationDate;
+  final bool isActive;
+
   final bool isSaving;
   final String? errorMessage;
 
@@ -212,6 +230,10 @@ class ProfileFormState {
         parentProfileId: null,
         secondParentProfileId: null,
         payingParentId: null,
+        dataProcessingConsent: false,
+        dataProcessingConsentVersion: null,
+        registrationDate: null,
+        isActive: true,
         isSaving: false,
         errorMessage: null,
       );
@@ -241,12 +263,19 @@ class ProfileFormState {
         parentProfileId: p.parentProfileId,
         secondParentProfileId: p.secondParentProfileId,
         payingParentId: p.payingParentId,
+        dataProcessingConsent: p.dataProcessingConsent,
+        dataProcessingConsentVersion: p.dataProcessingConsentVersion,
+        registrationDate: p.registrationDate,
+        isActive: p.isActive,
         isSaving: false,
         errorMessage: null,
       );
 
   /// Converts form state back to a [Profile] for persistence.
   /// An empty string ID signals a new profile — Firestore will generate one.
+  /// [registrationDate] is preserved from the loaded profile in edit mode;
+  /// it defaults to now for new profiles and is overwritten by
+  /// [CreateProfileUseCase] anyway.
   Profile toProfile() => Profile(
         id: id,
         firstName: firstName.trim(),
@@ -269,8 +298,10 @@ class ProfileFormState {
         photoVideoConsent: photoVideoConsent,
         notes: notes?.trim(),
         communicationPreferences: communicationPreferences,
-        registrationDate: DateTime.now(),
-        isActive: true,
+        dataProcessingConsent: dataProcessingConsent,
+        dataProcessingConsentVersion: dataProcessingConsentVersion,
+        registrationDate: registrationDate ?? DateTime.now(),
+        isActive: isActive,
         parentProfileId: parentProfileId,
         secondParentProfileId: secondParentProfileId,
         payingParentId: payingParentId,
@@ -301,6 +332,10 @@ class ProfileFormState {
     String? parentProfileId,
     String? secondParentProfileId,
     String? payingParentId,
+    bool? dataProcessingConsent,
+    String? dataProcessingConsentVersion,
+    DateTime? registrationDate,
+    bool? isActive,
     bool? isSaving,
     String? errorMessage,
   }) {
@@ -334,6 +369,12 @@ class ProfileFormState {
       secondParentProfileId:
           secondParentProfileId ?? this.secondParentProfileId,
       payingParentId: payingParentId ?? this.payingParentId,
+      dataProcessingConsent:
+          dataProcessingConsent ?? this.dataProcessingConsent,
+      dataProcessingConsentVersion:
+          dataProcessingConsentVersion ?? this.dataProcessingConsentVersion,
+      registrationDate: registrationDate ?? this.registrationDate,
+      isActive: isActive ?? this.isActive,
       isSaving: isSaving ?? this.isSaving,
       errorMessage: errorMessage ?? this.errorMessage,
     );

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/providers/app_settings_providers.dart';
 import '../../../core/providers/profile_providers.dart';
 import '../../../domain/entities/enums.dart';
 import '../../../domain/entities/profile.dart';
@@ -375,6 +376,14 @@ class _ProfileFormScreenState extends ConsumerState<ProfileFormScreen> {
               const SizedBox(height: 16),
             ],
 
+            // ── Data processing consent ──────────────────────────────────
+            _GdprConsentSection(
+              isEditing: _isEditing,
+              formState: formState,
+              notifier: notifier,
+            ),
+            const SizedBox(height: 16),
+
             // ── Communication preferences ────────────────────────────────
             _FormSection(
               title: 'Communication Preferences',
@@ -621,6 +630,132 @@ class _DropdownField<T> extends StatelessWidget {
       ),
       items: items,
       onChanged: onChanged,
+    );
+  }
+}
+
+// ── GDPR consent section ───────────────────────────────────────────────────
+
+class _GdprConsentSection extends ConsumerWidget {
+  const _GdprConsentSection({
+    required this.isEditing,
+    required this.formState,
+    required this.notifier,
+  });
+
+  final bool isEditing;
+  final ProfileFormState formState;
+  final ProfileFormNotifier notifier;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final policyVersionAsync = ref.watch(privacyPolicyVersionProvider);
+    final currentVersion =
+        policyVersionAsync.value ?? '…';
+
+    return Card(
+      elevation: 0,
+      color: AppColors.surface,
+      shape:
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Data Processing Consent',
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    color: AppColors.accent,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5,
+                  ),
+            ),
+            const SizedBox(height: 10),
+
+            // Edit mode — consent already given: show read-only status
+            if (isEditing && formState.dataProcessingConsent) ...[
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: AppColors.success.withAlpha(25),
+                  borderRadius: BorderRadius.circular(8),
+                  border:
+                      Border.all(color: AppColors.success.withAlpha(80)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.verified_outlined,
+                        size: 18, color: AppColors.success),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Consent given'
+                        '${formState.dataProcessingConsentVersion != null ? ' — policy v${formState.dataProcessingConsentVersion}' : ''}.',
+                        style: TextStyle(
+                            color: AppColors.success,
+                            fontWeight: FontWeight.w500,
+                            fontSize: 13),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'To withdraw consent use the Right to Erasure process, '
+                'not this form.',
+                style: TextStyle(
+                    color: AppColors.textSecondary, fontSize: 12),
+              ),
+            ]
+
+            // Create mode (or edit with no consent yet): show checkbox
+            else ...[
+              Text(
+                'The member must give explicit consent before their '
+                'profile can be created. Confirm below that consent has '
+                'been obtained.',
+                style: TextStyle(
+                    color: AppColors.textSecondary, fontSize: 13),
+              ),
+              const SizedBox(height: 8),
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                value: formState.dataProcessingConsent,
+                activeColor: AppColors.accent,
+                title: const Text(
+                  'Member has given data processing consent',
+                  style: TextStyle(fontWeight: FontWeight.w500),
+                ),
+                subtitle: Text(
+                  'Privacy policy version $currentVersion will be recorded.',
+                  style: const TextStyle(fontSize: 12),
+                ),
+                onChanged: (v) {
+                  final checked = v ?? false;
+                  notifier.setDataProcessingConsent(checked);
+                  // Stamp the current policy version when consent is given;
+                  // clear it if the checkbox is unchecked
+                  notifier.setDataProcessingConsentVersion(
+                      checked ? policyVersionAsync.value : null);
+                },
+                controlAffinity: ListTileControlAffinity.leading,
+              ),
+              if (!formState.dataProcessingConsent)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4, left: 12),
+                  child: Text(
+                    'Consent is required to create a profile.',
+                    style: TextStyle(
+                        color: AppColors.error, fontSize: 12),
+                  ),
+                ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }
