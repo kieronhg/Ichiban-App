@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../domain/entities/profile.dart';
 import '../../domain/entities/enums.dart';
 import '../../domain/repositories/profile_repository.dart';
@@ -63,5 +64,42 @@ class FirestoreProfileRepository implements ProfileRepository {
         .doc(id)
         .snapshots()
         .map((snap) => snap.data());
+  }
+
+  /// Replaces all personal data fields with anonymisation placeholders and
+  /// marks the profile as anonymised.
+  ///
+  /// Required String fields are set to '[Anonymised]' so the document remains
+  /// readable by [ProfileConverter.fromMap] without schema changes.
+  /// Nullable fields are set to null.
+  /// [dateOfBirth] is set to the Unix epoch (1970-01-01) as a safe placeholder.
+  @override
+  Future<void> anonymise(String id) async {
+    await FirestoreCollections.profiles().doc(id).update({
+      // Required String fields — replaced with placeholder
+      'firstName': '[Anonymised]',
+      'lastName': '[Anonymised]',
+      'addressLine1': '[Anonymised]',
+      'city': '[Anonymised]',
+      'county': '[Anonymised]',
+      'postcode': '[Anonymised]',
+      'country': '[Anonymised]',
+      'phone': '[Anonymised]',
+      'email': '[Anonymised]',
+      'emergencyContactName': '[Anonymised]',
+      'emergencyContactRelationship': '[Anonymised]',
+      'emergencyContactPhone': '[Anonymised]',
+      // Required date — replaced with epoch placeholder
+      'dateOfBirth': Timestamp.fromDate(DateTime.utc(1970)),
+      // Nullable fields — wiped to null
+      'addressLine2': null,
+      'gender': null,
+      'allergiesOrMedicalNotes': null,
+      'pinHash': null,
+      'fcmToken': null,
+      // Anonymisation flags
+      'isAnonymised': true,
+      'anonymisedAt': Timestamp.now(),
+    });
   }
 }

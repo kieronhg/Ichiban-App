@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/entities/enums.dart';
 import '../../domain/entities/profile.dart';
+import '../../domain/use_cases/profile/anonymise_profile_use_case.dart';
 import '../../domain/use_cases/profile/create_profile_use_case.dart';
 import '../../domain/use_cases/profile/deactivate_profile_use_case.dart';
 import '../../domain/use_cases/profile/get_profile_use_case.dart';
@@ -35,6 +36,10 @@ final deactivateProfileUseCaseProvider = Provider<DeactivateProfileUseCase>(
 
 final setPinUseCaseProvider = Provider<SetPinUseCase>(
   (ref) => SetPinUseCase(ref.watch(profileRepositoryProvider)),
+);
+
+final anonymiseProfileUseCaseProvider = Provider<AnonymiseProfileUseCase>(
+  (ref) => AnonymiseProfileUseCase(ref.watch(profileRepositoryProvider)),
 );
 
 // ── Stream providers ───────────────────────────────────────────────────────

@@ -63,7 +63,15 @@ class _ProfileDetailView extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // ── Status banner ────────────────────────────────────────────
+          // ── Status banners ────────────────────────────────────────────
+          if (profile.isAnonymised)
+            _InfoBanner(
+              color: AppColors.textSecondary,
+              icon: Icons.manage_accounts_outlined,
+              message: 'Personal data erased'
+                  '${profile.anonymisedAt != null ? ' on ${DateFormat('d MMM yyyy').format(profile.anonymisedAt!)}' : ''}.'
+                  ' Historical records are retained.',
+            ),
           if (!profile.isActive)
             _InfoBanner(
               color: AppColors.error,
@@ -75,14 +83,16 @@ class _ProfileDetailView extends ConsumerWidget {
           _SectionCard(
             title: 'Personal',
             children: [
-              _DetailRow('First name', profile.firstName),
-              _DetailRow('Last name', profile.lastName),
-              _DetailRow(
-                'Date of birth',
-                DateFormat('d MMMM yyyy').format(profile.dateOfBirth),
-              ),
-              if (profile.gender != null)
-                _DetailRow('Gender', profile.gender!),
+              if (!profile.isAnonymised) ...[
+                _DetailRow('First name', profile.firstName),
+                _DetailRow('Last name', profile.lastName),
+                _DetailRow(
+                  'Date of birth',
+                  DateFormat('d MMMM yyyy').format(profile.dateOfBirth),
+                ),
+                if (profile.gender != null)
+                  _DetailRow('Gender', profile.gender!),
+              ],
               _DetailRow(
                 'Profile types',
                 profile.profileTypes.map(_typeLabel).join(', '),
@@ -96,26 +106,29 @@ class _ProfileDetailView extends ConsumerWidget {
           const SizedBox(height: 12),
 
           // ── Contact ──────────────────────────────────────────────────
-          _SectionCard(
-            title: 'Contact',
-            children: [
-              _DetailRow('Phone', profile.phone),
-              _DetailRow('Email', profile.email),
-              _DetailRow('Address', _formatAddress(profile)),
-            ],
-          ),
-          const SizedBox(height: 12),
+          if (!profile.isAnonymised) ...[
+            _SectionCard(
+              title: 'Contact',
+              children: [
+                _DetailRow('Phone', profile.phone),
+                _DetailRow('Email', profile.email),
+                _DetailRow('Address', _formatAddress(profile)),
+              ],
+            ),
+            const SizedBox(height: 12),
 
-          // ── Emergency contact ─────────────────────────────────────────
-          _SectionCard(
-            title: 'Emergency Contact',
-            children: [
-              _DetailRow('Name', profile.emergencyContactName),
-              _DetailRow('Relationship', profile.emergencyContactRelationship),
-              _DetailRow('Phone', profile.emergencyContactPhone),
-            ],
-          ),
-          const SizedBox(height: 12),
+            // ── Emergency contact ───────────────────────────────────────
+            _SectionCard(
+              title: 'Emergency Contact',
+              children: [
+                _DetailRow('Name', profile.emergencyContactName),
+                _DetailRow(
+                    'Relationship', profile.emergencyContactRelationship),
+                _DetailRow('Phone', profile.emergencyContactPhone),
+              ],
+            ),
+            const SizedBox(height: 12),
+          ],
 
           // ── Medical & consent ─────────────────────────────────────────
           _SectionCard(
@@ -125,10 +138,10 @@ class _ProfileDetailView extends ConsumerWidget {
                 'Photo / video consent',
                 profile.photoVideoConsent ? 'Given' : 'Not given',
               ),
-              if (profile.allergiesOrMedicalNotes != null &&
+              if (!profile.isAnonymised &&
+                  profile.allergiesOrMedicalNotes != null &&
                   profile.allergiesOrMedicalNotes!.isNotEmpty)
-                _DetailRow(
-                    'Allergies / medical notes',
+                _DetailRow('Allergies / medical notes',
                     profile.allergiesOrMedicalNotes!),
             ],
           ),
@@ -219,6 +232,20 @@ class _ProfileDetailView extends ConsumerWidget {
               label: const Text('Deactivate Profile'),
               onPressed: () => _confirmDeactivate(context, ref),
             ),
+
+          // ── Erase personal data ───────────────────────────────────────
+          if (!profile.isAnonymised) ...[
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.error,
+                side: BorderSide(color: AppColors.error.withAlpha(120)),
+              ),
+              icon: const Icon(Icons.delete_forever_outlined),
+              label: const Text('Erase Personal Data'),
+              onPressed: () => _confirmAnonymise(context, ref),
+            ),
+          ],
           const SizedBox(height: 24),
         ],
       ),
@@ -242,6 +269,105 @@ class _ProfileDetailView extends ConsumerWidget {
         ProfileType.coach => 'Coach',
         ProfileType.parentGuardian => 'Parent / Guardian',
       };
+
+  Future<void> _confirmAnonymise(
+      BuildContext context, WidgetRef ref) async {
+    // Step 1 — initial warning
+    final proceed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Erase Personal Data?'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'This will permanently erase all personal data for '
+              '${profile.fullName}:',
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              '• Name, date of birth, address\n'
+              '• Phone, email\n'
+              '• Emergency contact details\n'
+              '• Allergies / medical notes\n'
+              '• Gender, PIN, device token',
+              style: TextStyle(fontSize: 13),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Historical records (attendance, grading, payments) '
+              'are retained but will no longer be linked to any '
+              'personal information.',
+              style: TextStyle(fontSize: 13),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'This action is irreversible.',
+              style: TextStyle(
+                color: AppColors.error,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Continue'),
+          ),
+        ],
+      ),
+    );
+
+    if (proceed != true || !context.mounted) return;
+
+    // Step 2 — final confirmation
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Final Confirmation'),
+        content: const Text(
+          'Are you absolutely sure? This cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+                backgroundColor: AppColors.error),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Yes, erase permanently'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !context.mounted) return;
+
+    try {
+      await ref
+          .read(anonymiseProfileUseCaseProvider)
+          .call(profile.id);
+      // Stream update will re-render the screen automatically
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erasure failed: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
 
   Future<void> _confirmDeactivate(
       BuildContext context, WidgetRef ref) async {
