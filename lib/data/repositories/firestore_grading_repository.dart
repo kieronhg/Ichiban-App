@@ -24,7 +24,9 @@ class FirestoreGradingRepository implements GradingRepository {
 
   @override
   Future<List<GradingRecord>> getForStudentAndDiscipline(
-      String studentId, String disciplineId) async {
+    String studentId,
+    String disciplineId,
+  ) async {
     final snap = await FirestoreCollections.gradingRecords()
         .where('studentId', isEqualTo: studentId)
         .where('disciplineId', isEqualTo: disciplineId)

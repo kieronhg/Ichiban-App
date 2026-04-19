@@ -5,6 +5,9 @@ import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/providers/profile_providers.dart';
+import '../../../core/providers/enrollment_providers.dart';
+import '../../../core/providers/discipline_providers.dart';
+import '../../../domain/entities/enrollment.dart';
 import '../../../domain/entities/enums.dart';
 import '../../../domain/entities/profile.dart';
 
@@ -18,9 +21,8 @@ class ProfileDetailScreen extends ConsumerWidget {
     final profileAsync = ref.watch(profileProvider(profileId));
 
     return profileAsync.when(
-      loading: () => const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      ),
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (e, _) => Scaffold(
         appBar: AppBar(),
         body: Center(child: Text('Error: $e')),
@@ -45,210 +47,241 @@ class _ProfileDetailView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(profile.fullName),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.edit_outlined),
-            tooltip: 'Edit',
-            onPressed: () => context.pushNamed(
-              'adminProfileEdit',
-              pathParameters: {'id': profile.id},
-              extra: profile,
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(profile.fullName),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.edit_outlined),
+              tooltip: 'Edit',
+              onPressed: () => context.pushNamed(
+                'adminProfileEdit',
+                pathParameters: {'id': profile.id},
+                extra: profile,
+              ),
             ),
+          ],
+          bottom: const TabBar(
+            tabs: [
+              Tab(text: 'Personal'),
+              Tab(text: 'Disciplines & Grading'),
+            ],
           ),
-        ],
+        ),
+        body: TabBarView(
+          children: [
+            _PersonalTab(profile: profile, ref: ref),
+            _DisciplinesGradingTab(profile: profile),
+          ],
+        ),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          // ── Status banners ────────────────────────────────────────────
-          if (profile.isAnonymised)
-            _InfoBanner(
-              color: AppColors.textSecondary,
-              icon: Icons.manage_accounts_outlined,
-              message: 'Personal data erased'
-                  '${profile.anonymisedAt != null ? ' on ${DateFormat('d MMM yyyy').format(profile.anonymisedAt!)}' : ''}.'
-                  ' Historical records are retained.',
-            ),
-          if (!profile.isActive)
-            _InfoBanner(
-              color: AppColors.error,
-              icon: Icons.block,
-              message: 'This profile is inactive.',
-            ),
+    );
+  }
+}
 
-          // ── Identity ─────────────────────────────────────────────────
+// ── Personal tab ────────────────────────────────────────────────────────────
+
+class _PersonalTab extends StatelessWidget {
+  const _PersonalTab({required this.profile, required this.ref});
+
+  final Profile profile;
+  final WidgetRef ref;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        // ── Status banners ────────────────────────────────────────────
+        if (profile.isAnonymised)
+          _InfoBanner(
+            color: AppColors.textSecondary,
+            icon: Icons.manage_accounts_outlined,
+            message:
+                'Personal data erased'
+                '${profile.anonymisedAt != null ? ' on ${DateFormat('d MMM yyyy').format(profile.anonymisedAt!)}' : ''}.'
+                ' Historical records are retained.',
+          ),
+        if (!profile.isActive)
+          _InfoBanner(
+            color: AppColors.error,
+            icon: Icons.block,
+            message: 'This profile is inactive.',
+          ),
+
+        // ── Identity ─────────────────────────────────────────────────
+        _SectionCard(
+          title: 'Personal',
+          children: [
+            if (!profile.isAnonymised) ...[
+              _DetailRow('First name', profile.firstName),
+              _DetailRow('Last name', profile.lastName),
+              _DetailRow(
+                'Date of birth',
+                DateFormat('d MMMM yyyy').format(profile.dateOfBirth),
+              ),
+              if (profile.gender != null) _DetailRow('Gender', profile.gender!),
+            ],
+            _DetailRow(
+              'Profile types',
+              profile.profileTypes.map(_typeLabel).join(', '),
+            ),
+            _DetailRow(
+              'Member since',
+              DateFormat('d MMMM yyyy').format(profile.registrationDate),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+
+        // ── Contact ──────────────────────────────────────────────────
+        if (!profile.isAnonymised) ...[
           _SectionCard(
-            title: 'Personal',
+            title: 'Contact',
             children: [
-              if (!profile.isAnonymised) ...[
-                _DetailRow('First name', profile.firstName),
-                _DetailRow('Last name', profile.lastName),
-                _DetailRow(
-                  'Date of birth',
-                  DateFormat('d MMMM yyyy').format(profile.dateOfBirth),
+              _DetailRow('Phone', profile.phone),
+              _DetailRow('Email', profile.email),
+              _DetailRow('Address', _formatAddress(profile)),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // ── Emergency contact ───────────────────────────────────────
+          _SectionCard(
+            title: 'Emergency Contact',
+            children: [
+              _DetailRow('Name', profile.emergencyContactName),
+              _DetailRow('Relationship', profile.emergencyContactRelationship),
+              _DetailRow('Phone', profile.emergencyContactPhone),
+            ],
+          ),
+          const SizedBox(height: 12),
+        ],
+
+        // ── Medical & consent ─────────────────────────────────────────
+        _SectionCard(
+          title: 'Medical & Consent',
+          children: [
+            _DetailRow(
+              'Photo / video consent',
+              profile.photoVideoConsent ? 'Given' : 'Not given',
+            ),
+            if (!profile.isAnonymised &&
+                profile.allergiesOrMedicalNotes != null &&
+                profile.allergiesOrMedicalNotes!.isNotEmpty)
+              _DetailRow(
+                'Allergies / medical notes',
+                profile.allergiesOrMedicalNotes!,
+              ),
+          ],
+        ),
+        const SizedBox(height: 12),
+
+        // ── Family links (juniors) ────────────────────────────────────
+        if (profile.isJunior) ...[
+          _SectionCard(
+            title: 'Family Links',
+            children: [
+              if (profile.parentProfileId != null)
+                _ProfileLinkRow(
+                  label: 'Parent / Guardian',
+                  profileId: profile.parentProfileId!,
+                  ref: ref,
                 ),
-                if (profile.gender != null)
-                  _DetailRow('Gender', profile.gender!),
-              ],
-              _DetailRow(
-                'Profile types',
-                profile.profileTypes.map(_typeLabel).join(', '),
-              ),
-              _DetailRow(
-                'Member since',
-                DateFormat('d MMMM yyyy').format(profile.registrationDate),
-              ),
+              if (profile.secondParentProfileId != null)
+                _ProfileLinkRow(
+                  label: 'Second Parent / Guardian',
+                  profileId: profile.secondParentProfileId!,
+                  ref: ref,
+                ),
+              if (profile.payingParentId != null)
+                _ProfileLinkRow(
+                  label: 'Paying Parent',
+                  profileId: profile.payingParentId!,
+                  ref: ref,
+                ),
             ],
           ),
           const SizedBox(height: 12),
+        ],
 
-          // ── Contact ──────────────────────────────────────────────────
-          if (!profile.isAnonymised) ...[
-            _SectionCard(
-              title: 'Contact',
-              children: [
-                _DetailRow('Phone', profile.phone),
-                _DetailRow('Email', profile.email),
-                _DetailRow('Address', _formatAddress(profile)),
-              ],
-            ),
-            const SizedBox(height: 12),
-
-            // ── Emergency contact ───────────────────────────────────────
-            _SectionCard(
-              title: 'Emergency Contact',
-              children: [
-                _DetailRow('Name', profile.emergencyContactName),
-                _DetailRow(
-                    'Relationship', profile.emergencyContactRelationship),
-                _DetailRow('Phone', profile.emergencyContactPhone),
-              ],
-            ),
-            const SizedBox(height: 12),
-          ],
-
-          // ── Medical & consent ─────────────────────────────────────────
-          _SectionCard(
-            title: 'Medical & Consent',
-            children: [
-              _DetailRow(
-                'Photo / video consent',
-                profile.photoVideoConsent ? 'Given' : 'Not given',
-              ),
-              if (!profile.isAnonymised &&
-                  profile.allergiesOrMedicalNotes != null &&
-                  profile.allergiesOrMedicalNotes!.isNotEmpty)
-                _DetailRow('Allergies / medical notes',
-                    profile.allergiesOrMedicalNotes!),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          // ── Family links (juniors) ────────────────────────────────────
-          if (profile.isJunior) ...[
-            _SectionCard(
-              title: 'Family Links',
-              children: [
-                if (profile.parentProfileId != null)
-                  _ProfileLinkRow(
-                    label: 'Parent / Guardian',
-                    profileId: profile.parentProfileId!,
-                    ref: ref,
-                  ),
-                if (profile.secondParentProfileId != null)
-                  _ProfileLinkRow(
-                    label: 'Second Parent / Guardian',
-                    profileId: profile.secondParentProfileId!,
-                    ref: ref,
-                  ),
-                if (profile.payingParentId != null)
-                  _ProfileLinkRow(
-                    label: 'Paying Parent',
-                    profileId: profile.payingParentId!,
-                    ref: ref,
-                  ),
-              ],
-            ),
-            const SizedBox(height: 12),
-          ],
-
-          // ── Communication ─────────────────────────────────────────────
-          _SectionCard(
-            title: 'Communication',
-            children: [
-              _DetailRow(
-                'Preferences',
-                profile.communicationPreferences.isEmpty
-                    ? 'None set'
-                    : profile.communicationPreferences
+        // ── Communication ─────────────────────────────────────────────
+        _SectionCard(
+          title: 'Communication',
+          children: [
+            _DetailRow(
+              'Preferences',
+              profile.communicationPreferences.isEmpty
+                  ? 'None set'
+                  : profile.communicationPreferences
                         .map((c) => c.name)
                         .join(', '),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+
+        // ── Admin notes ───────────────────────────────────────────────
+        if (profile.notes != null && profile.notes!.isNotEmpty) ...[
+          _SectionCard(
+            title: 'Admin Notes',
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                child: Text(profile.notes!),
               ),
             ],
           ),
           const SizedBox(height: 12),
-
-          // ── Admin notes ───────────────────────────────────────────────
-          if (profile.notes != null && profile.notes!.isNotEmpty) ...[
-            _SectionCard(
-              title: 'Admin Notes',
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 8),
-                  child: Text(profile.notes!),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-          ],
-
-          // ── Membership summary placeholder ────────────────────────────
-          _SectionCard(
-            title: 'Membership',
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  'Membership summary coming in a future phase.',
-                  style: TextStyle(color: AppColors.textSecondary),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-
-          // ── Deactivate ────────────────────────────────────────────────
-          if (profile.isActive)
-            OutlinedButton.icon(
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.error,
-                side: BorderSide(color: AppColors.error),
-              ),
-              icon: const Icon(Icons.person_off_outlined),
-              label: const Text('Deactivate Profile'),
-              onPressed: () => _confirmDeactivate(context, ref),
-            ),
-
-          // ── Erase personal data ───────────────────────────────────────
-          if (!profile.isAnonymised) ...[
-            const SizedBox(height: 12),
-            OutlinedButton.icon(
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.error,
-                side: BorderSide(color: AppColors.error.withAlpha(120)),
-              ),
-              icon: const Icon(Icons.delete_forever_outlined),
-              label: const Text('Erase Personal Data'),
-              onPressed: () => _confirmAnonymise(context, ref),
-            ),
-          ],
-          const SizedBox(height: 24),
         ],
-      ),
+
+        // ── Membership summary placeholder ────────────────────────────
+        _SectionCard(
+          title: 'Membership',
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                'Membership summary coming in a future phase.',
+                style: TextStyle(color: AppColors.textSecondary),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 24),
+
+        // ── Deactivate ────────────────────────────────────────────────
+        if (profile.isActive)
+          OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.error,
+              side: BorderSide(color: AppColors.error),
+            ),
+            icon: const Icon(Icons.person_off_outlined),
+            label: const Text('Deactivate Profile'),
+            onPressed: () => _confirmDeactivate(context, ref),
+          ),
+
+        // ── Erase personal data ───────────────────────────────────────
+        if (!profile.isAnonymised) ...[
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.error,
+              side: BorderSide(color: AppColors.error.withAlpha(120)),
+            ),
+            icon: const Icon(Icons.delete_forever_outlined),
+            label: const Text('Erase Personal Data'),
+            onPressed: () => _confirmAnonymise(context, ref),
+          ),
+        ],
+        const SizedBox(height: 24),
+      ],
     );
   }
 
@@ -264,15 +297,13 @@ class _ProfileDetailView extends ConsumerWidget {
   }
 
   String _typeLabel(ProfileType t) => switch (t) {
-        ProfileType.adultStudent => 'Adult Student',
-        ProfileType.juniorStudent => 'Junior Student',
-        ProfileType.coach => 'Coach',
-        ProfileType.parentGuardian => 'Parent / Guardian',
-      };
+    ProfileType.adultStudent => 'Adult Student',
+    ProfileType.juniorStudent => 'Junior Student',
+    ProfileType.coach => 'Coach',
+    ProfileType.parentGuardian => 'Parent / Guardian',
+  };
 
-  Future<void> _confirmAnonymise(
-      BuildContext context, WidgetRef ref) async {
-    // Step 1 — initial warning
+  Future<void> _confirmAnonymise(BuildContext context, WidgetRef ref) async {
     final proceed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
@@ -327,22 +358,18 @@ class _ProfileDetailView extends ConsumerWidget {
 
     if (proceed != true || !context.mounted) return;
 
-    // Step 2 — final confirmation
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Final Confirmation'),
-        content: const Text(
-          'Are you absolutely sure? This cannot be undone.',
-        ),
+        content: const Text('Are you absolutely sure? This cannot be undone.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
             child: const Text('Cancel'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(
-                backgroundColor: AppColors.error),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.error),
             onPressed: () => Navigator.pop(context, true),
             child: const Text('Yes, erase permanently'),
           ),
@@ -353,10 +380,7 @@ class _ProfileDetailView extends ConsumerWidget {
     if (confirmed != true || !context.mounted) return;
 
     try {
-      await ref
-          .read(anonymiseProfileUseCaseProvider)
-          .call(profile.id);
-      // Stream update will re-render the screen automatically
+      await ref.read(anonymiseProfileUseCaseProvider).call(profile.id);
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -369,8 +393,7 @@ class _ProfileDetailView extends ConsumerWidget {
     }
   }
 
-  Future<void> _confirmDeactivate(
-      BuildContext context, WidgetRef ref) async {
+  Future<void> _confirmDeactivate(BuildContext context, WidgetRef ref) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
@@ -394,42 +417,398 @@ class _ProfileDetailView extends ConsumerWidget {
     );
 
     if (confirmed == true && context.mounted) {
-      await ref
-          .read(deactivateProfileUseCaseProvider)
-          .call(profile.id);
+      await ref.read(deactivateProfileUseCaseProvider).call(profile.id);
       if (context.mounted) context.pop();
     }
+  }
+}
+
+// ── Disciplines & Grading tab ────────────────────────────────────────────────
+
+class _DisciplinesGradingTab extends ConsumerWidget {
+  const _DisciplinesGradingTab({required this.profile});
+
+  final Profile profile;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final enrollmentsAsync = ref.watch(
+      allEnrollmentsForStudentProvider(profile.id),
+    );
+
+    return enrollmentsAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Center(child: Text('Error: $e')),
+      data: (enrollments) {
+        final active = enrollments.where((e) => e.isActive).toList();
+        final inactive = enrollments.where((e) => !e.isActive).toList();
+
+        return ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            // ── Active enrolments ─────────────────────────────────────
+            _SectionCard(
+              title: 'Active Enrolments',
+              headerAction: FilledButton.icon(
+                onPressed: () => context.pushNamed(
+                  'adminProfileEnrol',
+                  pathParameters: {'id': profile.id},
+                  extra: profile,
+                ),
+                icon: const Icon(Icons.add, size: 16),
+                label: const Text('Enrol in Discipline'),
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  textStyle: const TextStyle(fontSize: 13),
+                ),
+              ),
+              children: active.isEmpty
+                  ? [
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Text(
+                          'No active enrolments.',
+                          style: TextStyle(color: AppColors.textSecondary),
+                        ),
+                      ),
+                    ]
+                  : active
+                        .map(
+                          (e) => _ActiveEnrolmentRow(
+                            enrollment: e,
+                            profile: profile,
+                          ),
+                        )
+                        .toList(),
+            ),
+            const SizedBox(height: 12),
+
+            // ── Inactive enrolments ───────────────────────────────────
+            if (inactive.isNotEmpty)
+              _SectionCard(
+                title: 'Inactive Enrolments',
+                children: [
+                  ExpansionTile(
+                    title: Text(
+                      '${inactive.length} inactive '
+                      '${inactive.length == 1 ? 'enrolment' : 'enrolments'}',
+                      style: const TextStyle(fontSize: 14),
+                    ),
+                    tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+                    childrenPadding: EdgeInsets.zero,
+                    children: inactive
+                        .map(
+                          (e) => _InactiveEnrolmentRow(
+                            enrollment: e,
+                            profile: profile,
+                          ),
+                        )
+                        .toList(),
+                  ),
+                ],
+              ),
+            const SizedBox(height: 24),
+          ],
+        );
+      },
+    );
+  }
+}
+
+// ── Active enrolment row ─────────────────────────────────────────────────────
+
+class _ActiveEnrolmentRow extends ConsumerWidget {
+  const _ActiveEnrolmentRow({required this.enrollment, required this.profile});
+
+  final Enrollment enrollment;
+  final Profile profile;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final disciplineAsync = ref.watch(
+      disciplineProvider(enrollment.disciplineId),
+    );
+    final ranksAsync = ref.watch(rankListProvider(enrollment.disciplineId));
+
+    final disciplineName = disciplineAsync.when(
+      loading: () => '…',
+      error: (_, _) => enrollment.disciplineId,
+      data: (d) => d?.name ?? enrollment.disciplineId,
+    );
+
+    final currentRank = ranksAsync.when(
+      loading: () => null,
+      error: (_, _) => null,
+      data: (ranks) =>
+          ranks.where((r) => r.id == enrollment.currentRankId).firstOrNull,
+    );
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Row(
+        children: [
+          // Belt swatch
+          _BeltSwatch(colourHex: currentRank?.colourHex),
+          const SizedBox(width: 12),
+          // Discipline + rank info
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  disciplineName,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  currentRank?.name ?? enrollment.currentRankId,
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                  ),
+                ),
+                Text(
+                  'Since ${DateFormat('d MMM yyyy').format(enrollment.enrollmentDate)}',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Deactivate
+          TextButton(
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.error,
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+            ),
+            onPressed: () => _confirmDeactivate(context, ref, disciplineName),
+            child: const Text('Deactivate', style: TextStyle(fontSize: 12)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _confirmDeactivate(
+    BuildContext context,
+    WidgetRef ref,
+    String disciplineName,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Deactivate Enrolment'),
+        content: Text(
+          'Are you sure you want to deactivate ${profile.fullName}\'s '
+          'enrolment in $disciplineName? '
+          'Their rank and history will be preserved.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Deactivate'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      try {
+        await ref.read(deactivateEnrollmentUseCaseProvider).call(enrollment.id);
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to deactivate enrolment: $e'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
+      }
+    }
+  }
+}
+
+// ── Inactive enrolment row ───────────────────────────────────────────────────
+
+class _InactiveEnrolmentRow extends ConsumerWidget {
+  const _InactiveEnrolmentRow({
+    required this.enrollment,
+    required this.profile,
+  });
+
+  final Enrollment enrollment;
+  final Profile profile;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final disciplineAsync = ref.watch(
+      disciplineProvider(enrollment.disciplineId),
+    );
+    final ranksAsync = ref.watch(rankListProvider(enrollment.disciplineId));
+
+    final disciplineName = disciplineAsync.when(
+      loading: () => '…',
+      error: (_, _) => enrollment.disciplineId,
+      data: (d) => d?.name ?? enrollment.disciplineId,
+    );
+
+    final currentRank = ranksAsync.when(
+      loading: () => null,
+      error: (_, _) => null,
+      data: (ranks) =>
+          ranks.where((r) => r.id == enrollment.currentRankId).firstOrNull,
+    );
+
+    // Flag when the stored rank no longer exists on the ladder
+    final rankMissing =
+        ranksAsync.hasValue &&
+        ranksAsync.value!.isNotEmpty &&
+        currentRank == null;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Row(
+        children: [
+          _BeltSwatch(colourHex: currentRank?.colourHex, muted: true),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  disciplineName,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  currentRank?.name ?? enrollment.currentRankId,
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                  ),
+                ),
+                if (rankMissing)
+                  Text(
+                    'Rank no longer on current ladder',
+                    style: TextStyle(
+                      color: AppColors.error.withAlpha(180),
+                      fontSize: 11,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          // Reactivate — navigates into the enrol wizard which detects the
+          // inactive record and shows the reactivation confirmation.
+          TextButton(
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+            ),
+            onPressed: () => context.pushNamed(
+              'adminProfileEnrol',
+              pathParameters: {'id': profile.id},
+              extra: profile,
+            ),
+            child: const Text('Reactivate', style: TextStyle(fontSize: 12)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Belt swatch ──────────────────────────────────────────────────────────────
+
+class _BeltSwatch extends StatelessWidget {
+  const _BeltSwatch({this.colourHex, this.muted = false});
+
+  final String? colourHex;
+  final bool muted;
+
+  @override
+  Widget build(BuildContext context) {
+    Color? swatchColor;
+    if (colourHex != null && colourHex!.length == 7) {
+      final hex = colourHex!.replaceFirst('#', '');
+      final value = int.tryParse('FF$hex', radix: 16);
+      if (value != null) {
+        swatchColor = Color(value);
+      }
+    }
+
+    return Container(
+      width: 20,
+      height: 20,
+      decoration: BoxDecoration(
+        color:
+            swatchColor?.withAlpha(muted ? 120 : 255) ??
+            AppColors.textSecondary.withAlpha(60),
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: AppColors.textSecondary.withAlpha(60),
+          width: 1,
+        ),
+      ),
+    );
   }
 }
 
 // ── Shared detail widgets ──────────────────────────────────────────────────
 
 class _SectionCard extends StatelessWidget {
-  const _SectionCard({required this.title, required this.children});
+  const _SectionCard({
+    required this.title,
+    required this.children,
+    this.headerAction,
+  });
 
   final String title;
   final List<Widget> children;
+  final Widget? headerAction;
 
   @override
   Widget build(BuildContext context) {
     return Card(
       elevation: 0,
       color: AppColors.surface,
-      shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding:
-                const EdgeInsets.fromLTRB(16, 14, 16, 4),
-            child: Text(
-              title,
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: AppColors.accent,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.5,
+            padding: const EdgeInsets.fromLTRB(16, 14, 12, 4),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    title,
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      color: AppColors.accent,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.5,
+                    ),
                   ),
+                ),
+                ?headerAction,
+              ],
             ),
           ),
           const Divider(height: 1),
@@ -458,14 +837,15 @@ class _DetailRow extends StatelessWidget {
             child: Text(
               label,
               style: const TextStyle(
-                  color: AppColors.textSecondary, fontSize: 13),
+                color: AppColors.textSecondary,
+                fontSize: 13,
+              ),
             ),
           ),
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(
-                  fontWeight: FontWeight.w500, fontSize: 13),
+              style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
             ),
           ),
         ],
@@ -521,8 +901,10 @@ class _InfoBanner extends StatelessWidget {
         children: [
           Icon(icon, color: color, size: 18),
           const SizedBox(width: 8),
-          Text(message,
-              style: TextStyle(color: color, fontWeight: FontWeight.w500)),
+          Text(
+            message,
+            style: TextStyle(color: color, fontWeight: FontWeight.w500),
+          ),
         ],
       ),
     );

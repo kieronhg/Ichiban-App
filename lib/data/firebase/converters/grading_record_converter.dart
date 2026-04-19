@@ -13,8 +13,8 @@ class GradingRecordConverter {
       rankAchievedId: map['rankAchievedId'] as String,
       gradingDate: (map['gradingDate'] as Timestamp).toDate(),
       markedEligibleByCoachId: map['markedEligibleByCoachId'] as String,
-      eligibilityAnnouncedDate:
-          (map['eligibilityAnnouncedDate'] as Timestamp?)?.toDate(),
+      eligibilityAnnouncedDate: (map['eligibilityAnnouncedDate'] as Timestamp?)
+          ?.toDate(),
       notes: map['notes'] as String?,
     );
   }

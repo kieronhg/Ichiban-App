@@ -104,7 +104,8 @@ class _DisciplineFormScreenState extends ConsumerState<DisciplineFormScreen> {
                   ),
                   textCapitalization: TextCapitalization.sentences,
                   maxLines: 3,
-                  onChanged: (v) => notifier.setDescription(v.isEmpty ? null : v),
+                  onChanged: (v) =>
+                      notifier.setDescription(v.isEmpty ? null : v),
                 ),
               ],
             ),
@@ -132,17 +133,23 @@ class _DisciplineFormScreenState extends ConsumerState<DisciplineFormScreen> {
                     Container(
                       margin: const EdgeInsets.only(top: 8),
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
                       decoration: BoxDecoration(
                         color: AppColors.warning.withAlpha(40),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                            color: AppColors.warning.withAlpha(100)),
+                          color: AppColors.warning.withAlpha(100),
+                        ),
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.info_outline,
-                              size: 16, color: AppColors.warning),
+                          Icon(
+                            Icons.info_outline,
+                            size: 16,
+                            color: AppColors.warning,
+                          ),
                           const SizedBox(width: 8),
                           const Expanded(
                             child: Text(
@@ -165,8 +172,7 @@ class _DisciplineFormScreenState extends ConsumerState<DisciplineFormScreen> {
                 padding: const EdgeInsets.only(bottom: 12),
                 child: Text(
                   formState.errorMessage!,
-                  style: const TextStyle(
-                      color: AppColors.error, fontSize: 13),
+                  style: const TextStyle(color: AppColors.error, fontSize: 13),
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -181,7 +187,9 @@ class _DisciplineFormScreenState extends ConsumerState<DisciplineFormScreen> {
                       height: 20,
                       width: 20,
                       child: CircularProgressIndicator(
-                          strokeWidth: 2, color: AppColors.textOnAccent),
+                        strokeWidth: 2,
+                        color: AppColors.textOnAccent,
+                      ),
                     )
                   : Text(_isEditing ? 'Save Changes' : 'Create Discipline'),
             ),
@@ -215,10 +223,10 @@ class _FormSection extends StatelessWidget {
             Text(
               title,
               style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: AppColors.accent,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.5,
-                  ),
+                color: AppColors.accent,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.5,
+              ),
             ),
             const SizedBox(height: 14),
             ...children,

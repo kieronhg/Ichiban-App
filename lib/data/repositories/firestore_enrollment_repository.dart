@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../../domain/entities/enrollment.dart';
 import '../../domain/repositories/enrollment_repository.dart';
 import '../firebase/firestore_collections.dart';
@@ -23,7 +25,9 @@ class FirestoreEnrollmentRepository implements EnrollmentRepository {
 
   @override
   Future<Enrollment?> getForStudentAndDiscipline(
-      String studentId, String disciplineId) async {
+    String studentId,
+    String disciplineId,
+  ) async {
     final snap = await FirestoreCollections.enrollments()
         .where('studentId', isEqualTo: studentId)
         .where('disciplineId', isEqualTo: disciplineId)
@@ -41,16 +45,46 @@ class FirestoreEnrollmentRepository implements EnrollmentRepository {
 
   @override
   Future<void> updateCurrentRank(String enrollmentId, String rankId) async {
-    await FirestoreCollections.enrollments()
-        .doc(enrollmentId)
-        .update({'currentRankId': rankId});
+    await FirestoreCollections.enrollments().doc(enrollmentId).update({
+      'currentRankId': rankId,
+    });
   }
 
   @override
   Future<void> deactivate(String enrollmentId) async {
-    await FirestoreCollections.enrollments()
-        .doc(enrollmentId)
-        .update({'isActive': false});
+    await FirestoreCollections.enrollments().doc(enrollmentId).update({
+      'isActive': false,
+    });
+  }
+
+  @override
+  Future<List<Enrollment>> getAllForStudent(String studentId) async {
+    final snap = await FirestoreCollections.enrollments()
+        .where('studentId', isEqualTo: studentId)
+        .get();
+    return snap.docs.map((d) => d.data()).toList();
+  }
+
+  @override
+  Future<Enrollment?> getInactiveForStudentAndDiscipline(
+    String studentId,
+    String disciplineId,
+  ) async {
+    final snap = await FirestoreCollections.enrollments()
+        .where('studentId', isEqualTo: studentId)
+        .where('disciplineId', isEqualTo: disciplineId)
+        .where('isActive', isEqualTo: false)
+        .limit(1)
+        .get();
+    return snap.docs.isEmpty ? null : snap.docs.first.data();
+  }
+
+  @override
+  Future<void> reactivate(String enrollmentId, DateTime newDate) async {
+    await FirestoreCollections.enrollments().doc(enrollmentId).update({
+      'isActive': true,
+      'enrollmentDate': Timestamp.fromDate(newDate),
+    });
   }
 
   @override
@@ -58,6 +92,14 @@ class FirestoreEnrollmentRepository implements EnrollmentRepository {
     return FirestoreCollections.enrollments()
         .where('studentId', isEqualTo: studentId)
         .where('isActive', isEqualTo: true)
+        .snapshots()
+        .map((snap) => snap.docs.map((d) => d.data()).toList());
+  }
+
+  @override
+  Stream<List<Enrollment>> watchAllForStudent(String studentId) {
+    return FirestoreCollections.enrollments()
+        .where('studentId', isEqualTo: studentId)
         .snapshots()
         .map((snap) => snap.docs.map((d) => d.data()).toList());
   }

@@ -17,11 +17,15 @@ class AuthFailure extends Failure {
 }
 
 class PermissionFailure extends Failure {
-  const PermissionFailure([super.message = 'You do not have permission to perform this action.']);
+  const PermissionFailure([
+    super.message = 'You do not have permission to perform this action.',
+  ]);
 }
 
 class NotFoundFailure extends Failure {
-  const NotFoundFailure([super.message = 'The requested record was not found.']);
+  const NotFoundFailure([
+    super.message = 'The requested record was not found.',
+  ]);
 }
 
 class ValidationFailure extends Failure {

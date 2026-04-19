@@ -28,10 +28,7 @@ class SignInNotifier extends Notifier<SignInState> {
   @override
   SignInState build() => const SignInState();
 
-  Future<void> signIn({
-    required String email,
-    required String password,
-  }) async {
+  Future<void> signIn({required String email, required String password}) async {
     if (email.trim().isEmpty) {
       state = state.copyWith(emailError: 'Email is required.');
       return;
@@ -49,10 +46,9 @@ class SignInNotifier extends Notifier<SignInState> {
     );
 
     try {
-      await ref.read(authRepositoryProvider).signIn(
-            email: email,
-            password: password,
-          );
+      await ref
+          .read(authRepositoryProvider)
+          .signIn(email: email, password: password);
       state = state.copyWith(isLoading: false);
     } on AuthException catch (e) {
       state = state.copyWith(isLoading: false, errorMessage: e.message);
@@ -71,9 +67,7 @@ class SignInNotifier extends Notifier<SignInState> {
     }
     state = state.copyWith(isLoading: true, errorMessage: null);
     try {
-      await ref
-          .read(authRepositoryProvider)
-          .sendPasswordReset(email: email);
+      await ref.read(authRepositoryProvider).sendPasswordReset(email: email);
       state = state.copyWith(
         isLoading: false,
         errorMessage: null,
@@ -85,23 +79,24 @@ class SignInNotifier extends Notifier<SignInState> {
   }
 
   void clearErrors() => state = state.copyWith(
-        errorMessage: null,
-        emailError: null,
-        passwordError: null,
-        resetEmailSent: false,
-      );
+    errorMessage: null,
+    emailError: null,
+    passwordError: null,
+    resetEmailSent: false,
+  );
 }
 
 final signInNotifierProvider =
     NotifierProvider.autoDispose<SignInNotifier, SignInState>(
-  SignInNotifier.new,
-);
+      SignInNotifier.new,
+    );
 
 // ── Sign-out ───────────────────────────────────────────────────────────────
 
 /// Call ref.read(signOutProvider)() to sign the admin out.
 final signOutProvider = Provider<Future<void> Function()>(
-  (ref) => () => ref.read(authRepositoryProvider).signOut(),
+  (ref) =>
+      () => ref.read(authRepositoryProvider).signOut(),
 );
 
 // ── Sign-in state ──────────────────────────────────────────────────────────

@@ -35,5 +35,11 @@ class EmailTemplate extends Equatable {
   }
 
   @override
-  List<Object?> get props => [key, subject, bodyHtml, lastEditedByAdminId, lastEditedAt];
+  List<Object?> get props => [
+    key,
+    subject,
+    bodyHtml,
+    lastEditedByAdminId,
+    lastEditedAt,
+  ];
 }

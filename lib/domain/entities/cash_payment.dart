@@ -22,9 +22,9 @@ class CashPayment extends Equatable {
     required this.recordedAt,
     this.notes,
   }) : assert(
-          (membershipId != null) != (paytSessionId != null),
-          'Exactly one of membershipId or paytSessionId must be set.',
-        );
+         (membershipId != null) != (paytSessionId != null),
+         'Exactly one of membershipId or paytSessionId must be set.',
+       );
 
   CashPayment copyWith({
     String? id,
@@ -50,7 +50,13 @@ class CashPayment extends Equatable {
 
   @override
   List<Object?> get props => [
-        id, profileId, membershipId, paytSessionId,
-        amount, recordedByAdminId, recordedAt, notes,
-      ];
+    id,
+    profileId,
+    membershipId,
+    paytSessionId,
+    amount,
+    recordedByAdminId,
+    recordedAt,
+    notes,
+  ];
 }

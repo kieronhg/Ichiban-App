@@ -37,6 +37,11 @@ class Enrollment extends Equatable {
 
   @override
   List<Object?> get props => [
-        id, studentId, disciplineId, currentRankId, enrollmentDate, isActive,
-      ];
+    id,
+    studentId,
+    disciplineId,
+    currentRankId,
+    enrollmentDate,
+    isActive,
+  ];
 }

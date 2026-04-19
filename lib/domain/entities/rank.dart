@@ -64,14 +64,14 @@ class Rank extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        disciplineId,
-        name,
-        displayOrder,
-        colourHex,
-        rankType,
-        monCount,
-        minAttendanceForGrading,
-        createdAt,
-      ];
+    id,
+    disciplineId,
+    name,
+    displayOrder,
+    colourHex,
+    rankType,
+    monCount,
+    minAttendanceForGrading,
+    createdAt,
+  ];
 }

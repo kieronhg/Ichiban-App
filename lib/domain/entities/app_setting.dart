@@ -7,10 +7,7 @@ class AppSetting extends Equatable {
   const AppSetting({required this.key, required this.value});
 
   AppSetting copyWith({String? key, dynamic value}) {
-    return AppSetting(
-      key: key ?? this.key,
-      value: value ?? this.value,
-    );
+    return AppSetting(key: key ?? this.key, value: value ?? this.value);
   }
 
   int get intValue => (value as num).toInt();

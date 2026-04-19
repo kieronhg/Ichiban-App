@@ -6,7 +6,10 @@ class RankConverter {
   RankConverter._();
 
   static Rank fromMap(
-      String id, String disciplineId, Map<String, dynamic> map) {
+    String id,
+    String disciplineId,
+    Map<String, dynamic> map,
+  ) {
     return Rank(
       id: id,
       disciplineId: disciplineId,
@@ -15,8 +18,8 @@ class RankConverter {
       colourHex: map['colourHex'] as String?,
       rankType: RankType.values.byName(map['rankType'] as String),
       monCount: (map['monCount'] as num?)?.toInt(),
-      minAttendanceForGrading:
-          (map['minAttendanceForGrading'] as num?)?.toInt(),
+      minAttendanceForGrading: (map['minAttendanceForGrading'] as num?)
+          ?.toInt(),
       createdAt: (map['createdAt'] as Timestamp).toDate(),
     );
   }

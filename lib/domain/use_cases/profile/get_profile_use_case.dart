@@ -7,10 +7,8 @@ class GetProfileUseCase {
   final ProfileRepository _repo;
 
   /// Watches a single profile in real time. Emits null if not found.
-  Stream<Profile?> watchById(String profileId) =>
-      _repo.watchById(profileId);
+  Stream<Profile?> watchById(String profileId) => _repo.watchById(profileId);
 
   /// Fetches a single profile once. Returns null if not found.
-  Future<Profile?> getById(String profileId) =>
-      _repo.getById(profileId);
+  Future<Profile?> getById(String profileId) => _repo.getById(profileId);
 }

@@ -51,9 +51,11 @@ class FirestorePaytSessionRepository implements PaytSessionRepository {
 
   @override
   Future<void> linkAttendanceRecord(
-      String sessionId, String attendanceRecordId) async {
-    await FirestoreCollections.paytSessions()
-        .doc(sessionId)
-        .update({'attendanceRecordId': attendanceRecordId});
+    String sessionId,
+    String attendanceRecordId,
+  ) async {
+    await FirestoreCollections.paytSessions().doc(sessionId).update({
+      'attendanceRecordId': attendanceRecordId,
+    });
   }
 }

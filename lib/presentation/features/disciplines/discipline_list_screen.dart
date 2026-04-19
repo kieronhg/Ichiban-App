@@ -14,9 +14,7 @@ class DisciplineListScreen extends ConsumerWidget {
     final disciplinesAsync = ref.watch(disciplineListProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Disciplines'),
-      ),
+      appBar: AppBar(title: const Text('Disciplines')),
       body: disciplinesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),
@@ -26,15 +24,18 @@ class DisciplineListScreen extends ConsumerWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.sports_martial_arts_outlined,
-                      size: 64, color: AppColors.textSecondary),
+                  Icon(
+                    Icons.sports_martial_arts_outlined,
+                    size: 64,
+                    color: AppColors.textSecondary,
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     'No disciplines yet.\nTap + to add the first one.',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ],
               ),
@@ -53,7 +54,7 @@ class DisciplineListScreen extends ConsumerWidget {
           return ListView.separated(
             padding: const EdgeInsets.symmetric(vertical: 8),
             itemCount: sorted.length,
-            separatorBuilder: (_, __) => const Divider(height: 1, indent: 16),
+            separatorBuilder: (_, _) => const Divider(height: 1, indent: 16),
             itemBuilder: (context, i) => _DisciplineTile(
               discipline: sorted[i],
               onTap: () => context.pushNamed(
@@ -74,10 +75,7 @@ class DisciplineListScreen extends ConsumerWidget {
 }
 
 class _DisciplineTile extends StatelessWidget {
-  const _DisciplineTile({
-    required this.discipline,
-    required this.onTap,
-  });
+  const _DisciplineTile({required this.discipline, required this.onTap});
 
   final Discipline discipline;
   final VoidCallback onTap;
@@ -86,8 +84,9 @@ class _DisciplineTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListTile(
       leading: CircleAvatar(
-        backgroundColor:
-            discipline.isActive ? AppColors.primary : AppColors.surfaceVariant,
+        backgroundColor: discipline.isActive
+            ? AppColors.primary
+            : AppColors.surfaceVariant,
         child: Text(
           discipline.name[0],
           style: TextStyle(
@@ -102,8 +101,9 @@ class _DisciplineTile extends StatelessWidget {
         discipline.name,
         style: TextStyle(
           fontWeight: FontWeight.w600,
-          color:
-              discipline.isActive ? AppColors.textPrimary : AppColors.textSecondary,
+          color: discipline.isActive
+              ? AppColors.textPrimary
+              : AppColors.textSecondary,
         ),
       ),
       subtitle: discipline.description != null

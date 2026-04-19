@@ -16,9 +16,7 @@ class CreateDisciplineUseCase {
       throw ArgumentError('createdByAdminId must not be empty.');
     }
 
-    final stamped = discipline.copyWith(
-      createdAt: DateTime.now(),
-    );
+    final stamped = discipline.copyWith(createdAt: DateTime.now());
 
     return _repo.create(stamped);
   }

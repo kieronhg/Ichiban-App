@@ -13,8 +13,7 @@ class ProfileConverter {
         .toList();
 
     // communicationPreferences is stored as a List<String> in Firestore
-    final rawPrefs =
-        (map['communicationPreferences'] as List<dynamic>?) ?? [];
+    final rawPrefs = (map['communicationPreferences'] as List<dynamic>?) ?? [];
     final communicationPreferences = rawPrefs
         .map((p) => NotificationChannel.values.byName(p as String))
         .toList();
@@ -42,8 +41,7 @@ class ProfileConverter {
       photoVideoConsent: map['photoVideoConsent'] as bool,
       notes: map['notes'] as String?,
       communicationPreferences: communicationPreferences,
-      dataProcessingConsent:
-          (map['dataProcessingConsent'] as bool?) ?? false,
+      dataProcessingConsent: (map['dataProcessingConsent'] as bool?) ?? false,
       dataProcessingConsentDate:
           (map['dataProcessingConsentDate'] as Timestamp?)?.toDate(),
       dataProcessingConsentVersion:
@@ -65,8 +63,7 @@ class ProfileConverter {
       'firstName': profile.firstName,
       'lastName': profile.lastName,
       'dateOfBirth': Timestamp.fromDate(profile.dateOfBirth),
-      'profileTypes':
-          profile.profileTypes.map((t) => t.name).toList(),
+      'profileTypes': profile.profileTypes.map((t) => t.name).toList(),
       'gender': profile.gender,
       'addressLine1': profile.addressLine1,
       'addressLine2': profile.addressLine2,
@@ -82,8 +79,9 @@ class ProfileConverter {
       'allergiesOrMedicalNotes': profile.allergiesOrMedicalNotes,
       'photoVideoConsent': profile.photoVideoConsent,
       'notes': profile.notes,
-      'communicationPreferences':
-          profile.communicationPreferences.map((p) => p.name).toList(),
+      'communicationPreferences': profile.communicationPreferences
+          .map((p) => p.name)
+          .toList(),
       'dataProcessingConsent': profile.dataProcessingConsent,
       'dataProcessingConsentDate': profile.dataProcessingConsentDate != null
           ? Timestamp.fromDate(profile.dataProcessingConsentDate!)

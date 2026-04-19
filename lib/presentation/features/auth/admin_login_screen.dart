@@ -26,16 +26,18 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    await ref.read(signInNotifierProvider.notifier).signIn(
+    await ref
+        .read(signInNotifierProvider.notifier)
+        .signIn(
           email: _emailController.text,
           password: _passwordController.text,
         );
   }
 
   Future<void> _forgotPassword() async {
-    await ref.read(signInNotifierProvider.notifier).sendPasswordReset(
-          email: _emailController.text,
-        );
+    await ref
+        .read(signInNotifierProvider.notifier)
+        .sendPasswordReset(email: _emailController.text);
   }
 
   @override
@@ -117,15 +119,17 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
                               : Icons.visibility_off_outlined,
                         ),
                         onPressed: () => setState(
-                            () => _obscurePassword = !_obscurePassword),
+                          () => _obscurePassword = !_obscurePassword,
+                        ),
                       ),
                     ),
                     textInputAction: TextInputAction.done,
                     onFieldSubmitted: (_) => _submit(),
                     onChanged: (_) =>
                         ref.read(signInNotifierProvider.notifier).clearErrors(),
-                    validator: (v) =>
-                        (v == null || v.isEmpty) ? 'Password is required.' : null,
+                    validator: (v) => (v == null || v.isEmpty)
+                        ? 'Password is required.'
+                        : null,
                   ),
                   const SizedBox(height: 8),
 
@@ -133,8 +137,7 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
-                      onPressed:
-                          signInState.isLoading ? null : _forgotPassword,
+                      onPressed: signInState.isLoading ? null : _forgotPassword,
                       child: const Text('Forgot password?'),
                     ),
                   ),
@@ -205,16 +208,16 @@ class _Logo extends StatelessWidget {
         Text(
           'Ichiban',
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+          ),
         ),
         const SizedBox(height: 4),
         Text(
           'Admin Portal',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppColors.textSecondary,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
         ),
       ],
     );

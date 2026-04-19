@@ -41,15 +41,24 @@ class GradingRecord extends Equatable {
       enrollmentId: enrollmentId ?? this.enrollmentId,
       rankAchievedId: rankAchievedId ?? this.rankAchievedId,
       gradingDate: gradingDate ?? this.gradingDate,
-      markedEligibleByCoachId: markedEligibleByCoachId ?? this.markedEligibleByCoachId,
-      eligibilityAnnouncedDate: eligibilityAnnouncedDate ?? this.eligibilityAnnouncedDate,
+      markedEligibleByCoachId:
+          markedEligibleByCoachId ?? this.markedEligibleByCoachId,
+      eligibilityAnnouncedDate:
+          eligibilityAnnouncedDate ?? this.eligibilityAnnouncedDate,
       notes: notes ?? this.notes,
     );
   }
 
   @override
   List<Object?> get props => [
-        id, studentId, disciplineId, enrollmentId, rankAchievedId,
-        gradingDate, markedEligibleByCoachId, eligibilityAnnouncedDate, notes,
-      ];
+    id,
+    studentId,
+    disciplineId,
+    enrollmentId,
+    rankAchievedId,
+    gradingDate,
+    markedEligibleByCoachId,
+    eligibilityAnnouncedDate,
+    notes,
+  ];
 }

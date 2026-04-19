@@ -65,7 +65,9 @@ class Membership extends Equatable {
 
   /// Derives the correct family pricing tier from member count.
   static FamilyPricingTier deriveFamilyTier(int memberCount) {
-    return memberCount >= 4 ? FamilyPricingTier.fourOrMore : FamilyPricingTier.upToThree;
+    return memberCount >= 4
+        ? FamilyPricingTier.fourOrMore
+        : FamilyPricingTier.upToThree;
   }
 
   Membership copyWith({
@@ -98,7 +100,8 @@ class Membership extends Equatable {
       trialStartDate: trialStartDate ?? this.trialStartDate,
       trialEndDate: trialEndDate ?? this.trialEndDate,
       membershipStartDate: membershipStartDate ?? this.membershipStartDate,
-      subscriptionRenewalDate: subscriptionRenewalDate ?? this.subscriptionRenewalDate,
+      subscriptionRenewalDate:
+          subscriptionRenewalDate ?? this.subscriptionRenewalDate,
       status: status ?? this.status,
       paymentMethod: paymentMethod ?? this.paymentMethod,
       stripeCustomerId: stripeCustomerId ?? this.stripeCustomerId,
@@ -112,11 +115,23 @@ class Membership extends Equatable {
 
   @override
   List<Object?> get props => [
-        id, planType, familyPricingTier, monthlyAmount,
-        primaryHolderId, memberProfileIds,
-        trialStartDate, trialEndDate, membershipStartDate, subscriptionRenewalDate,
-        status, paymentMethod,
-        stripeCustomerId, stripeSubscriptionId,
-        createdByAdminId, createdAt, notes, isActive,
-      ];
+    id,
+    planType,
+    familyPricingTier,
+    monthlyAmount,
+    primaryHolderId,
+    memberProfileIds,
+    trialStartDate,
+    trialEndDate,
+    membershipStartDate,
+    subscriptionRenewalDate,
+    status,
+    paymentMethod,
+    stripeCustomerId,
+    stripeSubscriptionId,
+    createdByAdminId,
+    createdAt,
+    notes,
+    isActive,
+  ];
 }

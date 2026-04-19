@@ -32,5 +32,11 @@ class AttendanceSession extends Equatable {
   }
 
   @override
-  List<Object?> get props => [id, disciplineId, sessionDate, notes, createdByCoachId];
+  List<Object?> get props => [
+    id,
+    disciplineId,
+    sessionDate,
+    notes,
+    createdByCoachId,
+  ];
 }

@@ -1,16 +1,6 @@
-enum RankType {
-  kyu,
-  dan,
-  mon,
-  ungraded,
-}
+enum RankType { kyu, dan, mon, ungraded }
 
-enum ProfileType {
-  adultStudent,
-  juniorStudent,
-  coach,
-  parentGuardian,
-}
+enum ProfileType { adultStudent, juniorStudent, coach, parentGuardian }
 
 enum MembershipPlanType {
   monthlyAdult,
@@ -23,39 +13,17 @@ enum MembershipPlanType {
   trial,
 }
 
-enum FamilyPricingTier {
-  upToThree,
-  fourOrMore,
-}
+enum FamilyPricingTier { upToThree, fourOrMore }
 
-enum MembershipStatus {
-  trial,
-  active,
-  lapsed,
-  cancelled,
-  expired,
-}
+enum MembershipStatus { trial, active, lapsed, cancelled, expired }
 
-enum PaymentMethod {
-  card,
-  cash,
-  none,
-}
+enum PaymentMethod { card, cash, none }
 
-enum PaytPaymentStatus {
-  pending,
-  paid,
-}
+enum PaytPaymentStatus { pending, paid }
 
-enum CheckInMethod {
-  self,
-  coach,
-}
+enum CheckInMethod { self, coach }
 
-enum NotificationChannel {
-  push,
-  email,
-}
+enum NotificationChannel { push, email }
 
 enum NotificationType {
   renewalReminderPre,
@@ -65,7 +33,4 @@ enum NotificationType {
   licenceReminder,
 }
 
-enum EmailDeliveryStatus {
-  sent,
-  failed,
-}
+enum EmailDeliveryStatus { sent, failed }

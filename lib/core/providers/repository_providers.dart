@@ -50,8 +50,8 @@ final membershipRepositoryProvider = Provider<MembershipRepository>(
 
 final membershipPricingRepositoryProvider =
     Provider<MembershipPricingRepository>(
-  (ref) => FirestoreMembershipPricingRepository(),
-);
+      (ref) => FirestoreMembershipPricingRepository(),
+    );
 
 // ── Payments ───────────────────────────────────────────────────────────────
 

@@ -9,7 +9,6 @@ import '../../domain/use_cases/profile/get_profile_use_case.dart';
 import '../../domain/use_cases/profile/get_profiles_use_case.dart';
 import '../../domain/use_cases/profile/set_pin_use_case.dart';
 import '../../domain/use_cases/profile/update_profile_use_case.dart';
-import 'app_settings_providers.dart';
 import 'repository_providers.dart';
 
 // ── Use-case providers ─────────────────────────────────────────────────────
@@ -52,8 +51,8 @@ final profileListProvider = StreamProvider<List<Profile>>(
 /// Profiles filtered by [ProfileType], live.
 final profilesByTypeProvider =
     StreamProvider.family<List<Profile>, ProfileType>(
-  (ref, type) => ref.watch(getProfilesUseCaseProvider).watchByType(type),
-);
+      (ref, type) => ref.watch(getProfilesUseCaseProvider).watchByType(type),
+    );
 
 /// Single profile by ID, live. Emits null if not found.
 final profileProvider = StreamProvider.family<Profile?, String>(
@@ -133,8 +132,8 @@ class ProfileFormNotifier extends Notifier<ProfileFormState> {
 
 final profileFormNotifierProvider =
     NotifierProvider.autoDispose<ProfileFormNotifier, ProfileFormState>(
-  ProfileFormNotifier.new,
-);
+      ProfileFormNotifier.new,
+    );
 
 // ── Form state ─────────────────────────────────────────────────────────────
 
@@ -211,70 +210,70 @@ class ProfileFormState {
   bool get isEditing => id.isNotEmpty;
 
   factory ProfileFormState.empty() => const ProfileFormState(
-        id: '',
-        firstName: '',
-        lastName: '',
-        dateOfBirth: null,
-        profileTypes: [],
-        gender: null,
-        addressLine1: '',
-        addressLine2: null,
-        city: '',
-        county: '',
-        postcode: '',
-        country: 'United Kingdom',
-        phone: '',
-        email: '',
-        emergencyContactName: '',
-        emergencyContactRelationship: '',
-        emergencyContactPhone: '',
-        allergiesOrMedicalNotes: null,
-        photoVideoConsent: false,
-        notes: null,
-        communicationPreferences: [],
-        parentProfileId: null,
-        secondParentProfileId: null,
-        payingParentId: null,
-        dataProcessingConsent: false,
-        dataProcessingConsentVersion: null,
-        registrationDate: null,
-        isActive: true,
-        isSaving: false,
-        errorMessage: null,
-      );
+    id: '',
+    firstName: '',
+    lastName: '',
+    dateOfBirth: null,
+    profileTypes: [],
+    gender: null,
+    addressLine1: '',
+    addressLine2: null,
+    city: '',
+    county: '',
+    postcode: '',
+    country: 'United Kingdom',
+    phone: '',
+    email: '',
+    emergencyContactName: '',
+    emergencyContactRelationship: '',
+    emergencyContactPhone: '',
+    allergiesOrMedicalNotes: null,
+    photoVideoConsent: false,
+    notes: null,
+    communicationPreferences: [],
+    parentProfileId: null,
+    secondParentProfileId: null,
+    payingParentId: null,
+    dataProcessingConsent: false,
+    dataProcessingConsentVersion: null,
+    registrationDate: null,
+    isActive: true,
+    isSaving: false,
+    errorMessage: null,
+  );
 
   factory ProfileFormState.fromProfile(Profile p) => ProfileFormState(
-        id: p.id,
-        firstName: p.firstName,
-        lastName: p.lastName,
-        dateOfBirth: p.dateOfBirth,
-        profileTypes: List.of(p.profileTypes),
-        gender: p.gender,
-        addressLine1: p.addressLine1,
-        addressLine2: p.addressLine2,
-        city: p.city,
-        county: p.county,
-        postcode: p.postcode,
-        country: p.country,
-        phone: p.phone,
-        email: p.email,
-        emergencyContactName: p.emergencyContactName,
-        emergencyContactRelationship: p.emergencyContactRelationship,
-        emergencyContactPhone: p.emergencyContactPhone,
-        allergiesOrMedicalNotes: p.allergiesOrMedicalNotes,
-        photoVideoConsent: p.photoVideoConsent,
-        notes: p.notes,
-        communicationPreferences: List.of(p.communicationPreferences),
-        parentProfileId: p.parentProfileId,
-        secondParentProfileId: p.secondParentProfileId,
-        payingParentId: p.payingParentId,
-        dataProcessingConsent: p.dataProcessingConsent,
-        dataProcessingConsentVersion: p.dataProcessingConsentVersion,
-        registrationDate: p.registrationDate,
-        isActive: p.isActive,
-        isSaving: false,
-        errorMessage: null,
-      );
+    id: p.id,
+    firstName: p.firstName,
+    lastName: p.lastName,
+    dateOfBirth: p.dateOfBirth,
+    profileTypes: List.of(p.profileTypes),
+    gender: p.gender,
+    addressLine1: p.addressLine1,
+    addressLine2: p.addressLine2,
+    city: p.city,
+    county: p.county,
+    postcode: p.postcode,
+    country: p.country,
+    phone: p.phone,
+    email: p.email,
+    emergencyContactName: p.emergencyContactName,
+    emergencyContactRelationship: p.emergencyContactRelationship,
+    emergencyContactPhone: p.emergencyContactPhone,
+    allergiesOrMedicalNotes: p.allergiesOrMedicalNotes,
+    photoVideoConsent: p.photoVideoConsent,
+    notes: p.notes,
+    communicationPreferences: List.of(p.communicationPreferences),
+    parentProfileId: p.parentProfileId,
+    secondParentProfileId: p.secondParentProfileId,
+    payingParentId: p.payingParentId,
+    dataProcessingConsent: p.dataProcessingConsent,
+    dataProcessingConsentVersion: p.dataProcessingConsentVersion,
+    registrationDate: p.registrationDate,
+    isActive: p.isActive,
+    isSaving: false,
+    errorMessage: null,
+  );
 
   /// Converts form state back to a [Profile] for persistence.
   /// An empty string ID signals a new profile — Firestore will generate one.
@@ -282,35 +281,35 @@ class ProfileFormState {
   /// it defaults to now for new profiles and is overwritten by
   /// [CreateProfileUseCase] anyway.
   Profile toProfile() => Profile(
-        id: id,
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
-        dateOfBirth: dateOfBirth!,
-        profileTypes: profileTypes,
-        gender: gender,
-        addressLine1: addressLine1.trim(),
-        addressLine2: addressLine2?.trim(),
-        city: city.trim(),
-        county: county.trim(),
-        postcode: postcode.trim(),
-        country: country,
-        phone: phone.trim(),
-        email: email.trim(),
-        emergencyContactName: emergencyContactName.trim(),
-        emergencyContactRelationship: emergencyContactRelationship.trim(),
-        emergencyContactPhone: emergencyContactPhone.trim(),
-        allergiesOrMedicalNotes: allergiesOrMedicalNotes?.trim(),
-        photoVideoConsent: photoVideoConsent,
-        notes: notes?.trim(),
-        communicationPreferences: communicationPreferences,
-        dataProcessingConsent: dataProcessingConsent,
-        dataProcessingConsentVersion: dataProcessingConsentVersion,
-        registrationDate: registrationDate ?? DateTime.now(),
-        isActive: isActive,
-        parentProfileId: parentProfileId,
-        secondParentProfileId: secondParentProfileId,
-        payingParentId: payingParentId,
-      );
+    id: id,
+    firstName: firstName.trim(),
+    lastName: lastName.trim(),
+    dateOfBirth: dateOfBirth!,
+    profileTypes: profileTypes,
+    gender: gender,
+    addressLine1: addressLine1.trim(),
+    addressLine2: addressLine2?.trim(),
+    city: city.trim(),
+    county: county.trim(),
+    postcode: postcode.trim(),
+    country: country,
+    phone: phone.trim(),
+    email: email.trim(),
+    emergencyContactName: emergencyContactName.trim(),
+    emergencyContactRelationship: emergencyContactRelationship.trim(),
+    emergencyContactPhone: emergencyContactPhone.trim(),
+    allergiesOrMedicalNotes: allergiesOrMedicalNotes?.trim(),
+    photoVideoConsent: photoVideoConsent,
+    notes: notes?.trim(),
+    communicationPreferences: communicationPreferences,
+    dataProcessingConsent: dataProcessingConsent,
+    dataProcessingConsentVersion: dataProcessingConsentVersion,
+    registrationDate: registrationDate ?? DateTime.now(),
+    isActive: isActive,
+    parentProfileId: parentProfileId,
+    secondParentProfileId: secondParentProfileId,
+    payingParentId: payingParentId,
+  );
 
   ProfileFormState copyWith({
     String? id,

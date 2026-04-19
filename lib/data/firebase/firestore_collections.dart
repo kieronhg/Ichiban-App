@@ -39,60 +39,63 @@ class FirestoreCollections {
 
   // ── Profiles ────────────────────────────────────────────────────────────────
 
-  static CollectionReference<Profile> profiles() =>
-      _db.collection(AppConstants.colProfiles).withConverter<Profile>(
-            fromFirestore: (snap, _) =>
-                ProfileConverter.fromMap(snap.id, snap.data()!),
-            toFirestore: (profile, _) => ProfileConverter.toMap(profile),
-          );
+  static CollectionReference<Profile> profiles() => _db
+      .collection(AppConstants.colProfiles)
+      .withConverter<Profile>(
+        fromFirestore: (snap, _) =>
+            ProfileConverter.fromMap(snap.id, snap.data()!),
+        toFirestore: (profile, _) => ProfileConverter.toMap(profile),
+      );
 
   // ── Memberships ─────────────────────────────────────────────────────────────
 
-  static CollectionReference<Membership> memberships() =>
-      _db.collection(AppConstants.colMemberships).withConverter<Membership>(
-            fromFirestore: (snap, _) =>
-                MembershipConverter.fromMap(snap.id, snap.data()!),
-            toFirestore: (membership, _) => MembershipConverter.toMap(membership),
-          );
+  static CollectionReference<Membership> memberships() => _db
+      .collection(AppConstants.colMemberships)
+      .withConverter<Membership>(
+        fromFirestore: (snap, _) =>
+            MembershipConverter.fromMap(snap.id, snap.data()!),
+        toFirestore: (membership, _) => MembershipConverter.toMap(membership),
+      );
 
   // ── Membership Pricing ──────────────────────────────────────────────────────
 
-  static CollectionReference<MembershipPricing> membershipPricing() =>
-      _db
-          .collection(AppConstants.colMembershipPricing)
-          .withConverter<MembershipPricing>(
-            fromFirestore: (snap, _) =>
-                MembershipPricingConverter.fromMap(snap.id, snap.data()!),
-            toFirestore: (pricing, _) =>
-                MembershipPricingConverter.toMap(pricing),
-          );
+  static CollectionReference<MembershipPricing> membershipPricing() => _db
+      .collection(AppConstants.colMembershipPricing)
+      .withConverter<MembershipPricing>(
+        fromFirestore: (snap, _) =>
+            MembershipPricingConverter.fromMap(snap.id, snap.data()!),
+        toFirestore: (pricing, _) => MembershipPricingConverter.toMap(pricing),
+      );
 
   // ── PAYT Sessions ───────────────────────────────────────────────────────────
 
-  static CollectionReference<PaytSession> paytSessions() =>
-      _db.collection(AppConstants.colPaytSessions).withConverter<PaytSession>(
-            fromFirestore: (snap, _) =>
-                PaytSessionConverter.fromMap(snap.id, snap.data()!),
-            toFirestore: (session, _) => PaytSessionConverter.toMap(session),
-          );
+  static CollectionReference<PaytSession> paytSessions() => _db
+      .collection(AppConstants.colPaytSessions)
+      .withConverter<PaytSession>(
+        fromFirestore: (snap, _) =>
+            PaytSessionConverter.fromMap(snap.id, snap.data()!),
+        toFirestore: (session, _) => PaytSessionConverter.toMap(session),
+      );
 
   // ── Cash Payments ───────────────────────────────────────────────────────────
 
-  static CollectionReference<CashPayment> cashPayments() =>
-      _db.collection(AppConstants.colCashPayments).withConverter<CashPayment>(
-            fromFirestore: (snap, _) =>
-                CashPaymentConverter.fromMap(snap.id, snap.data()!),
-            toFirestore: (payment, _) => CashPaymentConverter.toMap(payment),
-          );
+  static CollectionReference<CashPayment> cashPayments() => _db
+      .collection(AppConstants.colCashPayments)
+      .withConverter<CashPayment>(
+        fromFirestore: (snap, _) =>
+            CashPaymentConverter.fromMap(snap.id, snap.data()!),
+        toFirestore: (payment, _) => CashPaymentConverter.toMap(payment),
+      );
 
   // ── Disciplines ─────────────────────────────────────────────────────────────
 
-  static CollectionReference<Discipline> disciplines() =>
-      _db.collection(AppConstants.colDisciplines).withConverter<Discipline>(
-            fromFirestore: (snap, _) =>
-                DisciplineConverter.fromMap(snap.id, snap.data()!),
-            toFirestore: (discipline, _) => DisciplineConverter.toMap(discipline),
-          );
+  static CollectionReference<Discipline> disciplines() => _db
+      .collection(AppConstants.colDisciplines)
+      .withConverter<Discipline>(
+        fromFirestore: (snap, _) =>
+            DisciplineConverter.fromMap(snap.id, snap.data()!),
+        toFirestore: (discipline, _) => DisciplineConverter.toMap(discipline),
+      );
 
   // ── Ranks (subcollection of disciplines) ────────────────────────────────────
 
@@ -108,77 +111,71 @@ class FirestoreCollections {
 
   // ── Enrollments ─────────────────────────────────────────────────────────────
 
-  static CollectionReference<Enrollment> enrollments() =>
-      _db.collection(AppConstants.colEnrollments).withConverter<Enrollment>(
-            fromFirestore: (snap, _) =>
-                EnrollmentConverter.fromMap(snap.id, snap.data()!),
-            toFirestore: (enrollment, _) => EnrollmentConverter.toMap(enrollment),
-          );
+  static CollectionReference<Enrollment> enrollments() => _db
+      .collection(AppConstants.colEnrollments)
+      .withConverter<Enrollment>(
+        fromFirestore: (snap, _) =>
+            EnrollmentConverter.fromMap(snap.id, snap.data()!),
+        toFirestore: (enrollment, _) => EnrollmentConverter.toMap(enrollment),
+      );
 
   // ── Grading Records ─────────────────────────────────────────────────────────
 
-  static CollectionReference<GradingRecord> gradingRecords() =>
-      _db
-          .collection(AppConstants.colGradingRecords)
-          .withConverter<GradingRecord>(
-            fromFirestore: (snap, _) =>
-                GradingRecordConverter.fromMap(snap.id, snap.data()!),
-            toFirestore: (record, _) => GradingRecordConverter.toMap(record),
-          );
+  static CollectionReference<GradingRecord> gradingRecords() => _db
+      .collection(AppConstants.colGradingRecords)
+      .withConverter<GradingRecord>(
+        fromFirestore: (snap, _) =>
+            GradingRecordConverter.fromMap(snap.id, snap.data()!),
+        toFirestore: (record, _) => GradingRecordConverter.toMap(record),
+      );
 
   // ── Attendance Sessions ──────────────────────────────────────────────────────
 
-  static CollectionReference<AttendanceSession> attendanceSessions() =>
-      _db
-          .collection(AppConstants.colAttendanceSessions)
-          .withConverter<AttendanceSession>(
-            fromFirestore: (snap, _) =>
-                AttendanceSessionConverter.fromMap(snap.id, snap.data()!),
-            toFirestore: (session, _) =>
-                AttendanceSessionConverter.toMap(session),
-          );
+  static CollectionReference<AttendanceSession> attendanceSessions() => _db
+      .collection(AppConstants.colAttendanceSessions)
+      .withConverter<AttendanceSession>(
+        fromFirestore: (snap, _) =>
+            AttendanceSessionConverter.fromMap(snap.id, snap.data()!),
+        toFirestore: (session, _) => AttendanceSessionConverter.toMap(session),
+      );
 
   // ── Attendance Records ───────────────────────────────────────────────────────
 
-  static CollectionReference<AttendanceRecord> attendanceRecords() =>
-      _db
-          .collection(AppConstants.colAttendanceRecords)
-          .withConverter<AttendanceRecord>(
-            fromFirestore: (snap, _) =>
-                AttendanceRecordConverter.fromMap(snap.id, snap.data()!),
-            toFirestore: (record, _) =>
-                AttendanceRecordConverter.toMap(record),
-          );
+  static CollectionReference<AttendanceRecord> attendanceRecords() => _db
+      .collection(AppConstants.colAttendanceRecords)
+      .withConverter<AttendanceRecord>(
+        fromFirestore: (snap, _) =>
+            AttendanceRecordConverter.fromMap(snap.id, snap.data()!),
+        toFirestore: (record, _) => AttendanceRecordConverter.toMap(record),
+      );
 
   // ── Notification Logs ───────────────────────────────────────────────────────
 
-  static CollectionReference<NotificationLog> notificationLogs() =>
-      _db
-          .collection(AppConstants.colNotificationLogs)
-          .withConverter<NotificationLog>(
-            fromFirestore: (snap, _) =>
-                NotificationLogConverter.fromMap(snap.id, snap.data()!),
-            toFirestore: (log, _) => NotificationLogConverter.toMap(log),
-          );
+  static CollectionReference<NotificationLog> notificationLogs() => _db
+      .collection(AppConstants.colNotificationLogs)
+      .withConverter<NotificationLog>(
+        fromFirestore: (snap, _) =>
+            NotificationLogConverter.fromMap(snap.id, snap.data()!),
+        toFirestore: (log, _) => NotificationLogConverter.toMap(log),
+      );
 
   // ── Email Templates ──────────────────────────────────────────────────────────
 
-  static CollectionReference<EmailTemplate> emailTemplates() =>
-      _db
-          .collection(AppConstants.colEmailTemplates)
-          .withConverter<EmailTemplate>(
-            fromFirestore: (snap, _) =>
-                EmailTemplateConverter.fromMap(snap.id, snap.data()!),
-            toFirestore: (template, _) =>
-                EmailTemplateConverter.toMap(template),
-          );
+  static CollectionReference<EmailTemplate> emailTemplates() => _db
+      .collection(AppConstants.colEmailTemplates)
+      .withConverter<EmailTemplate>(
+        fromFirestore: (snap, _) =>
+            EmailTemplateConverter.fromMap(snap.id, snap.data()!),
+        toFirestore: (template, _) => EmailTemplateConverter.toMap(template),
+      );
 
   // ── App Settings ─────────────────────────────────────────────────────────────
 
-  static CollectionReference<AppSetting> appSettings() =>
-      _db.collection(AppConstants.colAppSettings).withConverter<AppSetting>(
-            fromFirestore: (snap, _) =>
-                AppSettingConverter.fromMap(snap.id, snap.data()!),
-            toFirestore: (setting, _) => AppSettingConverter.toMap(setting),
-          );
+  static CollectionReference<AppSetting> appSettings() => _db
+      .collection(AppConstants.colAppSettings)
+      .withConverter<AppSetting>(
+        fromFirestore: (snap, _) =>
+            AppSettingConverter.fromMap(snap.id, snap.data()!),
+        toFirestore: (setting, _) => AppSettingConverter.toMap(setting),
+      );
 }

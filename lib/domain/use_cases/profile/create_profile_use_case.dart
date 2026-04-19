@@ -20,13 +20,13 @@ class CreateProfileUseCase {
     }
     if (!profile.dataProcessingConsent) {
       throw ArgumentError(
-          'Data processing consent must be given before a profile can be created.');
+        'Data processing consent must be given before a profile can be created.',
+      );
     }
 
     final now = DateTime.now();
     final stamped = profile.copyWith(
-      dataProcessingConsentDate:
-          profile.dataProcessingConsentDate ?? now,
+      dataProcessingConsentDate: profile.dataProcessingConsentDate ?? now,
       registrationDate: now,
     );
 

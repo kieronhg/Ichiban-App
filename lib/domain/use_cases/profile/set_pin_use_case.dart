@@ -11,10 +11,7 @@ class SetPinUseCase {
   /// profile. The raw PIN is never persisted.
   ///
   /// [pin] must be exactly 4 numeric digits.
-  Future<void> call({
-    required String profileId,
-    required String pin,
-  }) async {
+  Future<void> call({required String profileId, required String pin}) async {
     if (!RegExp(r'^\d{4}$').hasMatch(pin)) {
       throw ArgumentError('PIN must be exactly 4 numeric digits.');
     }
@@ -29,10 +26,7 @@ class SetPinUseCase {
   }
 
   /// Returns true if [pin] matches the stored hash for [profileId].
-  Future<bool> verify({
-    required String profileId,
-    required String pin,
-  }) async {
+  Future<bool> verify({required String profileId, required String pin}) async {
     final profile = await _repo.getById(profileId);
     if (profile == null || profile.pinHash == null) return false;
     final hash = sha256.convert(utf8.encode(pin)).toString();

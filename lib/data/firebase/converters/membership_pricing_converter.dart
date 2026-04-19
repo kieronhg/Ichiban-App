@@ -11,8 +11,6 @@ class MembershipPricingConverter {
   }
 
   static Map<String, dynamic> toMap(MembershipPricing pricing) {
-    return {
-      'amount': pricing.amount,
-    };
+    return {'amount': pricing.amount};
   }
 }

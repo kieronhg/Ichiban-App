@@ -59,9 +59,15 @@ class NotificationLog extends Equatable {
 
   @override
   List<Object?> get props => [
-        id, recipientProfileId, channel, type,
-        title, body, isRead,
-        emailTemplateKey, deliveryStatus,
-        sentAt,
-      ];
+    id,
+    recipientProfileId,
+    channel,
+    type,
+    title,
+    body,
+    isRead,
+    emailTemplateKey,
+    deliveryStatus,
+    sentAt,
+  ];
 }

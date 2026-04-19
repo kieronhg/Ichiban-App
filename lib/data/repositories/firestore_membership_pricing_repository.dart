@@ -12,22 +12,21 @@ class FirestoreMembershipPricingRepository
 
   @override
   Future<MembershipPricing?> getByKey(String key) async {
-    final snap =
-        await FirestoreCollections.membershipPricing().doc(key).get();
+    final snap = await FirestoreCollections.membershipPricing().doc(key).get();
     return snap.data();
   }
 
   @override
   Future<void> updatePrice(String key, double amount) async {
-    await FirestoreCollections.membershipPricing()
-        .doc(key)
-        .update({'amount': amount});
+    await FirestoreCollections.membershipPricing().doc(key).update({
+      'amount': amount,
+    });
   }
 
   @override
   Stream<List<MembershipPricing>> watchAll() {
-    return FirestoreCollections.membershipPricing()
-        .snapshots()
-        .map((snap) => snap.docs.map((d) => d.data()).toList());
+    return FirestoreCollections.membershipPricing().snapshots().map(
+      (snap) => snap.docs.map((d) => d.data()).toList(),
+    );
   }
 }

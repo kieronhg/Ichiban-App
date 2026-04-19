@@ -117,7 +117,8 @@ class Profile extends Equatable {
   bool get isJunior => profileTypes.contains(ProfileType.juniorStudent);
   bool get isAdult => profileTypes.contains(ProfileType.adultStudent);
   bool get isCoach => profileTypes.contains(ProfileType.coach);
-  bool get isParentGuardian => profileTypes.contains(ProfileType.parentGuardian);
+  bool get isParentGuardian =>
+      profileTypes.contains(ProfileType.parentGuardian);
 
   // ── copyWith ───────────────────────────────────────────────────────────────
 
@@ -205,38 +206,38 @@ class Profile extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        firstName,
-        lastName,
-        dateOfBirth,
-        profileTypes,
-        gender,
-        addressLine1,
-        addressLine2,
-        city,
-        county,
-        postcode,
-        country,
-        phone,
-        email,
-        emergencyContactName,
-        emergencyContactRelationship,
-        emergencyContactPhone,
-        allergiesOrMedicalNotes,
-        photoVideoConsent,
-        notes,
-        communicationPreferences,
-        dataProcessingConsent,
-        dataProcessingConsentDate,
-        dataProcessingConsentVersion,
-        isAnonymised,
-        anonymisedAt,
-        registrationDate,
-        isActive,
-        fcmToken,
-        pinHash,
-        parentProfileId,
-        secondParentProfileId,
-        payingParentId,
-      ];
+    id,
+    firstName,
+    lastName,
+    dateOfBirth,
+    profileTypes,
+    gender,
+    addressLine1,
+    addressLine2,
+    city,
+    county,
+    postcode,
+    country,
+    phone,
+    email,
+    emergencyContactName,
+    emergencyContactRelationship,
+    emergencyContactPhone,
+    allergiesOrMedicalNotes,
+    photoVideoConsent,
+    notes,
+    communicationPreferences,
+    dataProcessingConsent,
+    dataProcessingConsentDate,
+    dataProcessingConsentVersion,
+    isAnonymised,
+    anonymisedAt,
+    registrationDate,
+    isActive,
+    fcmToken,
+    pinHash,
+    parentProfileId,
+    secondParentProfileId,
+    payingParentId,
+  ];
 }
