@@ -42,6 +42,14 @@ class ProfileConverter {
       photoVideoConsent: map['photoVideoConsent'] as bool,
       notes: map['notes'] as String?,
       communicationPreferences: communicationPreferences,
+      dataProcessingConsent:
+          (map['dataProcessingConsent'] as bool?) ?? false,
+      dataProcessingConsentDate:
+          (map['dataProcessingConsentDate'] as Timestamp?)?.toDate(),
+      dataProcessingConsentVersion:
+          map['dataProcessingConsentVersion'] as String?,
+      isAnonymised: (map['isAnonymised'] as bool?) ?? false,
+      anonymisedAt: (map['anonymisedAt'] as Timestamp?)?.toDate(),
       registrationDate: (map['registrationDate'] as Timestamp).toDate(),
       isActive: map['isActive'] as bool,
       fcmToken: map['fcmToken'] as String?,
@@ -76,6 +84,15 @@ class ProfileConverter {
       'notes': profile.notes,
       'communicationPreferences':
           profile.communicationPreferences.map((p) => p.name).toList(),
+      'dataProcessingConsent': profile.dataProcessingConsent,
+      'dataProcessingConsentDate': profile.dataProcessingConsentDate != null
+          ? Timestamp.fromDate(profile.dataProcessingConsentDate!)
+          : null,
+      'dataProcessingConsentVersion': profile.dataProcessingConsentVersion,
+      'isAnonymised': profile.isAnonymised,
+      'anonymisedAt': profile.anonymisedAt != null
+          ? Timestamp.fromDate(profile.anonymisedAt!)
+          : null,
       'registrationDate': Timestamp.fromDate(profile.registrationDate),
       'isActive': profile.isActive,
       'fcmToken': profile.fcmToken,

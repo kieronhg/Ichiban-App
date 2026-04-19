@@ -23,6 +23,12 @@ abstract class ProfileRepository {
   /// Soft-deletes a profile by setting isActive to false.
   Future<void> deactivate(String id);
 
+  /// Anonymises a profile under Right to Erasure.
+  ///
+  /// Replaces all personal data fields with placeholder values and sets
+  /// [isAnonymised] to true and [anonymisedAt] to now.
+  Future<void> anonymise(String id);
+
   /// Watches all profiles in real time.
   Stream<List<Profile>> watchAll();
 

@@ -46,6 +46,24 @@ class Profile extends Equatable {
   final String? fcmToken;
   final String? pinHash;
 
+  // GDPR — data processing consent
+  /// Must be true before a profile can be created.
+  final bool dataProcessingConsent;
+
+  /// Timestamp when consent was given.
+  final DateTime? dataProcessingConsentDate;
+
+  /// Version of the privacy policy agreed to (e.g. "1.0").
+  final String? dataProcessingConsentVersion;
+
+  // GDPR — anonymisation
+  /// True once personal data has been wiped under Right to Erasure or
+  /// the data retention policy.
+  final bool isAnonymised;
+
+  /// Timestamp when the profile was anonymised. Null if not yet anonymised.
+  final DateTime? anonymisedAt;
+
   // Family links (juniors only)
   /// Primary parent/guardian profile ID.
   final String? parentProfileId;
@@ -78,6 +96,11 @@ class Profile extends Equatable {
     required this.photoVideoConsent,
     this.notes,
     this.communicationPreferences = const [],
+    this.dataProcessingConsent = false,
+    this.dataProcessingConsentDate,
+    this.dataProcessingConsentVersion,
+    this.isAnonymised = false,
+    this.anonymisedAt,
     required this.registrationDate,
     required this.isActive,
     this.fcmToken,
@@ -120,6 +143,11 @@ class Profile extends Equatable {
     bool? photoVideoConsent,
     String? notes,
     List<NotificationChannel>? communicationPreferences,
+    bool? dataProcessingConsent,
+    DateTime? dataProcessingConsentDate,
+    String? dataProcessingConsentVersion,
+    bool? isAnonymised,
+    DateTime? anonymisedAt,
     DateTime? registrationDate,
     bool? isActive,
     String? fcmToken,
@@ -154,6 +182,14 @@ class Profile extends Equatable {
       notes: notes ?? this.notes,
       communicationPreferences:
           communicationPreferences ?? this.communicationPreferences,
+      dataProcessingConsent:
+          dataProcessingConsent ?? this.dataProcessingConsent,
+      dataProcessingConsentDate:
+          dataProcessingConsentDate ?? this.dataProcessingConsentDate,
+      dataProcessingConsentVersion:
+          dataProcessingConsentVersion ?? this.dataProcessingConsentVersion,
+      isAnonymised: isAnonymised ?? this.isAnonymised,
+      anonymisedAt: anonymisedAt ?? this.anonymisedAt,
       registrationDate: registrationDate ?? this.registrationDate,
       isActive: isActive ?? this.isActive,
       fcmToken: fcmToken ?? this.fcmToken,
@@ -190,6 +226,11 @@ class Profile extends Equatable {
         photoVideoConsent,
         notes,
         communicationPreferences,
+        dataProcessingConsent,
+        dataProcessingConsentDate,
+        dataProcessingConsentVersion,
+        isAnonymised,
+        anonymisedAt,
         registrationDate,
         isActive,
         fcmToken,

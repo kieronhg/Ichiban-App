@@ -37,6 +37,13 @@ class FirestoreDisciplineRepository implements DisciplineRepository {
   }
 
   @override
+  Stream<List<Discipline>> watchAll() {
+    return FirestoreCollections.disciplines()
+        .snapshots()
+        .map((snap) => snap.docs.map((d) => d.data()).toList());
+  }
+
+  @override
   Stream<List<Discipline>> watchActive() {
     return FirestoreCollections.disciplines()
         .where('isActive', isEqualTo: true)

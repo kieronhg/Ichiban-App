@@ -16,6 +16,9 @@ abstract class DisciplineRepository {
   /// Updates an existing discipline.
   Future<void> update(Discipline discipline);
 
+  /// Watches all disciplines (active and inactive) in real time.
+  Stream<List<Discipline>> watchAll();
+
   /// Watches active disciplines in real time.
   Stream<List<Discipline>> watchActive();
 }

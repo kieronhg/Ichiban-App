@@ -12,6 +12,12 @@ import '../../presentation/features/profiles/profile_detail_screen.dart';
 import '../../presentation/features/profiles/profile_form_screen.dart';
 import '../../presentation/features/profiles/profile_list_screen.dart';
 import '../../presentation/features/profiles/student_profile_screen.dart';
+import '../../presentation/features/disciplines/discipline_list_screen.dart';
+import '../../presentation/features/disciplines/discipline_detail_screen.dart';
+import '../../presentation/features/disciplines/discipline_form_screen.dart';
+import '../../presentation/features/disciplines/rank_form_screen.dart';
+import '../../domain/entities/discipline.dart';
+import '../../domain/entities/rank.dart';
 import 'route_names.dart';
 
 // Placeholder screens — replaced during feature implementation phases
@@ -102,11 +108,50 @@ class AppRouter {
             ],
           ),
 
-          // ── Other admin routes (placeholder) ───────────────────────
+          // ── Disciplines & Ranks ────────────────────────────────────
           GoRoute(
             path: RouteNames.adminDisciplines,
             name: 'adminDisciplines',
-            builder: (_, state) => const _PlaceholderScreen('Disciplines'),
+            builder: (_, state) => const DisciplineListScreen(),
+            routes: [
+              GoRoute(
+                path: 'create',
+                name: 'adminDisciplineCreate',
+                builder: (_, state) => const DisciplineFormScreen(),
+              ),
+              GoRoute(
+                path: ':disciplineId',
+                name: 'adminDisciplineDetail',
+                builder: (_, state) => DisciplineDetailScreen(
+                  disciplineId: state.pathParameters['disciplineId']!,
+                ),
+                routes: [
+                  GoRoute(
+                    path: 'edit',
+                    name: 'adminDisciplineEdit',
+                    builder: (_, state) => DisciplineFormScreen(
+                      existingDiscipline: state.extra as Discipline?,
+                    ),
+                  ),
+                  GoRoute(
+                    path: 'ranks/create',
+                    name: 'adminRankCreate',
+                    builder: (_, state) => RankFormScreen(
+                      disciplineId: state.pathParameters['disciplineId']!,
+                      nextDisplayOrder: (state.extra as int?) ?? 0,
+                    ),
+                  ),
+                  GoRoute(
+                    path: 'ranks/:rankId/edit',
+                    name: 'adminRankEdit',
+                    builder: (_, state) => RankFormScreen(
+                      disciplineId: state.pathParameters['disciplineId']!,
+                      existingRank: state.extra as Rank?,
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
           GoRoute(
             path: RouteNames.adminAttendance,

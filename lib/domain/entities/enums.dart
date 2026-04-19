@@ -1,3 +1,10 @@
+enum RankType {
+  kyu,
+  dan,
+  mon,
+  ungraded,
+}
+
 enum ProfileType {
   adultStudent,
   juniorStudent,
