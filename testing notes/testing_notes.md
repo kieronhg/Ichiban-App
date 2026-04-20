@@ -280,6 +280,101 @@ Run the seeder once against a fresh Firestore project and verify:
 
 ---
 
+## Enrollment Feature
+
+### Enrol Discipline Wizard (`/admin/profiles/:id/enrol`)
+
+**Step 1 — Select Discipline**
+
+- [ ] ✅ Launched from Profile Detail "Disciplines & Grading" tab → "Enrol in Discipline" button
+- [ ] ✅ Active disciplines listed; already-enrolled (active) disciplines shown as disabled with a lock icon
+- [ ] ✅ Disciplines with an inactive enrolment show a "Reactivate" badge
+- [ ] ✅ Inactive disciplines shown with muted style and lock icon (not selectable)
+- [ ] ✅ Tapping an active, not-yet-enrolled discipline advances to Step 2
+- [ ] ✅ Tapping a "Reactivate" discipline skips Step 2 and goes directly to Step 3 confirmation
+
+**Step 2 — Select Rank**
+
+- [ ] ✅ All ranks for the selected discipline are displayed
+- [ ] ✅ Default selection is the bottom rank (last in displayOrder)
+- [ ] ✅ Tapping a rank card highlights it
+- [ ] ✅ Back button returns to Step 1 with discipline selection cleared
+- [ ] ✅ Continue advances to Step 3
+
+**Step 3 — Confirm**
+
+- [ ] ✅ Summary card shows discipline name, rank name, and belt colour swatch
+- [ ] ✅ "Reactivating" label shown when reactivating an existing enrolment
+- [ ] ✅ Confirm button triggers enrolment / reactivation and pops back to Profile Detail
+- [ ] ✅ Profile Detail "Disciplines & Grading" tab updates immediately (stream)
+- [ ] ⚠️ Student under age 5: red error banner appears at Step 3; Confirm button disabled
+- [ ] ⚠️ Inactive discipline: use case throws even if tapped somehow — SnackBar error shown
+
+### Use-case guards
+
+- [ ] ✅ `EnrolStudentUseCase` throws `AgeRestrictionException` for students under 5
+- [ ] ✅ `EnrolStudentUseCase` throws if discipline is inactive
+- [ ] ✅ `EnrolStudentUseCase` throws if student already has an active enrolment for the discipline
+- [ ] ✅ `ReactivateEnrollmentUseCase` finds the inactive record and sets `isActive: true` with a new `enrollmentDate`
+- [ ] ✅ `DeactivateEnrollmentUseCase` sets the enrolment to inactive in Firestore
+
+### Profile Detail — Disciplines & Grading tab
+
+- [ ] ✅ Tab appears next to "Personal" tab; switching is smooth
+- [ ] ✅ Active enrolments show: discipline name, belt colour swatch, rank name, enrolment date
+- [ ] ✅ "Enrol in Discipline" button visible when no active enrolments (or always, to allow multi-discipline)
+- [ ] ✅ Deactivate button on each active enrolment shows confirmation dialog; deactivates on confirm
+- [ ] ✅ After deactivation, enrolment moves to the inactive section immediately (stream)
+- [ ] ✅ Inactive enrolments appear in a collapsible "Inactive Enrolments" section
+- [ ] ✅ Each inactive row has a "Reactivate" button that navigates to the enrol wizard at Step 3
+- [ ] ⚠️ Profile with no enrolments shows appropriate empty state (not a blank tab)
+
+### Discipline Detail — Enrolled Students section
+
+- [ ] ✅ Enrolled students list appears below the rank ladder
+- [ ] ✅ Each row shows student full name, current rank name, and belt swatch
+- [ ] ✅ "Bulk Enrol via CSV" button present; taps navigate to bulk upload screen locked to this discipline
+- [ ] ⚠️ Student name resolves correctly even for anonymised profiles (shows '[Anonymised] [Anonymised]')
+
+### Bulk Enrolment — Upload screen (`/admin/enrollment` or from Discipline Detail)
+
+- [ ] ✅ When launched from Discipline Detail: discipline chip shown locked; no dropdown
+- [ ] ✅ When launched from global enrollment menu: discipline dropdown shown
+- [ ] ✅ "Choose CSV File" button opens file picker (CSV only)
+- [ ] ✅ Valid CSV with correct columns: row count shown, "Upload and Validate" enabled
+- [ ] ✅ CSV with missing required column (firstName, lastName, dateOfBirth): error message shown, no row count
+- [ ] ✅ Empty CSV file: "The CSV file is empty." error shown
+- [ ] ✅ "Upload and Validate" button disabled while no file is loaded or while validating
+- [ ] ✅ Loading spinner shown during validation
+- [ ] ✅ On success, navigates to preview screen with parsed results
+
+### Bulk Enrolment — CSV format
+
+- [ ] ✅ DOB in wrong format (not DD/MM/YYYY) → error row in preview
+- [ ] ✅ Student name + DOB not matching any profile → error row
+- [ ] ✅ Discipline name not matching any active discipline (when not pre-locked) → error row
+- [ ] ✅ Student already actively enrolled → skipped row
+- [ ] ✅ Duplicate student+discipline row in same CSV → second row skipped
+- [ ] ✅ Student with inactive enrolment → success row marked as reactivation
+- [ ] ✅ Blank rank column → defaults to bottom rank of discipline (no error)
+- [ ] ✅ Rank name not found in discipline → error row
+- [ ] ✅ Student under age 5 → error row
+
+### Bulk Enrolment — Preview screen
+
+- [ ] ✅ Summary badge bar shows correct counts for to-enrol, skipped, errors
+- [ ] ✅ "To Enrol" section lists each valid row with student name, discipline, rank
+- [ ] ✅ Reactivation rows distinguished from new enrolment rows
+- [ ] ✅ "Skipped" section collapsible; shows reason for each skip
+- [ ] ✅ "Errors" section collapsible; shows row number, name, and reason for each error
+- [ ] ✅ "Download Error Report" button visible when errors exist; generates and shares a CSV
+- [ ] ✅ "Confirm Enrolments" disabled when no valid rows
+- [ ] ✅ "Confirm Enrolments" commits all successes sequentially; shows SnackBar on completion
+- [ ] ✅ After confirm: pops back through preview → upload → discipline detail (or enrollment list)
+- [ ] ⚠️ If one enrolment fails mid-commit: error banner shown with count of successful records before failure; user can retry or manually correct
+
+---
+
 ## Known Gaps / Deferred Items
 
 These are not bugs — they are features not yet built. Flagged here to avoid
@@ -292,9 +387,138 @@ confusion during testing.
 | No guard on rank delete if students hold that rank | Grading feature |
 | `minAttendanceForGrading` stored but not enforced anywhere | Grading feature |
 | Membership summary on profile detail is a placeholder | Memberships feature |
-| Student home, attendance, grades screens are placeholders | Student features |
+| Student home and check-in screens are fully built ✅ | — |
+| Student attendance history and grades screens are still placeholders | Student features |
 | Dashboard is a placeholder | Dashboard feature |
-| Settings, Notifications, Payments, Enrollment screens are placeholders | Respective features |
+| Settings, Notifications, Payments screens are placeholders | Respective features |
+| PAYT session recording on check-in not yet built | Memberships feature |
+| Lapsed membership flag on dashboard not yet built | Memberships feature |
 | PIN for profiles with no `pinHash` — behaviour undefined | Auth (next iteration) |
 | GDPR anonymisation (Cloud Function) not built | Backend / Cloud Functions |
 | GDPR data export (PDF/CSV) not built | GDPR feature |
+
+---
+
+## Attendance Feature
+
+### Attendance List (`/admin/attendance`)
+
+- [ ] ✅ Screen shows all sessions grouped by date, newest date first
+- [ ] ✅ "Today" label shown in accent colour for today's group header
+- [ ] ✅ Past dates shown in muted secondary colour
+- [ ] ✅ Each session tile: discipline name, time range, live "N present" chip
+- [ ] ✅ "Present" chip updates immediately when records stream in
+- [ ] ✅ Filter dropdown lets admin show sessions for a single discipline
+- [ ] ✅ Selecting "All Disciplines" (null) shows all sessions again
+- [ ] ✅ When queued check-ins exist: badge with count appears in AppBar; tapping navigates to queued check-ins screen
+- [ ] ✅ No badge shown when there are no pending queued check-ins
+- [ ] ✅ FAB "Create Session" navigates to create session wizard
+- [ ] ✅ Tapping a session tile navigates to session detail screen (session passed as `extra`)
+
+### Create Session Wizard (`/admin/attendance/create`)
+
+**Step 1 — Select Discipline**
+- [ ] ✅ Only active disciplines listed
+- [ ] ✅ Selecting a discipline advances to Step 2
+
+**Step 2 — Select Date**
+- [ ] ✅ Date picker has max date = today (future dates not selectable)
+- [ ] ✅ "Next" button disabled until a date is picked
+- [ ] ✅ Back button returns to Step 1
+
+**Step 3 — Set Times**
+- [ ] ✅ Start time and end time pickers work correctly
+- [ ] ✅ Validation: end time must be after start time — error message shown
+- [ ] ✅ Both fields required — error shown if either is empty
+- [ ] ✅ Back button returns to Step 2
+
+**Step 4 — Add Notes**
+- [ ] ✅ Notes field is optional — tapping "Next" with empty field is allowed
+- [ ] ✅ Notes field is multiline
+- [ ] ✅ Back button returns to Step 3
+
+**Step 5 — Confirm**
+- [ ] ✅ Summary card shows discipline, date, time, and notes (if provided)
+- [ ] ✅ Notes row hidden when notes is empty
+- [ ] ✅ "Create Session" button triggers save
+- [ ] ✅ On success: SnackBar "Session created." shown; wizard pops back to list
+- [ ] ✅ On success with queued check-ins resolved: SnackBar says "Session created. N queued check-in(s) resolved."
+- [ ] ⚠️ Queued check-in auto-resolution: only fires for today's date; creating a back-dated session does NOT resolve queued check-ins
+
+### Session Detail (`/admin/attendance/:sessionId`)
+
+- [ ] ✅ Header card shows date, time range, and notes (if any)
+- [ ] ✅ All enrolled students for the discipline are listed with checkboxes
+- [ ] ✅ Students who previously self-checked in appear pre-checked with "Self check-in" label
+- [ ] ✅ Students marked by coach appear with "Coach marked" label
+- [ ] ✅ Students not yet checked in appear unchecked (no subtitle)
+- [ ] ✅ "All present" button checks all students
+- [ ] ✅ "Clear all" button unchecks all students
+- [ ] ✅ Summary bar shows "N / M present" count, updating as checkboxes change
+- [ ] ✅ Toggling a checkbox marks the UI as dirty; FAB "Save Attendance" appears
+- [ ] ✅ Save button in AppBar also appears when dirty
+- [ ] ✅ On save: SnackBar "Attendance saved." shown; dirty state clears
+- [ ] ✅ Saving correctly creates/deletes records in Firestore (opt-in model)
+- [ ] ⚠️ Students enrolled AFTER the session was created will appear in the list but unchecked
+
+### Queued Check-ins Screen (`/admin/attendance/queued`)
+
+- [ ] ✅ Groups displayed by discipline + date; newest date first
+- [ ] ✅ Each group header shows discipline name and formatted date
+- [ ] ✅ Each queued check-in tile shows student name and queue time
+- [ ] ✅ "Discard" (✕) icon on each tile; tapping discards the single check-in immediately (no confirm dialog)
+- [ ] ✅ "Discard all" button per group shows a confirmation dialog
+- [ ] ✅ Confirming "Discard all" discards all in the group and shows a SnackBar with count
+- [ ] ✅ After all check-ins are discarded, the screen shows the empty state
+- [ ] ✅ Empty state: "No pending check-ins" with a tick icon
+
+### Student Home (`/student/home`)
+
+- [ ] ✅ Student name shown in welcome card after PIN authentication
+- [ ] ✅ "Check In to a Class" button navigates to self check-in flow
+- [ ] ✅ "Sign out" button in AppBar clears the session and returns to student select screen
+
+### Self Check-in Flow (`/student/checkin`)
+
+**Step 1 — Select Discipline**
+- [ ] ✅ Active disciplines listed; student sees all (not filtered by enrolment)
+- [ ] ✅ Selecting a discipline advances to Step 2
+
+**Step 2a — Session exists today**
+- [ ] ✅ One or more sessions for the discipline shown as selectable cards
+- [ ] ✅ Session card shows time range and notes (if any)
+- [ ] ✅ Tapping a session triggers check-in
+
+**Step 2b — No session today**
+- [ ] ✅ "No session yet today" message shown with explanation
+- [ ] ✅ "Join the Queue" button writes a queued check-in record
+- [ ] ✅ "Cancel" button pops back to student home
+
+**Check-in outcomes**
+- [ ] ✅ Success: dialog "Checked in!" shown; tapping Done returns to student home
+- [ ] ✅ Already checked in: error message shown inline (no navigation)
+- [ ] ✅ Queued: dialog with queue message shown; tapping Done returns to student home
+- [ ] ✅ Already queued: dialog with "Already queued" message shown
+- [ ] ✅ Auto-enrolled: success dialog notes "automatically enrolled and checked in"
+- [ ] ⚠️ AgeRestrictionException (auto-enrol fail): "please speak to a coach" error shown inline
+- [ ] ⚠️ No ranks on discipline (auto-enrol fail): StateError message shown inline
+
+### Profile Detail — Attendance History section
+
+- [ ] ✅ "Attendance History" section card appears in Disciplines & Grading tab
+- [ ] ✅ Loading state shows a spinner inside the card
+- [ ] ✅ When no records: "No attendance records yet." shown
+- [ ] ✅ Records grouped by discipline; disciplines sorted alphabetically
+- [ ] ✅ Each discipline shows total sessions attended count
+- [ ] ✅ Tapping discipline group expands to show individual session rows
+- [ ] ✅ Each row: check-in method icon (phone/coach), formatted date, method label
+- [ ] ✅ Sessions within a discipline sorted newest first
+- [ ] ⚠️ Attendance history is loaded as a one-time `FutureProvider` (not a live stream) — a page refresh is needed to see newly added records while the screen is open
+
+### Firestore data integrity
+
+- [ ] ✅ `attendanceSessions` documents contain: `disciplineId`, `sessionDate` (midnight UTC), `startTime`, `endTime`, `notes`, `createdByAdminId`, `createdAt`
+- [ ] ✅ `attendanceRecords` documents contain: `sessionId`, `studentId`, `disciplineId`, `sessionDate`, `checkInMethod`, `checkedInByProfileId`, `timestamp`
+- [ ] ✅ `queuedCheckIns` documents contain: `studentId`, `disciplineId`, `queueDate` (midnight UTC), `queuedAt`, `status`
+- [ ] ✅ Resolved `queuedCheckIns` have `resolvedSessionId` and `resolvedAt` set
+- [ ] ✅ Discarded `queuedCheckIns` have `discardedByAdminId` and `discardedAt` set

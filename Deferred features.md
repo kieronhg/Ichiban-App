@@ -63,30 +63,24 @@ Admin can export a full member record on request. The export includes:
 
 ---
 
-## 4. Discipline Inactivity Enforcement
+## 4. Discipline Inactivity Enforcement (Grading only)
 
 **Source:** Disciplines, Ranks & GDPR handover — Section 3
-**Depends on:** Enrollment feature, Attendance feature, Grading feature
-
-**What it is:**
-When a discipline has `isActive: false`, the following must be blocked:
-- No new student enrolments into the discipline
-- No new attendance sessions created for the discipline
-- No new grading events triggered for the discipline
+**Depends on:** Grading feature
 
 **What is already built:**
-- `isActive` flag exists on `Discipline` entity ✅
+- `isActive` flag on `Discipline` entity ✅
 - `activeDisciplineListProvider` streams only active disciplines ✅
-- The deactivation toggle + warning banner exists in `DisciplineFormScreen` ✅
+- The deactivation toggle + warning banner in `DisciplineFormScreen` ✅
+- **Enrollment guard:** `EnrolStudentUseCase` throws if `discipline.isActive == false` ✅
+- **Enrollment UI:** `EnrolDisciplineScreen` only shows active disciplines ✅
+- **Attendance UI:** `CreateAttendanceSessionScreen` and `SelfCheckInScreen` filter to active disciplines via `activeDisciplineListProvider` ✅
 
 **What still needs enforcing:**
-Each relevant feature must filter its discipline dropdown / creation flow to only
-show `activeDisciplineListProvider` (active disciplines). The data layer guard should
-also be added at the use-case level (e.g. `CreateEnrolmentUseCase` should check
-`discipline.isActive` before persisting).
+- Grading: when triggering a grading event, only allow active disciplines (same pattern)
 
 Admin can still **view** inactive disciplines and their enrolled students for
-historical reference — this is already supported via `disciplineListProvider`.
+historical reference — already supported via `disciplineListProvider`.
 
 ---
 
@@ -166,30 +160,28 @@ No handover document has been received for this feature yet.
 
 ---
 
-## 9. Student App Screens (Home, Attendance, Grades)
+## 9. Student App Screens (Attendance History, Grades)
 
 **Source:** App scaffold
-**Depends on:** Enrollment, Attendance, Grading features
+**Depends on:** Grading feature
 
 **What they are:**
 The following student routes are currently `_PlaceholderScreen`:
-- `/student/home` — student dashboard
 - `/student/attendance` — student's own attendance history
 - `/student/grades` — student's current rank and grading history
 
-No handover documents have been received for these screens yet.
+`/student/home` (StudentHomeScreen) and `/student/checkin` (SelfCheckInScreen) are now fully built ✅.
+No handover documents have been received for the remaining screens yet.
 
 ---
 
-## 10. Admin Screens — Enrollment, Attendance, Grading, Memberships, Payments, Settings, Notifications
+## 10. Admin Screens — Grading, Memberships, Payments, Settings, Notifications
 
 **Source:** App scaffold
 **Depends on:** Respective handover documents (not yet received)
 
 **What they are:**
 The following admin routes are currently `_PlaceholderScreen`:
-- `/admin/enrollment`
-- `/admin/attendance`
 - `/admin/grading`
 - `/admin/memberships`
 - `/admin/payments`
@@ -197,6 +189,47 @@ The following admin routes are currently `_PlaceholderScreen`:
 - `/admin/notifications`
 
 Each will be implemented when its handover document is provided.
-The data layer (entities, repository interfaces, Firestore implementations) for
-enrollment, grading, attendance, membership, payments, and notifications is already
-built — only the use cases and UI remain.
+
+**Note:** `/admin/enrollment` is fully built ✅. `/admin/attendance` is fully built ✅.
+
+---
+
+## 11. Memberships — PAYT Session Recording
+
+**Source:** Attendance handover — PAYT stub
+**Depends on:** Memberships feature
+
+**What it is:**
+When a student with a Pay-As-You-Train (PAYT) membership checks in to a session
+(via self check-in, queue resolution, or coach marking), a `paytSessions` record
+should be written to track billable sessions.
+
+**Where stubs live:**
+- `lib/domain/use_cases/attendance/self_check_in_use_case.dart` — `// TODO(memberships):` after `createRecord`
+- `lib/domain/use_cases/attendance/create_attendance_session_use_case.dart` — `// TODO(memberships):` inside queue resolution loop
+- `lib/domain/use_cases/attendance/mark_attendance_use_case.dart` — `// TODO(memberships):` inside upsert loop
+
+**Logic to implement:**
+1. Determine if the student's active membership for the discipline is PAYT
+2. If yes, write a `paytSessions` document: `{studentId, sessionId, disciplineId, date, status: 'pending'}`
+3. If a PAYT student is later unmarked by admin, cancel the pending `paytSessions` record
+   (see note in `mark_attendance_use_case.dart` — currently a manual admin task)
+
+---
+
+## 12. Memberships — Lapsed Membership Flag on Dashboard
+
+**Source:** Attendance handover
+**Depends on:** Memberships feature, Dashboard feature
+
+**What it is:**
+When a student's membership is lapsed or expired and they check in (via self check-in),
+an admin flag should appear on the dashboard to prompt follow-up.
+
+**Where stubs live:**
+- `lib/domain/use_cases/attendance/self_check_in_use_case.dart` — `// TODO(memberships):` comment
+
+**Logic to implement:**
+1. On self check-in, check if the student's membership for the discipline is lapsed/expired
+2. If yes, write a `membershipFlags` document: `{studentId, disciplineId, sessionId, date, type: 'lapsed'}`
+3. The admin dashboard should surface these flags for admin action
