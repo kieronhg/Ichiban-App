@@ -11,6 +11,7 @@ import '../../domain/entities/enrollment.dart';
 import '../../domain/entities/grading_record.dart';
 import '../../domain/entities/attendance_session.dart';
 import '../../domain/entities/attendance_record.dart';
+import '../../domain/entities/queued_check_in.dart';
 import '../../domain/entities/notification_log.dart';
 import '../../domain/entities/email_template.dart';
 import '../../domain/entities/app_setting.dart';
@@ -25,6 +26,7 @@ import 'converters/enrollment_converter.dart';
 import 'converters/grading_record_converter.dart';
 import 'converters/attendance_session_converter.dart';
 import 'converters/attendance_record_converter.dart';
+import 'converters/queued_check_in_converter.dart';
 import 'converters/notification_log_converter.dart';
 import 'converters/email_template_converter.dart';
 import 'converters/app_setting_converter.dart';
@@ -167,6 +169,16 @@ class FirestoreCollections {
         fromFirestore: (snap, _) =>
             EmailTemplateConverter.fromMap(snap.id, snap.data()!),
         toFirestore: (template, _) => EmailTemplateConverter.toMap(template),
+      );
+
+  // ── Queued Check-Ins ─────────────────────────────────────────────────────────
+
+  static CollectionReference<QueuedCheckIn> queuedCheckIns() => _db
+      .collection(AppConstants.colQueuedCheckIns)
+      .withConverter<QueuedCheckIn>(
+        fromFirestore: (snap, _) =>
+            QueuedCheckInConverter.fromMap(snap.id, snap.data()!),
+        toFirestore: (q, _) => QueuedCheckInConverter.toMap(q),
       );
 
   // ── App Settings ─────────────────────────────────────────────────────────────

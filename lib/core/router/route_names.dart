@@ -27,6 +27,9 @@ class RouteNames {
   static const String adminBulkEnrolPreview = '/admin/bulk-enrol/preview';
   static const String adminEnrollment = '/admin/enrollment';
   static const String adminAttendance = '/admin/attendance';
+  static const String adminAttendanceCreate = '/admin/attendance/create';
+  static const String adminAttendanceDetail = '/admin/attendance/:sessionId';
+  static const String adminAttendanceQueued = '/admin/attendance/queued';
   static const String adminGrading = '/admin/grading';
   static const String adminMemberships = '/admin/memberships';
   static const String adminPayments = '/admin/payments';
@@ -37,6 +40,7 @@ class RouteNames {
   static const String studentSelect = '/student/select';
   static const String studentPin = '/student/pin';
   static const String studentHome = '/student/home';
+  static const String studentCheckin = '/student/checkin';
   static const String studentAttendance = '/student/attendance';
   static const String studentGrades = '/student/grades';
   static const String studentProfile = '/student/profile';
