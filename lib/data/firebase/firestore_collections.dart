@@ -9,6 +9,8 @@ import '../../domain/entities/discipline.dart';
 import '../../domain/entities/rank.dart';
 import '../../domain/entities/enrollment.dart';
 import '../../domain/entities/grading_record.dart';
+import '../../domain/entities/grading_event.dart';
+import '../../domain/entities/grading_event_student.dart';
 import '../../domain/entities/attendance_session.dart';
 import '../../domain/entities/attendance_record.dart';
 import '../../domain/entities/queued_check_in.dart';
@@ -24,6 +26,8 @@ import 'converters/discipline_converter.dart';
 import 'converters/rank_converter.dart';
 import 'converters/enrollment_converter.dart';
 import 'converters/grading_record_converter.dart';
+import 'converters/grading_event_converter.dart';
+import 'converters/grading_event_student_converter.dart';
 import 'converters/attendance_session_converter.dart';
 import 'converters/attendance_record_converter.dart';
 import 'converters/queued_check_in_converter.dart';
@@ -129,6 +133,27 @@ class FirestoreCollections {
         fromFirestore: (snap, _) =>
             GradingRecordConverter.fromMap(snap.id, snap.data()!),
         toFirestore: (record, _) => GradingRecordConverter.toMap(record),
+      );
+
+  // ── Grading Events ───────────────────────────────────────────────────────────
+
+  static CollectionReference<GradingEvent> gradingEvents() => _db
+      .collection(AppConstants.colGradingEvents)
+      .withConverter<GradingEvent>(
+        fromFirestore: (snap, _) =>
+            GradingEventConverter.fromMap(snap.id, snap.data()!),
+        toFirestore: (event, _) => GradingEventConverter.toMap(event),
+      );
+
+  // ── Grading Event Students ────────────────────────────────────────────────────
+
+  static CollectionReference<GradingEventStudent> gradingEventStudents() => _db
+      .collection(AppConstants.colGradingEventStudents)
+      .withConverter<GradingEventStudent>(
+        fromFirestore: (snap, _) =>
+            GradingEventStudentConverter.fromMap(snap.id, snap.data()!),
+        toFirestore: (student, _) =>
+            GradingEventStudentConverter.toMap(student),
       );
 
   // ── Attendance Sessions ──────────────────────────────────────────────────────

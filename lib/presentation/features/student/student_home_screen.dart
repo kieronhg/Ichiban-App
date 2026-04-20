@@ -101,6 +101,22 @@ class StudentHomeScreen extends ConsumerWidget {
                 ),
               ),
 
+              const SizedBox(height: 12),
+
+              // ── My Grades button ─────────────────────────────────────
+              OutlinedButton.icon(
+                onPressed: () => context.pushNamed('studentGrades'),
+                icon: const Icon(Icons.military_tech_outlined, size: 22),
+                label: const Text('My Grades'),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 18),
+                  textStyle: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+
               const Spacer(),
             ],
           ),

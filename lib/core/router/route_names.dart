@@ -31,6 +31,11 @@ class RouteNames {
   static const String adminAttendanceDetail = '/admin/attendance/:sessionId';
   static const String adminAttendanceQueued = '/admin/attendance/queued';
   static const String adminGrading = '/admin/grading';
+  static const String adminGradingCreate = '/admin/grading/create';
+  static const String adminGradingDetail = '/admin/grading/:eventId';
+  static const String adminGradingNominate = '/admin/grading/:eventId/nominate';
+  static const String adminGradingRecordResults =
+      '/admin/grading/:eventId/record-results';
   static const String adminMemberships = '/admin/memberships';
   static const String adminPayments = '/admin/payments';
   static const String adminNotifications = '/admin/notifications';

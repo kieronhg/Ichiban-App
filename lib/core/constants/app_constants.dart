@@ -13,6 +13,8 @@ class AppConstants {
   static const String colCashPayments = 'cashPayments';
   static const String colEnrollments = 'enrollments';
   static const String colGradingRecords = 'gradingRecords';
+  static const String colGradingEvents = 'gradingEvents';
+  static const String colGradingEventStudents = 'gradingEventStudents';
   static const String colAttendanceSessions = 'attendanceSessions';
   static const String colAttendanceRecords = 'attendanceRecords';
   static const String colQueuedCheckIns = 'queuedCheckIns';

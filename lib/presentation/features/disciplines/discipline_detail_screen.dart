@@ -6,10 +6,13 @@ import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/providers/discipline_providers.dart';
 import '../../../core/providers/enrollment_providers.dart';
+import '../../../core/providers/grading_providers.dart';
 import '../../../core/providers/profile_providers.dart';
+import '../../../core/router/route_names.dart';
 import '../../../domain/entities/discipline.dart';
 import '../../../domain/entities/enrollment.dart';
 import '../../../domain/entities/enums.dart';
+import '../../../domain/entities/grading_event.dart';
 import '../../../domain/entities/rank.dart';
 
 class DisciplineDetailScreen extends ConsumerWidget {
@@ -253,6 +256,9 @@ class _DisciplineDetailViewState extends ConsumerState<_DisciplineDetailView> {
               },
             ),
 
+            // ── Grading Events section ─────────────────────────────────
+            _GradingEventsSection(discipline: discipline),
+
             // ── Enrolled Students section ──────────────────────────────
             _EnrolledStudentsSection(discipline: discipline),
 
@@ -452,6 +458,156 @@ class _MonCountBadge extends StatelessWidget {
       children: List.generate(
         count,
         (_) => const Icon(Icons.circle, size: 6, color: AppColors.accent),
+      ),
+    );
+  }
+}
+
+// ── Grading Events section ────────────────────────────────────────────────
+
+class _GradingEventsSection extends ConsumerWidget {
+  const _GradingEventsSection({required this.discipline});
+
+  final Discipline discipline;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final eventsAsync = ref.watch(
+      gradingEventsForDisciplineProvider(discipline.id),
+    );
+
+    final events = eventsAsync.asData?.value ?? <GradingEvent>[];
+    final upcoming = events
+        .where((e) => e.status == GradingEventStatus.upcoming)
+        .toList();
+    final past = events
+        .where((e) => e.status != GradingEventStatus.upcoming)
+        .toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 24, 16, 4),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Grading Events',
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    color: AppColors.accent,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+              TextButton.icon(
+                onPressed: () => context.pushNamed(
+                  RouteNames.adminGradingCreate,
+                  extra: discipline.id,
+                ),
+                icon: const Icon(Icons.add, size: 16),
+                label: const Text('New Event'),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.accent,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  textStyle: const TextStyle(fontSize: 13),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const Divider(height: 1, indent: 16),
+        if (eventsAsync is AsyncLoading)
+          const Padding(
+            padding: EdgeInsets.all(24),
+            child: Center(child: CircularProgressIndicator()),
+          )
+        else if (events.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            child: Text(
+              'No grading events yet.',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          )
+        else ...[
+          if (upcoming.isNotEmpty) ...[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+              child: Text(
+                'UPCOMING',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textSecondary,
+                  letterSpacing: 0.8,
+                ),
+              ),
+            ),
+            ...upcoming.map((e) => _GradingEventRow(event: e)),
+          ],
+          if (past.isNotEmpty)
+            ExpansionTile(
+              title: Text(
+                '${past.length} past event${past.length == 1 ? '' : 's'}',
+                style: const TextStyle(fontSize: 14),
+              ),
+              tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+              childrenPadding: EdgeInsets.zero,
+              children: past.map((e) => _GradingEventRow(event: e)).toList(),
+            ),
+        ],
+      ],
+    );
+  }
+}
+
+class _GradingEventRow extends StatelessWidget {
+  const _GradingEventRow({required this.event});
+
+  final GradingEvent event;
+
+  @override
+  Widget build(BuildContext context) {
+    final dateStr = DateFormat('d MMM yyyy').format(event.eventDate);
+    final (statusLabel, statusColor) = switch (event.status) {
+      GradingEventStatus.upcoming => ('Upcoming', AppColors.info),
+      GradingEventStatus.completed => ('Completed', AppColors.success),
+      GradingEventStatus.cancelled => ('Cancelled', AppColors.textSecondary),
+    };
+
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+      title: Text(
+        event.title ?? dateStr,
+        style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+      ),
+      subtitle: event.title != null
+          ? Text(dateStr, style: const TextStyle(fontSize: 12))
+          : null,
+      trailing: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          color: statusColor.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Text(
+          statusLabel,
+          style: TextStyle(
+            color: statusColor,
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+      onTap: () => context.pushNamed(
+        RouteNames.adminGradingDetail,
+        pathParameters: {'eventId': event.id},
+        extra: event,
       ),
     );
   }

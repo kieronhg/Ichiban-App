@@ -5,12 +5,15 @@ import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/providers/attendance_providers.dart';
+import '../../../core/providers/grading_providers.dart';
 import '../../../core/providers/profile_providers.dart';
 import '../../../core/providers/enrollment_providers.dart';
 import '../../../core/providers/discipline_providers.dart';
+import '../../../core/router/route_names.dart';
 import '../../../domain/entities/attendance_record.dart';
 import '../../../domain/entities/enrollment.dart';
 import '../../../domain/entities/enums.dart';
+import '../../../domain/entities/grading_record.dart';
 import '../../../domain/entities/profile.dart';
 
 class ProfileDetailScreen extends ConsumerWidget {
@@ -440,6 +443,9 @@ class _DisciplinesGradingTab extends ConsumerWidget {
     final attendanceAsync = ref.watch(
       attendanceHistoryForStudentProvider(profile.id),
     );
+    final gradingRecordsAsync = ref.watch(
+      gradingRecordsForStudentProvider(profile.id),
+    );
     final disciplinesAsync = ref.watch(disciplineListProvider);
 
     return enrollmentsAsync.when(
@@ -539,6 +545,14 @@ class _DisciplinesGradingTab extends ConsumerWidget {
               byDiscipline: byDiscipline,
               disciplineNames: disciplineNames,
               isLoading: attendanceAsync is AsyncLoading,
+            ),
+            const SizedBox(height: 12),
+
+            // ── Grading history ───────────────────────────────────────
+            _GradingHistorySection(
+              records: gradingRecordsAsync.asData?.value ?? [],
+              disciplineNames: disciplineNames,
+              isLoading: gradingRecordsAsync is AsyncLoading,
             ),
             const SizedBox(height: 24),
           ],
@@ -658,6 +672,145 @@ class _AttendanceHistorySection extends StatelessWidget {
   }
 }
 
+// ── Grading history section ──────────────────────────────────────────────────
+
+class _GradingHistorySection extends StatelessWidget {
+  const _GradingHistorySection({
+    required this.records,
+    required this.disciplineNames,
+    required this.isLoading,
+  });
+
+  final List<GradingRecord> records;
+  final Map<String, String> disciplineNames;
+  final bool isLoading;
+
+  @override
+  Widget build(BuildContext context) {
+    if (isLoading) {
+      return const _SectionCard(
+        title: 'Grading History',
+        children: [
+          Padding(
+            padding: EdgeInsets.all(16),
+            child: Center(child: CircularProgressIndicator()),
+          ),
+        ],
+      );
+    }
+
+    if (records.isEmpty) {
+      return _SectionCard(
+        title: 'Grading History',
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text(
+              'No grading records yet.',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+        ],
+      );
+    }
+
+    // Group by discipline, sorted by discipline name
+    final byDiscipline = <String, List<GradingRecord>>{};
+    for (final r in records) {
+      byDiscipline.putIfAbsent(r.disciplineId, () => []).add(r);
+    }
+    for (final list in byDiscipline.values) {
+      list.sort((a, b) => b.gradingDate.compareTo(a.gradingDate));
+    }
+    final sortedEntries = byDiscipline.entries.toList()
+      ..sort((a, b) {
+        final nameA = disciplineNames[a.key] ?? a.key;
+        final nameB = disciplineNames[b.key] ?? b.key;
+        return nameA.compareTo(nameB);
+      });
+
+    return _SectionCard(
+      title: 'Grading History',
+      children: sortedEntries.map((entry) {
+        final disciplineName = disciplineNames[entry.key] ?? entry.key;
+        final recs = entry.value;
+        return ExpansionTile(
+          title: Text(
+            disciplineName,
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+          ),
+          subtitle: Text(
+            '${recs.length} promotion${recs.length == 1 ? '' : 's'}',
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+          ),
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+          childrenPadding: EdgeInsets.zero,
+          children: recs.map((r) => _GradingRecordRow(record: r)).toList(),
+        );
+      }).toList(),
+    );
+  }
+}
+
+class _GradingRecordRow extends ConsumerWidget {
+  const _GradingRecordRow({required this.record});
+
+  final GradingRecord record;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ranksAsync = ref.watch(rankListProvider(record.disciplineId));
+    final ranks = ranksAsync.asData?.value ?? [];
+    final toRank = ranks
+        .where((r) => r.id == record.rankAchievedId)
+        .firstOrNull;
+    final dateLabel = DateFormat('d MMM yyyy').format(record.gradingDate);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.military_tech_outlined,
+            size: 14,
+            color: AppColors.success,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  toRank?.name ?? record.rankAchievedId,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                if (record.gradingScore != null)
+                  Text(
+                    'Score: ${record.gradingScore!.toStringAsFixed(1)}',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          Text(
+            dateLabel,
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 // ── Active enrolment row ─────────────────────────────────────────────────────
 
 class _ActiveEnrolmentRow extends ConsumerWidget {
@@ -722,6 +875,18 @@ class _ActiveEnrolmentRow extends ConsumerWidget {
                 ),
               ],
             ),
+          ),
+          // Grading events shortcut
+          TextButton(
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.accent,
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+            ),
+            onPressed: () => context.pushNamed(
+              RouteNames.adminGrading,
+              extra: enrollment.disciplineId,
+            ),
+            child: const Text('Grading', style: TextStyle(fontSize: 12)),
           ),
           // Deactivate
           TextButton(

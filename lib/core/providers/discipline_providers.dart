@@ -100,6 +100,7 @@ class DisciplineFormNotifier extends Notifier<DisciplineFormState> {
   void setName(String v) => state = state.copyWith(name: v);
   void setDescription(String? v) => state = state.copyWith(description: v);
   void setActive(bool v) => state = state.copyWith(isActive: v);
+  void setHasGradingScore(bool v) => state = state.copyWith(hasGradingScore: v);
 
   /// Creates or updates the discipline. Returns the discipline ID.
   Future<String> save() async {
@@ -136,6 +137,7 @@ class DisciplineFormState {
     required this.name,
     required this.description,
     required this.isActive,
+    required this.hasGradingScore,
     required this.isSaving,
     required this.errorMessage,
   });
@@ -144,6 +146,7 @@ class DisciplineFormState {
   final String name;
   final String? description;
   final bool isActive;
+  final bool hasGradingScore;
   final bool isSaving;
   final String? errorMessage;
 
@@ -154,6 +157,7 @@ class DisciplineFormState {
     name: '',
     description: null,
     isActive: true,
+    hasGradingScore: false,
     isSaving: false,
     errorMessage: null,
   );
@@ -164,6 +168,7 @@ class DisciplineFormState {
         name: d.name,
         description: d.description,
         isActive: d.isActive,
+        hasGradingScore: d.hasGradingScore,
         isSaving: false,
         errorMessage: null,
       );
@@ -177,6 +182,7 @@ class DisciplineFormState {
         ? null
         : description?.trim(),
     isActive: isActive,
+    hasGradingScore: hasGradingScore,
     createdByAdminId: adminId,
     createdAt: DateTime.now(), // will be stamped by use case on create
   );
@@ -186,6 +192,7 @@ class DisciplineFormState {
     String? name,
     String? description,
     bool? isActive,
+    bool? hasGradingScore,
     bool? isSaving,
     String? errorMessage,
   }) {
@@ -194,6 +201,7 @@ class DisciplineFormState {
       name: name ?? this.name,
       description: description ?? this.description,
       isActive: isActive ?? this.isActive,
+      hasGradingScore: hasGradingScore ?? this.hasGradingScore,
       isSaving: isSaving ?? this.isSaving,
       errorMessage: errorMessage ?? this.errorMessage,
     );

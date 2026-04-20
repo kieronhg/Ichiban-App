@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../domain/entities/grading_record.dart';
 import '../../domain/repositories/grading_repository.dart';
 import '../firebase/firestore_collections.dart';
@@ -41,37 +40,14 @@ class FirestoreGradingRepository implements GradingRepository {
     return ref.id;
   }
 
-  /// Creates an eligibility entry per student using a Firestore batch write.
-  /// Note: rankAchievedId is set to empty string at this stage —
-  /// it is updated to the actual rank ID when the grade is awarded in Phase 7.
   @override
-  Future<void> markEligible({
-    required List<String> studentIds,
-    required String disciplineId,
-    required DateTime gradingDate,
-    required String coachId,
-  }) async {
-    final batch = FirebaseFirestore.instance.batch();
-    final now = DateTime.now();
+  Future<void> update(GradingRecord record) async {
+    await FirestoreCollections.gradingRecords().doc(record.id).set(record);
+  }
 
-    for (final studentId in studentIds) {
-      final ref = FirestoreCollections.gradingRecords().doc();
-      final record = GradingRecord(
-        id: ref.id,
-        studentId: studentId,
-        disciplineId: disciplineId,
-        // enrollmentId resolved by the use case layer before calling this method
-        enrollmentId: '',
-        // Placeholder — updated when grade is awarded
-        rankAchievedId: '',
-        gradingDate: gradingDate,
-        markedEligibleByCoachId: coachId,
-        eligibilityAnnouncedDate: now,
-      );
-      batch.set(ref, record);
-    }
-
-    await batch.commit();
+  @override
+  Future<void> delete(String id) async {
+    await FirestoreCollections.gradingRecords().doc(id).delete();
   }
 
   @override

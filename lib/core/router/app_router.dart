@@ -24,10 +24,18 @@ import '../../presentation/features/attendance/attendance_list_screen.dart';
 import '../../presentation/features/attendance/create_attendance_session_screen.dart';
 import '../../presentation/features/attendance/session_detail_screen.dart';
 import '../../presentation/features/attendance/queued_check_ins_screen.dart';
+import '../../presentation/features/grading/grading_list_screen.dart';
+import '../../presentation/features/grading/create_grading_event_screen.dart';
+import '../../presentation/features/grading/grading_event_detail_screen.dart';
+import '../../presentation/features/grading/nominate_students_screen.dart';
+import '../../presentation/features/grading/record_results_screen.dart';
 import '../../presentation/features/student/student_home_screen.dart';
 import '../../presentation/features/student/self_check_in_screen.dart';
+import '../../presentation/features/student/student_grades_screen.dart';
 import '../../domain/entities/attendance_session.dart';
 import '../../domain/entities/discipline.dart';
+import '../../domain/entities/grading_event.dart';
+import '../../domain/entities/grading_event_student.dart';
 import '../../domain/entities/rank.dart';
 import 'route_names.dart';
 
@@ -211,7 +219,48 @@ class AppRouter {
       GoRoute(
         path: RouteNames.adminGrading,
         name: 'adminGrading',
-        builder: (_, state) => const _PlaceholderScreen('Grading'),
+        builder: (_, state) => GradingListScreen(
+          preFilterDisciplineId: state.extra is String
+              ? state.extra as String
+              : null,
+        ),
+        routes: [
+          GoRoute(
+            path: 'create',
+            name: 'adminGradingCreate',
+            builder: (_, state) => CreateGradingEventScreen(
+              preselectedDisciplineId: state.extra is String
+                  ? state.extra as String
+                  : null,
+            ),
+          ),
+          GoRoute(
+            path: ':eventId',
+            name: 'adminGradingDetail',
+            builder: (_, state) =>
+                GradingEventDetailScreen(event: state.extra as GradingEvent),
+            routes: [
+              GoRoute(
+                path: 'nominate',
+                name: 'adminGradingNominate',
+                builder: (_, state) =>
+                    NominateStudentsScreen(event: state.extra as GradingEvent),
+              ),
+              GoRoute(
+                path: 'record-results',
+                name: 'adminGradingRecordResults',
+                builder: (_, state) {
+                  final extra =
+                      state.extra as (GradingEvent, GradingEventStudent);
+                  return RecordResultsScreen(
+                    event: extra.$1,
+                    eventStudent: extra.$2,
+                  );
+                },
+              ),
+            ],
+          ),
+        ],
       ),
       GoRoute(
         path: RouteNames.adminMemberships,
@@ -289,7 +338,7 @@ class AppRouter {
       GoRoute(
         path: RouteNames.studentGrades,
         name: 'studentGrades',
-        builder: (_, state) => const _PlaceholderScreen('My Grades'),
+        builder: (_, state) => const StudentGradesScreen(),
       ),
       GoRoute(
         path: RouteNames.studentProfile,
