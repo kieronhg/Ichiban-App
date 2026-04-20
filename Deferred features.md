@@ -79,6 +79,8 @@ Admin can export a full member record on request. The export includes:
 **What still needs enforcing:**
 - Grading: when triggering a grading event, only allow active disciplines (same pattern)
 
+**Update (Grading feature built):** `CreateGradingEventScreen` already uses `activeDisciplineListProvider` for the discipline dropdown, so inactive disciplines are excluded from new event creation ✅. The remaining gap is that `CreateGradingEventUseCase` does not yet throw if a caller bypasses the UI with an inactive `disciplineId`. This is the outstanding enforcement gap.
+
 Admin can still **view** inactive disciplines and their enrolled students for
 historical reference — already supported via `disciplineListProvider`.
 
@@ -160,29 +162,28 @@ No handover document has been received for this feature yet.
 
 ---
 
-## 9. Student App Screens (Attendance History, Grades)
+## 9. Student App Screens (Attendance History)
 
 **Source:** App scaffold
-**Depends on:** Grading feature
+**Depends on:** Nothing blocking
 
 **What they are:**
-The following student routes are currently `_PlaceholderScreen`:
+The following student route is currently a `_PlaceholderScreen`:
 - `/student/attendance` — student's own attendance history
-- `/student/grades` — student's current rank and grading history
 
-`/student/home` (StudentHomeScreen) and `/student/checkin` (SelfCheckInScreen) are now fully built ✅.
-No handover documents have been received for the remaining screens yet.
+`/student/home` (StudentHomeScreen), `/student/checkin` (SelfCheckInScreen), and `/student/grades`
+(StudentGradesScreen) are all fully built ✅.
+No handover document has been received for the attendance history screen yet.
 
 ---
 
-## 10. Admin Screens — Grading, Memberships, Payments, Settings, Notifications
+## 10. Admin Screens — Memberships, Payments, Settings, Notifications
 
 **Source:** App scaffold
 **Depends on:** Respective handover documents (not yet received)
 
 **What they are:**
 The following admin routes are currently `_PlaceholderScreen`:
-- `/admin/grading`
 - `/admin/memberships`
 - `/admin/payments`
 - `/admin/settings`
@@ -191,6 +192,7 @@ The following admin routes are currently `_PlaceholderScreen`:
 Each will be implemented when its handover document is provided.
 
 **Note:** `/admin/enrollment` is fully built ✅. `/admin/attendance` is fully built ✅.
+`/admin/grading` is fully built ✅.
 
 ---
 
@@ -233,3 +235,65 @@ an admin flag should appear on the dashboard to prompt follow-up.
 1. On self check-in, check if the student's membership for the discipline is lapsed/expired
 2. If yes, write a `membershipFlags` document: `{studentId, disciplineId, sessionId, date, type: 'lapsed'}`
 3. The admin dashboard should surface these flags for admin action
+
+---
+
+## 13. Grading — Membership Check During Nomination
+
+**Source:** Grading feature implementation
+**Depends on:** Memberships feature
+
+**What it is:**
+When an admin nominates a student for a grading event, the system should verify the student
+has an active (non-lapsed, non-trial) membership for the discipline before allowing nomination.
+
+**Where the stub lives:**
+`lib/domain/use_cases/grading/nominate_student_use_case.dart`
+```dart
+// TODO(memberships): check student has an active membership for the discipline.
+// Fetch the student's membership record for disciplineId; throw
+// MembershipInactiveException if lapsed or not found.
+```
+
+**Logic to implement:**
+1. Fetch the student's current membership for `disciplineId`
+2. If not found or `status != active`: throw a descriptive exception
+3. The `NominateStudentsScreen` already surfaces errors via SnackBar — no UI change needed
+4. Admin should see a clear message if a nomination is blocked due to membership
+
+---
+
+## 14. Grading — Push Notifications
+
+**Source:** Grading feature implementation
+**Depends on:** Notifications / Firebase Cloud Messaging feature
+
+**What it is:**
+Two points in the grading flow currently write `NotificationLog` documents to Firestore
+but do not send actual push notifications. When the notifications infrastructure is in place,
+these stubs need to be wired up.
+
+**Where the stubs live:**
+
+1. **Nomination** — `lib/domain/use_cases/grading/nominate_student_use_case.dart`
+```dart
+// TODO(notifications): send push notification to student
+// Type: gradingEligibility
+// Recipient: studentId
+// Payload: { gradingEventId, disciplineId, eventDate }
+// The NotificationLog document is already written above.
+```
+
+2. **Promotion** — `lib/domain/use_cases/grading/record_grading_results_use_case.dart`
+```dart
+// TODO(notifications): send push notification to student
+// Type: gradingPromotion
+// Recipient: studentId
+// Payload: { disciplineId, rankAchievedId, gradingScore, gradingDate }
+// The NotificationLog document is already written above.
+```
+
+**Logic to implement:**
+- Integrate with FCM (or equivalent) to send a push to the student's registered device token
+- Device tokens should come from a `deviceTokens` subcollection on the profile (to be designed)
+- The `NotificationLog` documents already record `sentAt` — update this after a successful send
