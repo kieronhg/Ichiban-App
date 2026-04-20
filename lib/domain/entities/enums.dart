@@ -25,6 +25,10 @@ enum CheckInMethod { self, coach }
 
 enum QueuedCheckInStatus { pending, resolved, discarded }
 
+enum GradingOutcome { promoted, failed, absent }
+
+enum GradingEventStatus { upcoming, completed, cancelled }
+
 enum NotificationChannel { push, email }
 
 enum NotificationType {
@@ -32,6 +36,7 @@ enum NotificationType {
   renewalReminderPost,
   trialExpiring,
   gradingEligibility,
+  gradingPromotion,
   licenceReminder,
 }
 

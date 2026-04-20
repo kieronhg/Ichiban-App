@@ -16,14 +16,11 @@ abstract class GradingRepository {
   /// Creates a grading record and returns the generated document ID.
   Future<String> create(GradingRecord record);
 
-  /// Marks multiple students as eligible for a grading event.
-  /// Creates a grading record per student and sets eligibilityAnnouncedDate to now.
-  Future<void> markEligible({
-    required List<String> studentIds,
-    required String disciplineId,
-    required DateTime gradingDate,
-    required String coachId,
-  });
+  /// Updates an existing grading record.
+  Future<void> update(GradingRecord record);
+
+  /// Deletes a grading record.
+  Future<void> delete(String id);
 
   /// Watches grading records for a student in real time.
   Stream<List<GradingRecord>> watchForStudent(String studentId);

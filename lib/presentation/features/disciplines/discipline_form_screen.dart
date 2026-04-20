@@ -107,6 +107,18 @@ class _DisciplineFormScreenState extends ConsumerState<DisciplineFormScreen> {
                   onChanged: (v) =>
                       notifier.setDescription(v.isEmpty ? null : v),
                 ),
+                const SizedBox(height: 4),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Records grading score'),
+                  subtitle: const Text(
+                    'Enable for Karate — shows a 0–100 score field '
+                    'when recording grading results.',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                  value: formState.hasGradingScore,
+                  onChanged: notifier.setHasGradingScore,
+                ),
               ],
             ),
             const SizedBox(height: 16),

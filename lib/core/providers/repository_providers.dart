@@ -9,6 +9,8 @@ import '../../data/repositories/firestore_discipline_repository.dart';
 import '../../data/repositories/firestore_email_template_repository.dart';
 import '../../data/repositories/firestore_enrollment_repository.dart';
 import '../../data/repositories/firestore_grading_repository.dart';
+import '../../data/repositories/firestore_grading_event_repository.dart';
+import '../../data/repositories/firestore_grading_event_student_repository.dart';
 import '../../data/repositories/firestore_membership_pricing_repository.dart';
 import '../../data/repositories/firestore_membership_repository.dart';
 import '../../data/repositories/firestore_notification_repository.dart';
@@ -25,6 +27,8 @@ import '../../domain/repositories/discipline_repository.dart';
 import '../../domain/repositories/email_template_repository.dart';
 import '../../domain/repositories/enrollment_repository.dart';
 import '../../domain/repositories/grading_repository.dart';
+import '../../domain/repositories/grading_event_repository.dart';
+import '../../domain/repositories/grading_event_student_repository.dart';
 import '../../domain/repositories/membership_pricing_repository.dart';
 import '../../domain/repositories/membership_repository.dart';
 import '../../domain/repositories/notification_repository.dart';
@@ -84,6 +88,15 @@ final enrollmentRepositoryProvider = Provider<EnrollmentRepository>(
 final gradingRepositoryProvider = Provider<GradingRepository>(
   (ref) => FirestoreGradingRepository(),
 );
+
+final gradingEventRepositoryProvider = Provider<GradingEventRepository>(
+  (ref) => FirestoreGradingEventRepository(),
+);
+
+final gradingEventStudentRepositoryProvider =
+    Provider<GradingEventStudentRepository>(
+      (ref) => FirestoreGradingEventStudentRepository(),
+    );
 
 // ── Attendance ─────────────────────────────────────────────────────────────
 
