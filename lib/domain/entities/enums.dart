@@ -23,6 +23,8 @@ enum PaytPaymentStatus { pending, paid }
 
 enum CheckInMethod { self, coach }
 
+enum QueuedCheckInStatus { pending, resolved, discarded }
+
 enum NotificationChannel { push, email }
 
 enum NotificationType {

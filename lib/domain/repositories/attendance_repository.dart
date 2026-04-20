@@ -4,8 +4,14 @@ import '../entities/attendance_record.dart';
 abstract class AttendanceRepository {
   // ── Sessions ──────────────────────────────────────────────
 
-  /// Returns all sessions for a discipline, ordered by sessionDate descending.
-  Future<List<AttendanceSession>> getSessionsForDiscipline(String disciplineId);
+  /// All sessions, optionally filtered by discipline, ordered by date desc.
+  Stream<List<AttendanceSession>> watchAllSessions({String? disciplineId});
+
+  /// Sessions for a specific discipline on a specific date (midnight UTC).
+  Stream<List<AttendanceSession>> watchSessionsForDisciplineAndDate(
+    String disciplineId,
+    DateTime date,
+  );
 
   /// Returns a single session by ID, or null if not found.
   Future<AttendanceSession?> getSessionById(String sessionId);
@@ -13,17 +19,12 @@ abstract class AttendanceRepository {
   /// Creates an attendance session and returns the generated document ID.
   Future<String> createSession(AttendanceSession session);
 
-  /// Watches sessions for a discipline in real time.
-  Stream<List<AttendanceSession>> watchSessionsForDiscipline(
-    String disciplineId,
-  );
-
   // ── Records ───────────────────────────────────────────────
 
-  /// Returns all attendance records for a session.
-  Future<List<AttendanceRecord>> getRecordsForSession(String sessionId);
+  /// Watches attendance records for a session in real time.
+  Stream<List<AttendanceRecord>> watchRecordsForSession(String sessionId);
 
-  /// Returns all attendance records for a student, ordered by sessionDate descending.
+  /// Returns all attendance records for a student, ordered by date desc.
   Future<List<AttendanceRecord>> getRecordsForStudent(String studentId);
 
   /// Returns attendance records for a student within a specific discipline.
@@ -32,16 +33,24 @@ abstract class AttendanceRepository {
     String disciplineId,
   );
 
+  /// Returns the attendance record for a student in a specific session,
+  /// or null if none exists.
+  Future<AttendanceRecord?> getRecordForStudentAndSession(
+    String studentId,
+    String sessionId,
+  );
+
+  /// Writes an attendance record, overwriting any existing document with the
+  /// same ID (upsert semantics).
+  Future<void> upsertRecord(AttendanceRecord record);
+
+  /// Deletes an attendance record by ID.
+  Future<void> deleteRecord(String recordId);
+
+  /// Creates a new attendance record and returns the generated document ID.
+  Future<String> createRecord(AttendanceRecord record);
+
   /// Returns student IDs who have an active membership but no attendance
   /// records within the past [withinDays] days.
   Future<List<String>> getNonAttendingMemberIds({required int withinDays});
-
-  /// Creates an attendance record and returns the generated document ID.
-  Future<String> createRecord(AttendanceRecord record);
-
-  /// Returns true if a student already has a record for a given session.
-  Future<bool> hasRecord(String sessionId, String studentId);
-
-  /// Watches attendance records for a session in real time.
-  Stream<List<AttendanceRecord>> watchRecordsForSession(String sessionId);
 }

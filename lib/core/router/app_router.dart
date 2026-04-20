@@ -20,6 +20,13 @@ import '../../presentation/features/enrollment/enrol_discipline_screen.dart';
 import '../../presentation/features/enrollment/bulk_enrol_upload_screen.dart';
 import '../../presentation/features/enrollment/bulk_enrol_preview_screen.dart';
 import '../../presentation/features/enrollment/csv_enrolment_parser.dart';
+import '../../presentation/features/attendance/attendance_list_screen.dart';
+import '../../presentation/features/attendance/create_attendance_session_screen.dart';
+import '../../presentation/features/attendance/session_detail_screen.dart';
+import '../../presentation/features/attendance/queued_check_ins_screen.dart';
+import '../../presentation/features/student/student_home_screen.dart';
+import '../../presentation/features/student/self_check_in_screen.dart';
+import '../../domain/entities/attendance_session.dart';
 import '../../domain/entities/discipline.dart';
 import '../../domain/entities/rank.dart';
 import 'route_names.dart';
@@ -181,7 +188,25 @@ class AppRouter {
       GoRoute(
         path: RouteNames.adminAttendance,
         name: 'adminAttendance',
-        builder: (_, state) => const _PlaceholderScreen('Attendance'),
+        builder: (_, state) => const AttendanceListScreen(),
+        routes: [
+          GoRoute(
+            path: 'create',
+            name: 'adminAttendanceCreate',
+            builder: (_, state) => const CreateAttendanceSessionScreen(),
+          ),
+          GoRoute(
+            path: 'queued',
+            name: 'adminAttendanceQueued',
+            builder: (_, state) => const QueuedCheckInsScreen(),
+          ),
+          GoRoute(
+            path: ':sessionId',
+            name: 'adminAttendanceDetail',
+            builder: (_, state) =>
+                SessionDetailScreen(session: state.extra as AttendanceSession),
+          ),
+        ],
       ),
       GoRoute(
         path: RouteNames.adminGrading,
@@ -247,7 +272,14 @@ class AppRouter {
       GoRoute(
         path: RouteNames.studentHome,
         name: 'studentHome',
-        builder: (_, state) => const _PlaceholderScreen('Student Home'),
+        builder: (_, state) => const StudentHomeScreen(),
+        routes: [
+          GoRoute(
+            path: 'checkin',
+            name: 'studentCheckin',
+            builder: (_, state) => const SelfCheckInScreen(),
+          ),
+        ],
       ),
       GoRoute(
         path: RouteNames.studentAttendance,

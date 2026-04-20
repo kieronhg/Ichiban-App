@@ -15,6 +15,7 @@ class AppConstants {
   static const String colGradingRecords = 'gradingRecords';
   static const String colAttendanceSessions = 'attendanceSessions';
   static const String colAttendanceRecords = 'attendanceRecords';
+  static const String colQueuedCheckIns = 'queuedCheckIns';
   static const String colNotificationLogs = 'notificationLogs';
   static const String colEmailTemplates = 'emailTemplates';
   static const String colAppSettings = 'appSettings';

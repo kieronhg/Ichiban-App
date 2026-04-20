@@ -4,9 +4,11 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/providers/attendance_providers.dart';
 import '../../../core/providers/profile_providers.dart';
 import '../../../core/providers/enrollment_providers.dart';
 import '../../../core/providers/discipline_providers.dart';
+import '../../../domain/entities/attendance_record.dart';
 import '../../../domain/entities/enrollment.dart';
 import '../../../domain/entities/enums.dart';
 import '../../../domain/entities/profile.dart';
@@ -435,6 +437,10 @@ class _DisciplinesGradingTab extends ConsumerWidget {
     final enrollmentsAsync = ref.watch(
       allEnrollmentsForStudentProvider(profile.id),
     );
+    final attendanceAsync = ref.watch(
+      attendanceHistoryForStudentProvider(profile.id),
+    );
+    final disciplinesAsync = ref.watch(disciplineListProvider);
 
     return enrollmentsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -442,6 +448,22 @@ class _DisciplinesGradingTab extends ConsumerWidget {
       data: (enrollments) {
         final active = enrollments.where((e) => e.isActive).toList();
         final inactive = enrollments.where((e) => !e.isActive).toList();
+
+        // Build discipline name lookup
+        final disciplineNames = <String, String>{
+          for (final d in disciplinesAsync.asData?.value ?? []) d.id: d.name,
+        };
+
+        // Group attendance records by discipline
+        final attendanceRecords = attendanceAsync.asData?.value ?? [];
+        final byDiscipline = <String, List<AttendanceRecord>>{};
+        for (final r in attendanceRecords) {
+          byDiscipline.putIfAbsent(r.disciplineId, () => []).add(r);
+        }
+        // Sort each group newest first
+        for (final list in byDiscipline.values) {
+          list.sort((a, b) => b.sessionDate.compareTo(a.sessionDate));
+        }
 
         return ListView(
           padding: const EdgeInsets.all(16),
@@ -510,10 +532,128 @@ class _DisciplinesGradingTab extends ConsumerWidget {
                   ),
                 ],
               ),
+            const SizedBox(height: 12),
+
+            // ── Attendance history ────────────────────────────────────
+            _AttendanceHistorySection(
+              byDiscipline: byDiscipline,
+              disciplineNames: disciplineNames,
+              isLoading: attendanceAsync is AsyncLoading,
+            ),
             const SizedBox(height: 24),
           ],
         );
       },
+    );
+  }
+}
+
+// ── Attendance history section ───────────────────────────────────────────────
+
+class _AttendanceHistorySection extends StatelessWidget {
+  const _AttendanceHistorySection({
+    required this.byDiscipline,
+    required this.disciplineNames,
+    required this.isLoading,
+  });
+
+  final Map<String, List<AttendanceRecord>> byDiscipline;
+  final Map<String, String> disciplineNames;
+  final bool isLoading;
+
+  @override
+  Widget build(BuildContext context) {
+    if (isLoading) {
+      return const _SectionCard(
+        title: 'Attendance History',
+        children: [
+          Padding(
+            padding: EdgeInsets.all(16),
+            child: Center(child: CircularProgressIndicator()),
+          ),
+        ],
+      );
+    }
+
+    if (byDiscipline.isEmpty) {
+      return _SectionCard(
+        title: 'Attendance History',
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text(
+              'No attendance records yet.',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+        ],
+      );
+    }
+
+    // Sort discipline entries by name
+    final sortedEntries = byDiscipline.entries.toList()
+      ..sort((a, b) {
+        final nameA = disciplineNames[a.key] ?? a.key;
+        final nameB = disciplineNames[b.key] ?? b.key;
+        return nameA.compareTo(nameB);
+      });
+
+    return _SectionCard(
+      title: 'Attendance History',
+      children: sortedEntries.map((entry) {
+        final disciplineName = disciplineNames[entry.key] ?? entry.key;
+        final records = entry.value;
+        final total = records.length;
+
+        return ExpansionTile(
+          title: Text(
+            disciplineName,
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+          ),
+          subtitle: Text(
+            '$total session${total == 1 ? '' : 's'} attended',
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+          ),
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+          childrenPadding: EdgeInsets.zero,
+          children: records.map((r) {
+            final dateLabel = DateFormat(
+              'EEE, d MMM yyyy',
+            ).format(r.sessionDate);
+            final methodLabel = r.checkInMethod == CheckInMethod.self
+                ? 'Self'
+                : 'Coach';
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
+              child: Row(
+                children: [
+                  Icon(
+                    r.checkInMethod == CheckInMethod.self
+                        ? Icons.phone_android_outlined
+                        : Icons.sports_outlined,
+                    size: 14,
+                    color: AppColors.textSecondary,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      dateLabel,
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                  ),
+                  Text(
+                    methodLabel,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+        );
+      }).toList(),
     );
   }
 }

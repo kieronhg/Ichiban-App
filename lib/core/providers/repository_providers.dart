@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/repositories/firebase_auth_repository.dart';
 import '../../data/repositories/firestore_app_settings_repository.dart';
 import '../../data/repositories/firestore_attendance_repository.dart';
+import '../../data/repositories/firestore_queued_check_in_repository.dart';
 import '../../data/repositories/firestore_cash_payment_repository.dart';
 import '../../data/repositories/firestore_discipline_repository.dart';
 import '../../data/repositories/firestore_email_template_repository.dart';
@@ -18,6 +19,7 @@ import '../../data/repositories/firestore_rank_repository.dart';
 import '../../domain/repositories/app_settings_repository.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../domain/repositories/attendance_repository.dart';
+import '../../domain/repositories/queued_check_in_repository.dart';
 import '../../domain/repositories/cash_payment_repository.dart';
 import '../../domain/repositories/discipline_repository.dart';
 import '../../domain/repositories/email_template_repository.dart';
@@ -87,6 +89,10 @@ final gradingRepositoryProvider = Provider<GradingRepository>(
 
 final attendanceRepositoryProvider = Provider<AttendanceRepository>(
   (ref) => FirestoreAttendanceRepository(),
+);
+
+final queuedCheckInRepositoryProvider = Provider<QueuedCheckInRepository>(
+  (ref) => FirestoreQueuedCheckInRepository(),
 );
 
 // ── Notifications ──────────────────────────────────────────────────────────
