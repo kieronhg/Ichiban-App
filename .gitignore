@@ -143,4 +143,5 @@ android/key.properties
 # IDE and tooling
 .vs/
 .vscode/
+.idea/
 .claude/
