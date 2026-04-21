@@ -13,6 +13,15 @@ class FirestoreCashPaymentRepository implements CashPaymentRepository {
   }
 
   @override
+  Future<List<CashPayment>> getForMembership(String membershipId) async {
+    final snap = await FirestoreCollections.cashPayments()
+        .where('membershipId', isEqualTo: membershipId)
+        .orderBy('recordedAt', descending: true)
+        .get();
+    return snap.docs.map((d) => d.data()).toList();
+  }
+
+  @override
   Future<List<CashPayment>> getAll() async {
     final snap = await FirestoreCollections.cashPayments()
         .orderBy('recordedAt', descending: true)

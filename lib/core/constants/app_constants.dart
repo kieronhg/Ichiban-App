@@ -8,6 +8,7 @@ class AppConstants {
   static const String colDisciplines = 'disciplines';
   static const String colRanks = 'ranks';
   static const String colMemberships = 'memberships';
+  static const String colMembershipHistory = 'membershipHistory';
   static const String colMembershipPricing = 'membershipPricing';
   static const String colPaytSessions = 'paytSessions';
   static const String colCashPayments = 'cashPayments';

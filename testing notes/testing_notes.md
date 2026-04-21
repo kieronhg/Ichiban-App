@@ -130,7 +130,10 @@ Run the seeder once against a fresh Firestore project and verify:
 - [ ] ✅ Edit button opens edit form pre-populated with current values
 - [ ] ✅ Deactivate button shows confirmation dialog; confirms deactivation;
       pops back to list
-- [ ] ⚠️ Membership summary section shows placeholder text — expected
+- [ ] ✅ Membership summary section shows active membership plan, status, renewal date, and a link to the full record
+- [ ] ✅ Membership summary shows "No active membership" empty state when no active membership exists
+- [ ] ✅ "Create" button in membership summary navigates to Create Membership wizard pre-selecting this profile
+- [ ] ✅ "View" button in membership summary navigates to the membership detail screen
 
 ### Profile create / edit form (`/admin/profiles/create`, `/admin/profiles/:id/edit`)
 
@@ -386,13 +389,15 @@ confusion during testing.
 | Anonymised profiles show '[Anonymised] [Anonymised]' in profile list — discuss with product owner | Profiles (visual treatment) |
 | No guard on rank delete if students hold that rank | Grading feature |
 | `minAttendanceForGrading` stored but not enforced anywhere | Grading feature |
-| Membership summary on profile detail is a placeholder | Memberships feature |
+| ~~Membership summary on profile detail is a placeholder~~ | ✅ Done |
 | Student home and check-in screens are fully built ✅ | — |
 | Student attendance history and grades screens are still placeholders | Student features |
 | Dashboard is a placeholder | Dashboard feature |
 | Settings, Notifications, Payments screens are placeholders | Respective features |
-| PAYT session recording on check-in not yet built | Memberships feature |
-| Lapsed membership flag on dashboard not yet built | Memberships feature |
+| PAYT session recording on check-in not yet built | Memberships / PAYT feature |
+| Lapsed membership flag on dashboard not yet built | Dashboard feature |
+| Membership auto-lapse / trial expiry Cloud Functions not built | Backend / Cloud Functions |
+| Stripe payment integration not built | Payments / Stripe feature |
 | PIN for profiles with no `pinHash` — behaviour undefined | Auth (next iteration) |
 | GDPR anonymisation (Cloud Function) not built | Backend / Cloud Functions |
 | GDPR data export (PDF/CSV) not built | GDPR feature |
@@ -652,3 +657,148 @@ confusion during testing.
 - [ ] ✅ `gradingRecords` contain `gradingScore` (nullable) and `notes` (nullable)
 - [ ] ✅ A promoted student's `currentRankId` on their `enrollments` document is updated to the new rank
 - [ ] ⚠️ `notificationLog` documents are written for nomination (type: `gradingEligibility`) and promotion (type: `gradingPromotion`) — actual push delivery is not yet implemented (see Deferred features item 14)
+
+---
+
+## Memberships Feature
+
+### Membership List (`/admin/memberships`)
+
+- [ ] ✅ Shows all memberships from Firestore; updates live
+- [ ] ✅ Status filter chips (All / Trial / Active / Lapsed / Cancelled / Expired / PAYT) narrow the list
+- [ ] ✅ Search by member name (primary holder or any family member) is case-insensitive
+- [ ] ✅ Each tile shows: primary holder name, plan badge, status badge, amount, and renewal date
+- [ ] ✅ Family memberships show member names below the primary holder name
+- [ ] ✅ PAYT memberships show "PAYT" instead of a renewal date
+- [ ] ✅ FAB "Create Membership" navigates to the create wizard
+- [ ] ✅ Tapping a tile navigates to membership detail screen
+
+### Create Membership Wizard (`/admin/memberships/create`)
+
+**Step 1 — Plan Type**
+
+- [ ] ✅ All 8 plan types displayed as selectable cards
+- [ ] ✅ Selected plan card shows accent border and check icon
+- [ ] ✅ Selecting a plan advances to Step 2
+- [ ] ⚠️ Trial and PAYT plans skip the payment step (progress bar still shows 4 steps correctly)
+
+**Step 2 — Assign Members**
+
+- [ ] ✅ For non-family plans: single member search; selecting a profile assigns them as primary holder
+- [ ] ✅ For family plans: multi-select search; first selected becomes primary holder; subsequent become members
+- [ ] ✅ Family tier indicator updates as members are added (Up to 3 / 4+ tier)
+- [ ] ✅ Primary holder can be changed by removing and re-adding members
+- [ ] ✅ When launched from Profile Detail with `preselectedProfileId`, that profile is pre-selected and locked
+- [ ] ✅ Search filters by full name (case-insensitive, all profile types)
+- [ ] ✅ Continue button disabled until at least one member is assigned
+
+**Step 3 — Payment Method**
+
+- [ ] ✅ Shown for monthly/annual/family plans (Cash, Card, Bank Transfer options)
+- [ ] ✅ Skipped entirely for Trial and PAYT plans (wizard jumps from Step 2 to Step 4)
+- [ ] ✅ Selected payment method shows accent border and check icon
+- [ ] ✅ Default selection is Cash
+
+**Step 4 — Review & Confirm**
+
+- [ ] ✅ Shows plan label, member(s), payment method (or "N/A" for trial/PAYT), and amount from live pricing
+- [ ] ✅ Amount shown with correct frequency (/month, /year)
+- [ ] ✅ Family tier shown for family plans
+- [ ] ✅ "Create Membership" button triggers save; spinner shown while saving
+- [ ] ✅ On success: SnackBar "Membership created." shown; wizard pops back
+- [ ] ✅ Error from use case (e.g. member already has active membership) shown in SnackBar
+
+### Active Membership Guard
+
+- [ ] ⚠️ Attempting to create a membership for a member who already has an active membership throws an error
+- [ ] ⚠️ The error message names the conflicting member ("… already has an active membership")
+- [ ] ⚠️ For family plans, each individual member is checked; error fires on the first conflict
+
+### Membership Detail (`/admin/memberships/:membershipId`)
+
+**Plan summary section**
+
+- [ ] ✅ Plan label, status badge, amount (with frequency), and renewal date shown
+- [ ] ✅ Trial memberships show trial expiry date instead of renewal date
+- [ ] ✅ PAYT memberships show "Pay As You Train" with no renewal date
+- [ ] ✅ Cancelled memberships show cancelled date and "Cancelled by [admin]" (or "System")
+
+**Members section (family memberships)**
+
+- [ ] ✅ Primary holder highlighted separately from other members
+- [ ] ✅ "Add Member" button appears for family memberships
+- [ ] ✅ Adding a member: search dialog, select profile, member added to Firestore and list updates
+- [ ] ✅ Remove button on each non-primary member; shows confirmation dialog before removing
+- [ ] ✅ Family tier label shown (Up to 3 / 4+ members); tier note explains tier changes only at renewal
+- [ ] ⚠️ Removing the primary holder is blocked — SnackBar error shown
+
+**Payment history section**
+
+- [ ] ✅ Shows all `cashPayments` records linked to this membership
+- [ ] ✅ Each row: amount, payment method badge, date recorded
+- [ ] ✅ Payment method badge shows Cash / Card / Bank Transfer
+- [ ] ✅ Empty state shown when no payment records
+
+**Membership history section**
+
+- [ ] ✅ Shows all `membershipHistory` records ordered newest first
+- [ ] ✅ Each row: change type icon, change type label, date, "by [admin name or System]"
+- [ ] ✅ Previous → new plan shown for plan changes
+- [ ] ✅ Notes shown when present on a history record
+
+**Actions (PopupMenuButton)**
+
+- [ ] ✅ "Renew" navigates to Renew Membership screen; disabled for PAYT, Trial, Cancelled, Expired
+- [ ] ✅ "Convert Plan" navigates to Convert Membership Plan screen; disabled for PAYT, Trial, Cancelled
+- [ ] ✅ "Manual Status Override" opens dialog with status dropdown and required notes field
+- [ ] ✅ "Cancel Membership" shows confirmation dialog with optional notes field
+- [ ] ✅ After cancellation: status updates to Cancelled; history record written; screen updates live
+
+### Renew Membership (`/admin/memberships/:membershipId/renew`)
+
+- [ ] ✅ Step 1 shows current plan label, new renewal date (extended from current renewal date, not today), and new amount from live pricing
+- [ ] ✅ Price change callout shown when the new price differs from the stored amount
+- [ ] ✅ Step 2: payment method selection (Cash / Card / Bank Transfer)
+- [ ] ✅ Step 3: confirmation summary with new renewal date and payment method
+- [ ] ✅ "Confirm Renewal" saves; SnackBar "Membership renewed." shown; pops back to detail
+- [ ] ✅ Family tier is recalculated at renewal time (tier based on current member count at time of renewal)
+- [ ] ✅ Annual plans extend by 1 year; monthly plans extend by 1 month
+
+### Convert Membership Plan (`/admin/memberships/:membershipId/convert`)
+
+- [ ] ✅ Step 1 shows all plan types; current plan is highlighted and non-selectable
+- [ ] ✅ Selecting a new plan shows the new amount from live pricing
+- [ ] ✅ Step 2: payment method (hidden for Trial/PAYT targets)
+- [ ] ✅ Step 3: confirmation summary
+- [ ] ✅ On confirm: old membership is cancelled, new membership created for same primary holder
+- [ ] ✅ Wizard double-pops on success (returns to membership list, not the stale detail)
+- [ ] ⚠️ Active membership guard is bypassed for conversion because the old membership is cancelled first
+
+### Manual Status Override
+
+- [ ] ✅ Status dropdown shows all status values except the current one
+- [ ] ✅ Notes field is required — "Save" button disabled until notes are non-empty
+- [ ] ✅ Saving updates `status` and `isActive` on the Firestore document
+- [ ] ✅ History record written with `changeType: statusOverride` and the provided notes
+- [ ] ✅ Membership detail updates live after override
+
+### Grading nomination guard
+
+- [ ] ⚠️ Nominating a student with no active membership throws a descriptive error — SnackBar shown on NominateStudentsScreen
+- [ ] ⚠️ Nominating a student with a trial membership is blocked (trial is not considered "active" for grading purposes)
+- [ ] ⚠️ Nominating a student with a lapsed membership is blocked
+
+### Firestore data integrity
+
+- [ ] ✅ `memberships` documents contain: `planType`, `status`, `isActive`, `primaryHolderId`, `memberProfileIds`, `monthlyAmount`, `paymentMethod`, `familyPricingTier` (family only), `createdByAdminId`, `createdAt`
+- [ ] ✅ Monthly/annual memberships have `subscriptionRenewalDate` set
+- [ ] ✅ Trial memberships have `trialStartDate` and `trialExpiryDate` set; no `subscriptionRenewalDate`
+- [ ] ✅ PAYT memberships have `status: "payt"` and `isActive: true`; no renewal or trial dates
+- [ ] ✅ Cancelled memberships have `cancelledAt`, `cancelledByAdminId` (nullable if system-cancelled)
+- [ ] ✅ `membershipHistory` subcollection records contain: `membershipId`, `changeType`, `previousStatus`, `newStatus`, `changedByAdminId` (nullable), `triggeredByCloudFunction`, `changedAt`
+- [ ] ✅ `membershipHistory` records for plan changes contain `previousPlanType` and `newPlanType`
+- [ ] ✅ `membershipHistory` records for renewals contain `previousAmount`, `newAmount`
+- [ ] ✅ `cashPayments` records for memberships contain `membershipId`, `amount`, `paymentMethod`, `recordedByAdminId`, `recordedAt`
+- [ ] ✅ `cashPayments` records have `paytSessionId: null` when linked to a membership (and vice versa — `membershipId: null` for PAYT session payments)
+- [ ] ⚠️ No `cashPayment` is written for Trial or PAYT memberships at creation time
+- [ ] ⚠️ `stripeCustomerId` and `stripeSubscriptionId` are null placeholders — Stripe integration not yet built

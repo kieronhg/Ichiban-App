@@ -29,6 +29,11 @@ import '../../presentation/features/grading/create_grading_event_screen.dart';
 import '../../presentation/features/grading/grading_event_detail_screen.dart';
 import '../../presentation/features/grading/nominate_students_screen.dart';
 import '../../presentation/features/grading/record_results_screen.dart';
+import '../../presentation/features/memberships/membership_list_screen.dart';
+import '../../presentation/features/memberships/create_membership_wizard_screen.dart';
+import '../../presentation/features/memberships/membership_detail_screen.dart';
+import '../../presentation/features/memberships/renew_membership_screen.dart';
+import '../../presentation/features/memberships/convert_membership_plan_screen.dart';
 import '../../presentation/features/student/student_home_screen.dart';
 import '../../presentation/features/student/self_check_in_screen.dart';
 import '../../presentation/features/student/student_grades_screen.dart';
@@ -36,6 +41,7 @@ import '../../domain/entities/attendance_session.dart';
 import '../../domain/entities/discipline.dart';
 import '../../domain/entities/grading_event.dart';
 import '../../domain/entities/grading_event_student.dart';
+import '../../domain/entities/membership.dart';
 import '../../domain/entities/rank.dart';
 import 'route_names.dart';
 
@@ -265,7 +271,40 @@ class AppRouter {
       GoRoute(
         path: RouteNames.adminMemberships,
         name: 'adminMemberships',
-        builder: (_, state) => const _PlaceholderScreen('Memberships'),
+        builder: (context, state) => const MembershipListScreen(),
+        routes: [
+          GoRoute(
+            path: 'create',
+            name: 'adminMembershipsCreate',
+            builder: (_, state) => CreateMembershipWizardScreen(
+              preselectedProfileId: state.extra is String
+                  ? state.extra as String
+                  : null,
+            ),
+          ),
+          GoRoute(
+            path: ':membershipId',
+            name: 'adminMembershipsDetail',
+            builder: (_, state) =>
+                MembershipDetailScreen(membership: state.extra as Membership),
+            routes: [
+              GoRoute(
+                path: 'renew',
+                name: 'adminMembershipsRenew',
+                builder: (_, state) => RenewMembershipScreen(
+                  membership: state.extra as Membership,
+                ),
+              ),
+              GoRoute(
+                path: 'convert',
+                name: 'adminMembershipsConvert',
+                builder: (_, state) => ConvertMembershipPlanScreen(
+                  membership: state.extra as Membership,
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
       GoRoute(
         path: RouteNames.adminPayments,

@@ -134,23 +134,6 @@ Agree with product owner on the flow, then implement:
 
 ---
 
-## 7. Membership Summary on Profile Detail
-
-**Source:** Profiles handover
-**Depends on:** Memberships feature
-
-**What it is:**
-The `ProfileDetailScreen` (`lib/presentation/features/profiles/profile_detail_screen.dart`)
-has a placeholder "Membership summary coming in a future phase" section.
-
-**What needs replacing:**
-Once the Memberships feature is built, replace the placeholder with:
-- Current membership type and status (active / lapsed / trial)
-- Membership expiry / renewal date
-- Quick link to the full membership record
-
----
-
 ## 8. Dashboard Screen
 
 **Source:** App scaffold
@@ -177,14 +160,13 @@ No handover document has been received for the attendance history screen yet.
 
 ---
 
-## 10. Admin Screens — Memberships, Payments, Settings, Notifications
+## 10. Admin Screens — Payments, Settings, Notifications
 
 **Source:** App scaffold
 **Depends on:** Respective handover documents (not yet received)
 
 **What they are:**
 The following admin routes are currently `_PlaceholderScreen`:
-- `/admin/memberships`
 - `/admin/payments`
 - `/admin/settings`
 - `/admin/notifications`
@@ -192,7 +174,7 @@ The following admin routes are currently `_PlaceholderScreen`:
 Each will be implemented when its handover document is provided.
 
 **Note:** `/admin/enrollment` is fully built ✅. `/admin/attendance` is fully built ✅.
-`/admin/grading` is fully built ✅.
+`/admin/grading` is fully built ✅. `/admin/memberships` is fully built ✅.
 
 ---
 
@@ -238,31 +220,6 @@ an admin flag should appear on the dashboard to prompt follow-up.
 
 ---
 
-## 13. Grading — Membership Check During Nomination
-
-**Source:** Grading feature implementation
-**Depends on:** Memberships feature
-
-**What it is:**
-When an admin nominates a student for a grading event, the system should verify the student
-has an active (non-lapsed, non-trial) membership for the discipline before allowing nomination.
-
-**Where the stub lives:**
-`lib/domain/use_cases/grading/nominate_student_use_case.dart`
-```dart
-// TODO(memberships): check student has an active membership for the discipline.
-// Fetch the student's membership record for disciplineId; throw
-// MembershipInactiveException if lapsed or not found.
-```
-
-**Logic to implement:**
-1. Fetch the student's current membership for `disciplineId`
-2. If not found or `status != active`: throw a descriptive exception
-3. The `NominateStudentsScreen` already surfaces errors via SnackBar — no UI change needed
-4. Admin should see a clear message if a nomination is blocked due to membership
-
----
-
 ## 14. Grading — Push Notifications
 
 **Source:** Grading feature implementation
@@ -297,3 +254,86 @@ these stubs need to be wired up.
 - Integrate with FCM (or equivalent) to send a push to the student's registered device token
 - Device tokens should come from a `deviceTokens` subcollection on the profile (to be designed)
 - The `NotificationLog` documents already record `sentAt` — update this after a successful send
+
+---
+
+## 15. Memberships — Automatic Lapse & Trial Expiry (Cloud Functions)
+
+**Source:** Memberships handover
+**Depends on:** Memberships feature ✅ (now built)
+**Scope:** Backend / Firebase Cloud Functions — NOT Flutter
+
+**What it is:**
+Two scheduled Cloud Functions that run daily to keep membership statuses current without
+requiring admin action:
+
+1. **Lapse function** — finds all `active` memberships where `subscriptionRenewalDate < today`
+   and updates their `status` to `lapsed`, sets `isActive = false`, and writes a `membershipHistory`
+   record with `changeType: lapsed`.
+
+2. **Trial expiry function** — finds all `trial` memberships where `trialExpiryDate < today`
+   and updates their `status` to `expired`, sets `isActive = false`, and writes a `membershipHistory`
+   record with `changeType: cancelled` (or a new `expired` change type if added).
+
+**Firestore fields available:**
+- `subscriptionRenewalDate` (Timestamp) on all non-trial, non-PAYT memberships
+- `trialExpiryDate` (Timestamp) on trial memberships
+- `status` (String — enum name)
+- `isActive` (bool)
+- `membershipHistory` subcollection (via `FirestoreMembershipHistoryRepository`)
+
+**Note:** The Flutter app reads `status` and `isActive` as set by these functions. No Flutter
+change is needed — lapsed/expired memberships will automatically surface correctly in all
+existing screens once the functions run.
+
+---
+
+## 16. Memberships — Stripe Payment Integration
+
+**Source:** Memberships handover
+**Depends on:** Memberships feature ✅ (now built), Stripe account setup
+**Scope:** Backend Cloud Functions + Flutter (partial)
+
+**What it is:**
+The `Membership` entity has `stripeCustomerId` and `stripeSubscriptionId` placeholder fields
+already stored on the Firestore document. When Stripe integration is built:
+
+1. **Backend:** Cloud Functions handle Stripe webhooks (`invoice.paid`, `invoice.payment_failed`,
+   `customer.subscription.deleted`) and update Firestore membership status accordingly.
+
+2. **Flutter:** `PaymentMethod.stripe` is already a valid enum value. The Create wizard's
+   payment step should show a Stripe option that launches the Stripe payment sheet (using
+   `flutter_stripe` package — not yet in `pubspec.yaml`).
+
+3. **Renewal:** Stripe subscriptions auto-renew; the Cloud Function webhook updates
+   `subscriptionRenewalDate` and writes a `membershipHistory` record after each successful charge.
+
+**Note:** `CashPayment` records are NOT written for Stripe payments — the Stripe webhook
+handles the payment record side. The `paymentMethod: stripe` guard in `CreateMembershipUseCase`
+already skips the cash payment write.
+
+---
+
+## 17. Memberships — Dashboard Lapsed / Expiring Flags
+
+**Source:** Memberships handover
+**Depends on:** Memberships feature ✅ (now built), Dashboard feature (item 8, not yet built)
+
+**What it is:**
+The admin dashboard should surface memberships needing attention:
+
+1. **Lapsed memberships** — count of memberships with `status: lapsed`; tapping navigates
+   to `/admin/memberships` pre-filtered to `lapsed` status.
+
+2. **Expiring soon** — count of `active` memberships where `subscriptionRenewalDate` is within
+   the next N days (N from `appSettings/lapseReminderPreDueDays`); tapping navigates to the
+   memberships list with an "expiring soon" filter.
+
+3. **Trial expiring soon** — count of `trial` memberships where `trialExpiryDate` is within
+   the next N days (N from `appSettings/trialExpiryReminderDays`).
+
+**Providers already available:**
+- `membershipsByStatusProvider(MembershipStatus.lapsed)` — use this for lapsed count
+- `membershipListProvider` — filter client-side by `subscriptionRenewalDate` proximity
+- `appSettingsProvider` — already exists; read `lapseReminderPreDueDays` and
+  `trialExpiryReminderDays` keys

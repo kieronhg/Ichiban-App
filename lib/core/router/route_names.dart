@@ -37,6 +37,13 @@ class RouteNames {
   static const String adminGradingRecordResults =
       '/admin/grading/:eventId/record-results';
   static const String adminMemberships = '/admin/memberships';
+  static const String adminMembershipsCreate = '/admin/memberships/create';
+  static const String adminMembershipsDetail =
+      '/admin/memberships/:membershipId';
+  static const String adminMembershipsRenew =
+      '/admin/memberships/:membershipId/renew';
+  static const String adminMembershipsConvert =
+      '/admin/memberships/:membershipId/convert';
   static const String adminPayments = '/admin/payments';
   static const String adminNotifications = '/admin/notifications';
   static const String adminSettings = '/admin/settings';

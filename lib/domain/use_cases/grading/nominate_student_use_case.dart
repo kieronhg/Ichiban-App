@@ -2,13 +2,19 @@ import '../../entities/enums.dart';
 import '../../entities/grading_event_student.dart';
 import '../../entities/notification_log.dart';
 import '../../repositories/grading_event_student_repository.dart';
+import '../../repositories/membership_repository.dart';
 import '../../repositories/notification_repository.dart';
 
 class NominateStudentUseCase {
-  const NominateStudentUseCase(this._eventStudentRepo, this._notificationRepo);
+  const NominateStudentUseCase(
+    this._eventStudentRepo,
+    this._notificationRepo,
+    this._membershipRepo,
+  );
 
   final GradingEventStudentRepository _eventStudentRepo;
   final NotificationRepository _notificationRepo;
+  final MembershipRepository _membershipRepo;
 
   Future<String> call({
     required String gradingEventId,
@@ -18,7 +24,16 @@ class NominateStudentUseCase {
     required String currentRankId,
     required String adminId,
   }) async {
-    // TODO(memberships): check student has an active membership before nominating.
+    // Membership check: student must have an active or PAYT membership.
+    final membership = await _membershipRepo.getActiveForProfile(studentId);
+    if (membership == null) {
+      throw Exception(
+        'Cannot nominate: this student does not have an active membership. '
+        'Please create or renew their membership first.',
+        // TODO(memberships): confirm whether this should be a hard block or
+        // a warning that can be overridden by an admin.
+      );
+    }
 
     final now = DateTime.now();
     final record = GradingEventStudent(

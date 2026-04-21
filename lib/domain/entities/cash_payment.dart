@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
+import 'enums.dart';
 
-// Audit record for every cash payment.
+// Audit record for every manually recorded payment.
 // Either membershipId OR paytSessionId will be set — never both.
 class CashPayment extends Equatable {
   final String id;
@@ -8,6 +9,10 @@ class CashPayment extends Equatable {
   final String? membershipId;
   final String? paytSessionId;
   final double amount;
+
+  /// The actual payment method used (cash, card, bank transfer, etc.).
+  final PaymentMethod paymentMethod;
+
   final String recordedByAdminId;
   final DateTime recordedAt;
   final String? notes;
@@ -18,6 +23,7 @@ class CashPayment extends Equatable {
     this.membershipId,
     this.paytSessionId,
     required this.amount,
+    required this.paymentMethod,
     required this.recordedByAdminId,
     required this.recordedAt,
     this.notes,
@@ -32,6 +38,7 @@ class CashPayment extends Equatable {
     String? membershipId,
     String? paytSessionId,
     double? amount,
+    PaymentMethod? paymentMethod,
     String? recordedByAdminId,
     DateTime? recordedAt,
     String? notes,
@@ -42,6 +49,7 @@ class CashPayment extends Equatable {
       membershipId: membershipId ?? this.membershipId,
       paytSessionId: paytSessionId ?? this.paytSessionId,
       amount: amount ?? this.amount,
+      paymentMethod: paymentMethod ?? this.paymentMethod,
       recordedByAdminId: recordedByAdminId ?? this.recordedByAdminId,
       recordedAt: recordedAt ?? this.recordedAt,
       notes: notes ?? this.notes,
@@ -55,6 +63,7 @@ class CashPayment extends Equatable {
     membershipId,
     paytSessionId,
     amount,
+    paymentMethod,
     recordedByAdminId,
     recordedAt,
     notes,

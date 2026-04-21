@@ -35,6 +35,7 @@ final nominateStudentUseCaseProvider = Provider<NominateStudentUseCase>(
   (ref) => NominateStudentUseCase(
     ref.watch(gradingEventStudentRepositoryProvider),
     ref.watch(notificationRepositoryProvider),
+    ref.watch(membershipRepositoryProvider),
   ),
 );
 

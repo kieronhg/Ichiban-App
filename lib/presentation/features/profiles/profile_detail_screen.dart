@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/providers/attendance_providers.dart';
 import '../../../core/providers/grading_providers.dart';
+import '../../../core/providers/membership_providers.dart';
 import '../../../core/providers/profile_providers.dart';
 import '../../../core/providers/enrollment_providers.dart';
 import '../../../core/providers/discipline_providers.dart';
@@ -14,6 +15,7 @@ import '../../../domain/entities/attendance_record.dart';
 import '../../../domain/entities/enrollment.dart';
 import '../../../domain/entities/enums.dart';
 import '../../../domain/entities/grading_record.dart';
+import '../../../domain/entities/membership.dart';
 import '../../../domain/entities/profile.dart';
 
 class ProfileDetailScreen extends ConsumerWidget {
@@ -245,19 +247,8 @@ class _PersonalTab extends StatelessWidget {
           const SizedBox(height: 12),
         ],
 
-        // ── Membership summary placeholder ────────────────────────────
-        _SectionCard(
-          title: 'Membership',
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(
-                'Membership summary coming in a future phase.',
-                style: TextStyle(color: AppColors.textSecondary),
-              ),
-            ),
-          ],
-        ),
+        // ── Membership summary ────────────────────────────────────────
+        _MembershipSummarySection(profileId: profile.id),
         const SizedBox(height: 24),
 
         // ── Deactivate ────────────────────────────────────────────────
@@ -1214,4 +1205,177 @@ class _InfoBanner extends StatelessWidget {
       ),
     );
   }
+}
+
+// ── Membership summary section ───────────────────────────────────────────────
+
+class _MembershipSummarySection extends ConsumerWidget {
+  const _MembershipSummarySection({required this.profileId});
+
+  final String profileId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final membershipAsync = ref.watch(
+      activeMembershipForProfileProvider(profileId),
+    );
+
+    return _SectionCard(
+      title: 'Membership',
+      headerAction: membershipAsync.asData?.value == null
+          ? TextButton(
+              onPressed: () => context.pushNamed(
+                RouteNames.adminMembershipsCreate,
+                extra: profileId,
+              ),
+              style: TextButton.styleFrom(foregroundColor: AppColors.accent),
+              child: const Text('Create', style: TextStyle(fontSize: 13)),
+            )
+          : TextButton(
+              onPressed: () {
+                final m = membershipAsync.asData!.value!;
+                context.pushNamed(
+                  RouteNames.adminMembershipsDetail,
+                  pathParameters: {'membershipId': m.id},
+                  extra: m,
+                );
+              },
+              style: TextButton.styleFrom(foregroundColor: AppColors.accent),
+              child: const Text('View', style: TextStyle(fontSize: 13)),
+            ),
+      children: [
+        membershipAsync.when(
+          loading: () => const Padding(
+            padding: EdgeInsets.all(16),
+            child: Center(child: CircularProgressIndicator()),
+          ),
+          error: (e, _) => Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text('Error: $e'),
+          ),
+          data: (membership) {
+            if (membership == null) {
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.card_membership_outlined,
+                      size: 16,
+                      color: AppColors.textSecondary.withValues(alpha: 0.5),
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'No active membership.',
+                      style: TextStyle(color: AppColors.textSecondary),
+                    ),
+                  ],
+                ),
+              );
+            }
+            return _MembershipSummaryContent(membership: membership);
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _MembershipSummaryContent extends StatelessWidget {
+  const _MembershipSummaryContent({required this.membership});
+
+  final Membership membership;
+
+  @override
+  Widget build(BuildContext context) {
+    final dateFormat = DateFormat('d MMM yyyy');
+    final renewalStr = membership.subscriptionRenewalDate != null
+        ? 'Renews ${dateFormat.format(membership.subscriptionRenewalDate!)}'
+        : membership.isPayAsYouTrain
+        ? 'Pay As You Train — no renewal'
+        : membership.trialEndDate != null
+        ? 'Trial ends ${dateFormat.format(membership.trialEndDate!)}'
+        : '—';
+
+    final (statusLabel, statusColor) = switch (membership.status) {
+      MembershipStatus.trial => ('Trial', AppColors.info),
+      MembershipStatus.active => ('Active', AppColors.success),
+      MembershipStatus.lapsed => ('Lapsed', AppColors.warning),
+      MembershipStatus.cancelled => ('Cancelled', AppColors.textSecondary),
+      MembershipStatus.expired => ('Expired', AppColors.error),
+      MembershipStatus.payt => ('PAYT', AppColors.accent),
+    };
+
+    final planLabel = switch (membership.planType) {
+      MembershipPlanType.trial => 'Free Trial',
+      MembershipPlanType.monthlyAdult => 'Monthly Adult',
+      MembershipPlanType.monthlyJunior => 'Monthly Junior',
+      MembershipPlanType.annualAdult => 'Annual Adult',
+      MembershipPlanType.annualJunior => 'Annual Junior',
+      MembershipPlanType.familyMonthly => 'Family Monthly',
+      MembershipPlanType.payAsYouTrainAdult => 'PAYT Adult',
+      MembershipPlanType.payAsYouTrainJunior => 'PAYT Junior',
+    };
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  planLabel,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  statusLabel,
+                  style: TextStyle(
+                    color: statusColor,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            renewalStr,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 13,
+            ),
+          ),
+          if (!membership.isPayAsYouTrain && !membership.isTrial) ...[
+            const SizedBox(height: 2),
+            Text(
+              '£${membership.monthlyAmount.toStringAsFixed(2)}${_frequency(membership.planType)}',
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  String _frequency(MembershipPlanType p) => switch (p) {
+    MembershipPlanType.annualAdult ||
+    MembershipPlanType.annualJunior => '/year',
+    _ => '/month',
+  };
 }
