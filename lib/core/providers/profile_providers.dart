@@ -3,6 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/enums.dart';
 import '../../domain/entities/profile.dart';
 import '../../domain/use_cases/profile/anonymise_profile_use_case.dart';
+
+// Sentinel that distinguishes "argument omitted" from "argument passed as null"
+// in ProfileFormState.copyWith. Using identical() avoids operator== overrides.
+const _absent = Object();
 import '../../domain/use_cases/profile/create_profile_use_case.dart';
 import '../../domain/use_cases/profile/deactivate_profile_use_case.dart';
 import '../../domain/use_cases/profile/get_profile_use_case.dart';
@@ -311,15 +315,19 @@ class ProfileFormState {
     payingParentId: payingParentId,
   );
 
+  // Non-nullable fields use the standard T? parameter + ?? pattern.
+  // Nullable fields use Object? + _absent sentinel so that callers can pass
+  // explicit null to CLEAR the field; omitting the argument preserves it.
   ProfileFormState copyWith({
     String? id,
     String? firstName,
     String? lastName,
-    DateTime? dateOfBirth,
+    // nullable ↓
+    Object? dateOfBirth = _absent,
     List<ProfileType>? profileTypes,
-    String? gender,
+    Object? gender = _absent,
     String? addressLine1,
-    String? addressLine2,
+    Object? addressLine2 = _absent,
     String? city,
     String? county,
     String? postcode,
@@ -329,29 +337,33 @@ class ProfileFormState {
     String? emergencyContactName,
     String? emergencyContactRelationship,
     String? emergencyContactPhone,
-    String? allergiesOrMedicalNotes,
+    Object? allergiesOrMedicalNotes = _absent,
     bool? photoVideoConsent,
-    String? notes,
+    Object? notes = _absent,
     List<NotificationChannel>? communicationPreferences,
-    String? parentProfileId,
-    String? secondParentProfileId,
-    String? payingParentId,
+    Object? parentProfileId = _absent,
+    Object? secondParentProfileId = _absent,
+    Object? payingParentId = _absent,
     bool? dataProcessingConsent,
-    String? dataProcessingConsentVersion,
-    DateTime? registrationDate,
+    Object? dataProcessingConsentVersion = _absent,
+    Object? registrationDate = _absent,
     bool? isActive,
     bool? isSaving,
-    String? errorMessage,
+    Object? errorMessage = _absent,
   }) {
     return ProfileFormState(
       id: id ?? this.id,
       firstName: firstName ?? this.firstName,
       lastName: lastName ?? this.lastName,
-      dateOfBirth: dateOfBirth ?? this.dateOfBirth,
+      dateOfBirth: identical(dateOfBirth, _absent)
+          ? this.dateOfBirth
+          : dateOfBirth as DateTime?,
       profileTypes: profileTypes ?? this.profileTypes,
-      gender: gender ?? this.gender,
+      gender: identical(gender, _absent) ? this.gender : gender as String?,
       addressLine1: addressLine1 ?? this.addressLine1,
-      addressLine2: addressLine2 ?? this.addressLine2,
+      addressLine2: identical(addressLine2, _absent)
+          ? this.addressLine2
+          : addressLine2 as String?,
       city: city ?? this.city,
       county: county ?? this.county,
       postcode: postcode ?? this.postcode,
@@ -363,24 +375,36 @@ class ProfileFormState {
           emergencyContactRelationship ?? this.emergencyContactRelationship,
       emergencyContactPhone:
           emergencyContactPhone ?? this.emergencyContactPhone,
-      allergiesOrMedicalNotes:
-          allergiesOrMedicalNotes ?? this.allergiesOrMedicalNotes,
+      allergiesOrMedicalNotes: identical(allergiesOrMedicalNotes, _absent)
+          ? this.allergiesOrMedicalNotes
+          : allergiesOrMedicalNotes as String?,
       photoVideoConsent: photoVideoConsent ?? this.photoVideoConsent,
-      notes: notes ?? this.notes,
+      notes: identical(notes, _absent) ? this.notes : notes as String?,
       communicationPreferences:
           communicationPreferences ?? this.communicationPreferences,
-      parentProfileId: parentProfileId ?? this.parentProfileId,
-      secondParentProfileId:
-          secondParentProfileId ?? this.secondParentProfileId,
-      payingParentId: payingParentId ?? this.payingParentId,
+      parentProfileId: identical(parentProfileId, _absent)
+          ? this.parentProfileId
+          : parentProfileId as String?,
+      secondParentProfileId: identical(secondParentProfileId, _absent)
+          ? this.secondParentProfileId
+          : secondParentProfileId as String?,
+      payingParentId: identical(payingParentId, _absent)
+          ? this.payingParentId
+          : payingParentId as String?,
       dataProcessingConsent:
           dataProcessingConsent ?? this.dataProcessingConsent,
       dataProcessingConsentVersion:
-          dataProcessingConsentVersion ?? this.dataProcessingConsentVersion,
-      registrationDate: registrationDate ?? this.registrationDate,
+          identical(dataProcessingConsentVersion, _absent)
+              ? this.dataProcessingConsentVersion
+              : dataProcessingConsentVersion as String?,
+      registrationDate: identical(registrationDate, _absent)
+          ? this.registrationDate
+          : registrationDate as DateTime?,
       isActive: isActive ?? this.isActive,
       isSaving: isSaving ?? this.isSaving,
-      errorMessage: errorMessage ?? this.errorMessage,
+      errorMessage: identical(errorMessage, _absent)
+          ? this.errorMessage
+          : errorMessage as String?,
     );
   }
 }
