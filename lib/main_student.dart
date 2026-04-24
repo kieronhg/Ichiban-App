@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'app.dart';
 
-// Entry point for the Student shared-device flavor.
-// Run with: flutter run -t lib/main_student.dart
+// Legacy entry point. The app now uses a single shared gateway.
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // TODO: await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  runApp(const ProviderScope(child: IchibanApp(flavor: AppFlavor.student)));
+  runApp(const ProviderScope(child: IchibanApp()));
 }

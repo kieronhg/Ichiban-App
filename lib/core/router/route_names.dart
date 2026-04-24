@@ -2,9 +2,9 @@ class RouteNames {
   RouteNames._();
 
   // Shared
-  static const String splash = '/';
+  static const String entry = '/';
 
-  // Admin flavor
+  // Admin
   static const String adminLogin = '/admin/login';
   static const String adminDashboard = '/admin/dashboard';
   static const String adminProfiles = '/admin/profiles';
@@ -53,7 +53,7 @@ class RouteNames {
   static const String adminNotifications = '/admin/notifications';
   static const String adminSettings = '/admin/settings';
 
-  // Student flavor
+  // Student
   static const String studentSelect = '/student/select';
   static const String studentPin = '/student/pin';
   static const String studentHome = '/student/home';

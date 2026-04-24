@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/providers/profile_providers.dart';
 import '../../../core/providers/student_session_provider.dart';
+import '../../../core/router/route_names.dart';
 
 /// Landing screen shown to a student after PIN authentication.
 ///
@@ -30,6 +31,7 @@ class StudentHomeScreen extends ConsumerWidget {
           TextButton.icon(
             onPressed: () {
               ref.read(studentSessionProvider.notifier).signOut();
+              context.go(RouteNames.entry);
             },
             icon: const Icon(Icons.logout_outlined, size: 18),
             label: const Text('Sign out'),
