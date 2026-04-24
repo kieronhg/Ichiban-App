@@ -30,17 +30,17 @@ class MembershipDetailScreen extends ConsumerWidget {
               .watch(profilesByTypeProvider(ProfileType.adultStudent))
               .asData
               ?.value ??
-          [],
+          <Profile>[],
       ...ref
               .watch(profilesByTypeProvider(ProfileType.juniorStudent))
               .asData
               ?.value ??
-          [],
+          <Profile>[],
       ...ref
               .watch(profilesByTypeProvider(ProfileType.parentGuardian))
               .asData
               ?.value ??
-          [],
+          <Profile>[],
     ];
     final profileMap = {for (final p in allProfiles) p.id: p};
 
