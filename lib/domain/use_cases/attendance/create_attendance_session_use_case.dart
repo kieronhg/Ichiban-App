@@ -1,7 +1,10 @@
 import '../../entities/attendance_record.dart';
 import '../../entities/attendance_session.dart';
 import '../../entities/enums.dart';
+import '../../entities/payt_session.dart';
 import '../../repositories/attendance_repository.dart';
+import '../../repositories/membership_repository.dart';
+import '../../repositories/payt_session_repository.dart';
 import '../../repositories/queued_check_in_repository.dart';
 
 /// Result returned after creating a session.
@@ -19,10 +22,17 @@ class CreateSessionResult {
 }
 
 class CreateAttendanceSessionUseCase {
-  const CreateAttendanceSessionUseCase(this._attendanceRepo, this._queueRepo);
+  const CreateAttendanceSessionUseCase(
+    this._attendanceRepo,
+    this._queueRepo,
+    this._membershipRepo,
+    this._paytRepo,
+  );
 
   final AttendanceRepository _attendanceRepo;
   final QueuedCheckInRepository _queueRepo;
+  final MembershipRepository _membershipRepo;
+  final PaytSessionRepository _paytRepo;
 
   Future<CreateSessionResult> call({
     required String disciplineId,
@@ -68,7 +78,7 @@ class CreateAttendanceSessionUseCase {
       final now = DateTime.now();
       for (final q in pending) {
         // Write the attendance record
-        await _attendanceRepo.createRecord(
+        final recordId = await _attendanceRepo.createRecord(
           AttendanceRecord(
             id: '',
             sessionId: sessionId,
@@ -81,7 +91,25 @@ class CreateAttendanceSessionUseCase {
           ),
         );
 
-        // TODO(memberships): if student is PAYT, write a pending paytSessions record here.
+        // Create a pending PAYT session if the student is on a PAYT plan
+        final membership = await _membershipRepo.getActiveForProfile(
+          q.studentId,
+        );
+        if (membership != null && membership.isPayAsYouTrain) {
+          await _paytRepo.create(
+            PaytSession(
+              id: '',
+              profileId: q.studentId,
+              disciplineId: disciplineId,
+              sessionDate: date,
+              attendanceRecordId: recordId,
+              paymentMethod: PaymentMethod.none,
+              paymentStatus: PaytPaymentStatus.pending,
+              amount: membership.monthlyAmount,
+              createdAt: now,
+            ),
+          );
+        }
 
         // Mark queued check-in resolved
         await _queueRepo.resolve(

@@ -802,3 +802,84 @@ confusion during testing.
 - [ ] ✅ `cashPayments` records have `paytSessionId: null` when linked to a membership (and vice versa — `membershipId: null` for PAYT session payments)
 - [ ] ⚠️ No `cashPayment` is written for Trial or PAYT memberships at creation time
 - [ ] ⚠️ `stripeCustomerId` and `stripeSubscriptionId` are null placeholders — Stripe integration not yet built
+
+---
+
+## Phase 8 — Payments
+
+### Data model
+
+- [ ] ✅ `paytSessions` documents contain: `profileId`, `disciplineId`, `sessionDate`, `attendanceRecordId` (nullable), `paymentMethod`, `paymentStatus`, `paidAt` (nullable), `amount`, `recordedByAdminId` (nullable), `writtenOffByAdminId` (nullable), `writtenOffAt` (nullable), `writeOffReason` (nullable), `createdAt`, `notes` (nullable)
+- [ ] ✅ `cashPayments` documents now include `paymentType` (`membership` | `payt` | `other`) and `editedByAdminId` / `editedAt` (both nullable, set on edit)
+- [ ] ✅ Legacy `cashPayments` documents that predate `paymentType` are gracefully handled — inferred as `membership` if `membershipId` is set, else `payt`
+- [ ] ✅ `cashPayments` documents now include `paymentMethod` for all records (legacy records default to `cash`)
+
+### PAYT auto-creation (attendance integration)
+
+- [ ] ✅ Self check-in by a PAYT student creates a pending `paytSessions` record with `amount` from `membership.monthlyAmount`
+- [ ] ✅ Coach marking a PAYT student present creates a pending `paytSessions` record
+- [ ] ✅ Queue resolution for a PAYT student (on session creation) creates a pending `paytSessions` record
+- [ ] ✅ `paytSessions` record is linked to the attendance record (`attendanceRecordId`) immediately on creation
+- [ ] ⚠️ If a PAYT student is unmarked by a coach, their pending `paytSessions` record is NOT automatically cancelled — admin must action manually (documented in code comment)
+- [ ] ⚠️ Non-PAYT students do NOT get a `paytSessions` record on check-in
+
+### Profile → Payments tab
+
+- [ ] ✅ Profile detail screen has a third "Payments" tab
+- [ ] ✅ Tab shows a combined list of `CashPayments` + `PaytSessions` sorted by date descending
+- [ ] ✅ Outstanding balance banner appears for PAYT members with pending sessions, shows count + total
+- [ ] ✅ Each entry shows: date, type, method, amount, status badge (Paid / Pending / Written off)
+- [ ] ✅ Notes / write-off reason shown if present
+
+### Payments list screen (`/admin/payments`)
+
+- [ ] ✅ Lists all `CashPayments` with member name, date, type, method, amount
+- [ ] ✅ Filter chips: All | Membership | PAYT | Other — correctly filter the list
+- [ ] ✅ FAB navigates to Record Payment screen
+- [ ] ⚠️ Financial Report button (bar chart icon) is only visible to super admins (currently always hidden — `isSuperAdminProvider` returns `false`)
+- [ ] ✅ Tapping a row navigates to Payment Detail screen
+
+### Payment Detail screen
+
+- [ ] ✅ Shows all audit fields: member, type, method, recorded at, recorded by, linked IDs, notes
+- [ ] ✅ Edit history section (Edited by / Edited at) only appears if the record has been edited
+- [ ] ⚠️ Edit button only visible to super admins (currently always hidden)
+- [ ] ⚠️ Edit sheet validates amount > 0; save calls `EditPaymentUseCase`; screen pops on success
+
+### Resolve PAYT session (single)
+
+- [ ] ✅ `ResolvePaytSessionUseCase` marks session paid + writes `CashPayment` with `paymentType: payt`
+- [ ] ✅ `WriteOffPaytSessionUseCase` marks session writtenOff + sets `paymentMethod: writtenOff`; no `CashPayment` is written for write-offs
+
+### Bulk resolve screen (`/admin/payments/bulk-resolve/:profileId`)
+
+- [ ] ✅ Lists all pending sessions for the profile with checkboxes
+- [ ] ✅ Select-all checkbox selects/deselects all
+- [ ] ✅ Resolve panel shows count + total and payment method dropdown
+- [ ] ✅ "Mark N as Paid" button is disabled while busy; shows spinner during operation
+- [ ] ✅ On success, screen pops with snack bar confirmation
+- [ ] ⚠️ Admin ID hardcoded as `'admin'` — update when auth session is built
+
+### Record standalone payment (`/admin/payments/record`)
+
+- [ ] ✅ Dropdown lists all active members (active first, alphabetical)
+- [ ] ✅ Amount validates > 0
+- [ ] ✅ Payment method: Cash | Card | Bank Transfer
+- [ ] ✅ Creates `CashPayment` with `paymentType: other`, no linked membership or PAYT session
+- [ ] ⚠️ Admin ID hardcoded as `'admin'` — update when auth session is built
+- [ ] ⚠️ Pre-selected profile (from `extra`) is applied post-frame — visible after first render
+
+### Financial Report screen (`/admin/payments/report`)
+
+- [ ] ⚠️ Only reachable by super admins (currently unreachable — `isSuperAdminProvider` returns `false`)
+- [ ] ✅ Shows total collected + outstanding PAYT balance
+- [ ] ✅ Breakdown by payment type and by payment method
+- [ ] ✅ Export CSV includes: all `CashPayments` + pending `PaytSessions`; CSV is shared via `share_plus`
+
+### Router
+
+- [ ] ✅ `/admin/payments` → `PaymentsListScreen`
+- [ ] ✅ `/admin/payments/record` → `RecordPaymentScreen`
+- [ ] ✅ `/admin/payments/report` → `FinancialReportScreen`
+- [ ] ✅ `/admin/payments/bulk-resolve/:profileId` → `BulkResolveScreen`
+- [ ] ✅ `/admin/payments/:paymentId` → `PaymentDetailScreen` (requires `CashPayment` in `extra`)

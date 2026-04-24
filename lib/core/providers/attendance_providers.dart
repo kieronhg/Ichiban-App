@@ -20,6 +20,8 @@ final createAttendanceSessionUseCaseProvider =
       (ref) => CreateAttendanceSessionUseCase(
         ref.watch(attendanceRepositoryProvider),
         ref.watch(queuedCheckInRepositoryProvider),
+        ref.watch(membershipRepositoryProvider),
+        ref.watch(paytSessionRepositoryProvider),
       ),
     );
 
@@ -36,7 +38,11 @@ final getAttendanceRecordsUseCaseProvider =
     );
 
 final markAttendanceUseCaseProvider = Provider<MarkAttendanceUseCase>(
-  (ref) => MarkAttendanceUseCase(ref.watch(attendanceRepositoryProvider)),
+  (ref) => MarkAttendanceUseCase(
+    ref.watch(attendanceRepositoryProvider),
+    ref.watch(membershipRepositoryProvider),
+    ref.watch(paytSessionRepositoryProvider),
+  ),
 );
 
 final selfCheckInUseCaseProvider = Provider<SelfCheckInUseCase>(
@@ -45,6 +51,8 @@ final selfCheckInUseCaseProvider = Provider<SelfCheckInUseCase>(
     ref.watch(enrollmentRepositoryProvider),
     ref.watch(rankRepositoryProvider),
     ref.watch(enrolStudentUseCaseProvider),
+    ref.watch(membershipRepositoryProvider),
+    ref.watch(paytSessionRepositoryProvider),
   ),
 );
 

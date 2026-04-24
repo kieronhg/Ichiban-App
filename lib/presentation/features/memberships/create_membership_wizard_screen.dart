@@ -981,6 +981,7 @@ class _Step4Review extends ConsumerWidget {
     PaymentMethod.card => 'Card',
     PaymentMethod.bankTransfer => 'Bank Transfer',
     PaymentMethod.stripe => 'Stripe',
+    PaymentMethod.writtenOff => 'Written off',
     PaymentMethod.none => 'None',
   };
 

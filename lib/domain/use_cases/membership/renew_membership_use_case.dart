@@ -82,6 +82,7 @@ class RenewMembershipUseCase {
           paytSessionId: null,
           amount: newAmount,
           paymentMethod: paymentMethod,
+          paymentType: PaymentType.membership,
           recordedByAdminId: adminId,
           recordedAt: now,
         ),

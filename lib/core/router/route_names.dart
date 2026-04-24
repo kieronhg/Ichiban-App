@@ -45,6 +45,11 @@ class RouteNames {
   static const String adminMembershipsConvert =
       '/admin/memberships/:membershipId/convert';
   static const String adminPayments = '/admin/payments';
+  static const String adminPaymentsDetail = '/admin/payments/:paymentId';
+  static const String adminPaymentsRecord = '/admin/payments/record';
+  static const String adminPaymentsReport = '/admin/payments/report';
+  static const String adminPaymentsBulkResolve =
+      '/admin/payments/bulk-resolve/:profileId';
   static const String adminNotifications = '/admin/notifications';
   static const String adminSettings = '/admin/settings';
 

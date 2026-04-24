@@ -1,7 +1,10 @@
 import '../../entities/attendance_record.dart';
 import '../../entities/enums.dart';
+import '../../entities/payt_session.dart';
 import '../../repositories/attendance_repository.dart';
 import '../../repositories/enrollment_repository.dart';
+import '../../repositories/membership_repository.dart';
+import '../../repositories/payt_session_repository.dart';
 import '../../repositories/rank_repository.dart';
 import '../enrollment/enrol_student_use_case.dart';
 
@@ -23,12 +26,16 @@ class SelfCheckInUseCase {
     this._enrollmentRepo,
     this._rankRepo,
     this._enrolStudentUseCase,
+    this._membershipRepo,
+    this._paytRepo,
   );
 
   final AttendanceRepository _attendanceRepo;
   final EnrollmentRepository _enrollmentRepo;
   final RankRepository _rankRepo;
   final EnrolStudentUseCase _enrolStudentUseCase;
+  final MembershipRepository _membershipRepo;
+  final PaytSessionRepository _paytRepo;
 
   Future<SelfCheckInResult> call({
     required String studentId,
@@ -75,7 +82,9 @@ class SelfCheckInUseCase {
       sessionDate.month,
       sessionDate.day,
     );
-    await _attendanceRepo.createRecord(
+    final now = DateTime.now();
+
+    final recordId = await _attendanceRepo.createRecord(
       AttendanceRecord(
         id: '',
         sessionId: sessionId,
@@ -84,12 +93,30 @@ class SelfCheckInUseCase {
         sessionDate: midnight,
         checkInMethod: CheckInMethod.self,
         checkedInByProfileId: studentId,
-        timestamp: DateTime.now(),
+        timestamp: now,
       ),
     );
 
-    // TODO(memberships): if student is PAYT, write a pending paytSessions record here.
-    // TODO(memberships): if student's membership is lapsed/expired, flag for admin dashboard.
+    // ── Create pending PAYT session if applicable ────────────────────────
+    final membership = await _membershipRepo.getActiveForProfile(studentId);
+    if (membership != null && membership.isPayAsYouTrain) {
+      await _paytRepo.create(
+        PaytSession(
+          id: '',
+          profileId: studentId,
+          disciplineId: disciplineId,
+          sessionDate: midnight,
+          attendanceRecordId: recordId,
+          paymentMethod: PaymentMethod.none,
+          paymentStatus: PaytPaymentStatus.pending,
+          amount: membership.monthlyAmount,
+          createdAt: now,
+        ),
+      );
+    }
+
+    // TODO(auth-session): if student's membership is lapsed/expired, flag for
+    // admin dashboard once Auth & Session design is implemented.
 
     return autoEnrolled
         ? SelfCheckInResult.successWithAutoEnrol

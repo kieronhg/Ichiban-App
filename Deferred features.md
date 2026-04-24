@@ -160,44 +160,20 @@ No handover document has been received for the attendance history screen yet.
 
 ---
 
-## 10. Admin Screens — Payments, Settings, Notifications
+## 10. Admin Screens — Settings, Notifications
 
 **Source:** App scaffold
 **Depends on:** Respective handover documents (not yet received)
 
 **What they are:**
 The following admin routes are currently `_PlaceholderScreen`:
-- `/admin/payments`
 - `/admin/settings`
 - `/admin/notifications`
 
 Each will be implemented when its handover document is provided.
 
-**Note:** `/admin/enrollment` is fully built ✅. `/admin/attendance` is fully built ✅.
-`/admin/grading` is fully built ✅. `/admin/memberships` is fully built ✅.
-
----
-
-## 11. Memberships — PAYT Session Recording
-
-**Source:** Attendance handover — PAYT stub
-**Depends on:** Memberships feature
-
-**What it is:**
-When a student with a Pay-As-You-Train (PAYT) membership checks in to a session
-(via self check-in, queue resolution, or coach marking), a `paytSessions` record
-should be written to track billable sessions.
-
-**Where stubs live:**
-- `lib/domain/use_cases/attendance/self_check_in_use_case.dart` — `// TODO(memberships):` after `createRecord`
-- `lib/domain/use_cases/attendance/create_attendance_session_use_case.dart` — `// TODO(memberships):` inside queue resolution loop
-- `lib/domain/use_cases/attendance/mark_attendance_use_case.dart` — `// TODO(memberships):` inside upsert loop
-
-**Logic to implement:**
-1. Determine if the student's active membership for the discipline is PAYT
-2. If yes, write a `paytSessions` document: `{studentId, sessionId, disciplineId, date, status: 'pending'}`
-3. If a PAYT student is later unmarked by admin, cancel the pending `paytSessions` record
-   (see note in `mark_attendance_use_case.dart` — currently a manual admin task)
+**Note:** `/admin/enrollment`, `/admin/attendance`, `/admin/grading`,
+`/admin/memberships`, and `/admin/payments` are all fully built ✅.
 
 ---
 

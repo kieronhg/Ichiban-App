@@ -8,7 +8,7 @@ class CashPaymentConverter {
   static CashPayment fromMap(String id, Map<String, dynamic> map) {
     return CashPayment(
       id: id,
-      profileId: map['profileId'] as String,
+      profileId: map['profileId'] as String? ?? '',
       membershipId: map['membershipId'] as String?,
       paytSessionId: map['paytSessionId'] as String?,
       amount: (map['amount'] as num).toDouble(),
@@ -16,9 +16,17 @@ class CashPaymentConverter {
       paymentMethod: map['paymentMethod'] != null
           ? PaymentMethod.values.byName(map['paymentMethod'] as String)
           : PaymentMethod.cash,
+      // Gracefully handle legacy records that predate the paymentType field.
+      paymentType: map['paymentType'] != null
+          ? PaymentType.values.byName(map['paymentType'] as String)
+          : (map['membershipId'] != null
+                ? PaymentType.membership
+                : PaymentType.payt),
       recordedByAdminId: map['recordedByAdminId'] as String,
       recordedAt: (map['recordedAt'] as Timestamp).toDate(),
       notes: map['notes'] as String?,
+      editedByAdminId: map['editedByAdminId'] as String?,
+      editedAt: (map['editedAt'] as Timestamp?)?.toDate(),
     );
   }
 
@@ -29,9 +37,14 @@ class CashPaymentConverter {
       'paytSessionId': payment.paytSessionId,
       'amount': payment.amount,
       'paymentMethod': payment.paymentMethod.name,
+      'paymentType': payment.paymentType.name,
       'recordedByAdminId': payment.recordedByAdminId,
       'recordedAt': Timestamp.fromDate(payment.recordedAt),
       'notes': payment.notes,
+      'editedByAdminId': payment.editedByAdminId,
+      'editedAt': payment.editedAt != null
+          ? Timestamp.fromDate(payment.editedAt!)
+          : null,
     };
   }
 }

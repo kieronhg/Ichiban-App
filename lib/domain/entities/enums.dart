@@ -17,7 +17,9 @@ enum FamilyPricingTier { upToThree, fourOrMore }
 
 enum MembershipStatus { trial, active, lapsed, cancelled, expired, payt }
 
-enum PaymentMethod { card, cash, bankTransfer, stripe, none }
+enum PaymentMethod { card, cash, bankTransfer, stripe, writtenOff, none }
+
+enum PaymentType { membership, payt, other }
 
 enum MembershipChangeType {
   created,
@@ -29,7 +31,7 @@ enum MembershipChangeType {
   statusOverride,
 }
 
-enum PaytPaymentStatus { pending, paid }
+enum PaytPaymentStatus { pending, paid, writtenOff }
 
 enum CheckInMethod { self, coach }
 

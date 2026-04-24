@@ -123,6 +123,7 @@ class CreateMembershipUseCase {
           paytSessionId: null,
           amount: amount,
           paymentMethod: paymentMethod,
+          paymentType: PaymentType.membership,
           recordedByAdminId: adminId,
           recordedAt: now,
         ),

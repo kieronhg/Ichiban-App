@@ -477,6 +477,7 @@ class _PlanSummaryCard extends StatelessWidget {
     PaymentMethod.card => 'Card',
     PaymentMethod.bankTransfer => 'Bank Transfer',
     PaymentMethod.stripe => 'Stripe',
+    PaymentMethod.writtenOff => 'Written off',
     PaymentMethod.none => 'None',
   };
 }
@@ -751,6 +752,7 @@ class _PaymentRow extends StatelessWidget {
       PaymentMethod.card => 'Card',
       PaymentMethod.bankTransfer => 'Bank Transfer',
       PaymentMethod.stripe => 'Stripe',
+      PaymentMethod.writtenOff => 'Written off',
       PaymentMethod.none => '—',
     };
     return Padding(

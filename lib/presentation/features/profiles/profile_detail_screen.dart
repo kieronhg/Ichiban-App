@@ -7,15 +7,18 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/providers/attendance_providers.dart';
 import '../../../core/providers/grading_providers.dart';
 import '../../../core/providers/membership_providers.dart';
+import '../../../core/providers/payments_providers.dart';
 import '../../../core/providers/profile_providers.dart';
 import '../../../core/providers/enrollment_providers.dart';
 import '../../../core/providers/discipline_providers.dart';
 import '../../../core/router/route_names.dart';
 import '../../../domain/entities/attendance_record.dart';
+import '../../../domain/entities/cash_payment.dart';
 import '../../../domain/entities/enrollment.dart';
 import '../../../domain/entities/enums.dart';
 import '../../../domain/entities/grading_record.dart';
 import '../../../domain/entities/membership.dart';
+import '../../../domain/entities/payt_session.dart';
 import '../../../domain/entities/profile.dart';
 
 class ProfileDetailScreen extends ConsumerWidget {
@@ -55,7 +58,7 @@ class _ProfileDetailView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold(
         appBar: AppBar(
           title: Text(profile.fullName),
@@ -74,6 +77,7 @@ class _ProfileDetailView extends ConsumerWidget {
             tabs: [
               Tab(text: 'Personal'),
               Tab(text: 'Disciplines & Grading'),
+              Tab(text: 'Payments'),
             ],
           ),
         ),
@@ -81,6 +85,7 @@ class _ProfileDetailView extends ConsumerWidget {
           children: [
             _PersonalTab(profile: profile, ref: ref),
             _DisciplinesGradingTab(profile: profile),
+            _PaymentsTab(profileId: profile.id),
           ],
         ),
       ),
@@ -549,6 +554,255 @@ class _DisciplinesGradingTab extends ConsumerWidget {
           ],
         );
       },
+    );
+  }
+}
+
+// ── Payments tab ────────────────────────────────────────────────────────────
+
+/// A unified payment history for a single profile, combining CashPayments and
+/// PaytSessions, sorted newest-first.
+class _PaymentsTab extends ConsumerWidget {
+  const _PaymentsTab({required this.profileId});
+
+  final String profileId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final cashAsync = ref.watch(cashPaymentsForProfileProvider(profileId));
+    final paytAsync = ref.watch(paytSessionsForProfileProvider(profileId));
+    final balance = ref.watch(outstandingBalanceProvider(profileId));
+    final pendingCount = ref.watch(pendingPaytSessionCountProvider(profileId));
+
+    final isLoading = cashAsync is AsyncLoading || paytAsync is AsyncLoading;
+    final hasError = cashAsync is AsyncError || paytAsync is AsyncError;
+
+    if (isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (hasError) {
+      return const Center(child: Text('Could not load payment history.'));
+    }
+
+    final cashPayments = cashAsync.asData?.value ?? [];
+    final paytSessions = paytAsync.asData?.value ?? [];
+
+    // Build a merged, sorted list of _PaymentEntry items
+    final entries = <_PaymentEntry>[
+      for (final c in cashPayments) _PaymentEntry.fromCash(c),
+      for (final p in paytSessions) _PaymentEntry.fromPayt(p),
+    ]..sort((a, b) => b.date.compareTo(a.date));
+
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        // ── Outstanding balance banner (PAYT only) ───────────────────
+        if (pendingCount > 0) ...[
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: AppColors.warning.withAlpha(30),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: AppColors.warning.withAlpha(100)),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.pending_actions_outlined,
+                  color: AppColors.warning,
+                  size: 20,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    '$pendingCount unpaid '
+                    '${pendingCount == 1 ? 'session' : 'sessions'} — '
+                    '£${balance.toStringAsFixed(2)} outstanding',
+                    style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+
+        // ── Payment list ─────────────────────────────────────────────
+        if (entries.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 32),
+            child: Center(
+              child: Text(
+                'No payment records yet.',
+                style: TextStyle(color: AppColors.textSecondary),
+              ),
+            ),
+          )
+        else
+          _SectionCard(
+            title: 'Payment History',
+            children: entries.map((e) => _PaymentEntryRow(entry: e)).toList(),
+          ),
+
+        const SizedBox(height: 24),
+      ],
+    );
+  }
+}
+
+// ── Payment entry model ──────────────────────────────────────────────────────
+
+class _PaymentEntry {
+  const _PaymentEntry({
+    required this.date,
+    required this.amount,
+    required this.typeLabel,
+    required this.statusLabel,
+    required this.statusColor,
+    required this.methodLabel,
+    required this.notes,
+  });
+
+  final DateTime date;
+  final double amount;
+  final String typeLabel;
+  final String statusLabel;
+  final Color statusColor;
+  final String methodLabel;
+  final String? notes;
+
+  factory _PaymentEntry.fromCash(CashPayment c) {
+    final typeLabel = switch (c.paymentType) {
+      PaymentType.membership => 'Membership',
+      PaymentType.payt => 'PAYT',
+      PaymentType.other => 'Other',
+    };
+    final methodLabel = _methodLabel(c.paymentMethod);
+    return _PaymentEntry(
+      date: c.recordedAt,
+      amount: c.amount,
+      typeLabel: typeLabel,
+      statusLabel: 'Paid',
+      statusColor: AppColors.success,
+      methodLabel: methodLabel,
+      notes: c.notes,
+    );
+  }
+
+  factory _PaymentEntry.fromPayt(PaytSession p) {
+    final (statusLabel, statusColor) = switch (p.paymentStatus) {
+      PaytPaymentStatus.pending => ('Pending', AppColors.warning),
+      PaytPaymentStatus.paid => ('Paid', AppColors.success),
+      PaytPaymentStatus.writtenOff => ('Written off', AppColors.textSecondary),
+    };
+    final methodLabel = p.isPending ? '—' : _methodLabel(p.paymentMethod);
+    return _PaymentEntry(
+      date: p.sessionDate,
+      amount: p.amount,
+      typeLabel: 'PAYT session',
+      statusLabel: statusLabel,
+      statusColor: statusColor,
+      methodLabel: methodLabel,
+      notes: p.writeOffReason ?? p.notes,
+    );
+  }
+
+  static String _methodLabel(PaymentMethod m) => switch (m) {
+    PaymentMethod.cash => 'Cash',
+    PaymentMethod.card => 'Card',
+    PaymentMethod.bankTransfer => 'Bank transfer',
+    PaymentMethod.stripe => 'Stripe',
+    PaymentMethod.writtenOff => 'Written off',
+    PaymentMethod.none => '—',
+  };
+}
+
+// ── Payment entry row ────────────────────────────────────────────────────────
+
+class _PaymentEntryRow extends StatelessWidget {
+  const _PaymentEntryRow({required this.entry});
+
+  final _PaymentEntry entry;
+
+  @override
+  Widget build(BuildContext context) {
+    final dateLabel = DateFormat('d MMM yyyy').format(entry.date);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Row(
+        children: [
+          // Date + type
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  dateLabel,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '${entry.typeLabel} · ${entry.methodLabel}',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                  ),
+                ),
+                if (entry.notes != null && entry.notes!.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    entry.notes!,
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 11,
+                      fontStyle: FontStyle.italic,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          // Amount + status
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                '£${entry.amount.toStringAsFixed(2)}',
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: entry.statusColor.withAlpha(25),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  entry.statusLabel,
+                  style: TextStyle(
+                    color: entry.statusColor,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

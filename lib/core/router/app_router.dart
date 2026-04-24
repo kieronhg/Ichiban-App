@@ -34,10 +34,16 @@ import '../../presentation/features/memberships/create_membership_wizard_screen.
 import '../../presentation/features/memberships/membership_detail_screen.dart';
 import '../../presentation/features/memberships/renew_membership_screen.dart';
 import '../../presentation/features/memberships/convert_membership_plan_screen.dart';
+import '../../presentation/features/payments/bulk_resolve_screen.dart';
+import '../../presentation/features/payments/financial_report_screen.dart';
+import '../../presentation/features/payments/payment_detail_screen.dart';
+import '../../presentation/features/payments/payments_list_screen.dart';
+import '../../presentation/features/payments/record_payment_screen.dart';
 import '../../presentation/features/student/student_home_screen.dart';
 import '../../presentation/features/student/self_check_in_screen.dart';
 import '../../presentation/features/student/student_grades_screen.dart';
 import '../../domain/entities/attendance_session.dart';
+import '../../domain/entities/cash_payment.dart';
 import '../../domain/entities/discipline.dart';
 import '../../domain/entities/grading_event.dart';
 import '../../domain/entities/grading_event_student.dart';
@@ -309,7 +315,36 @@ class AppRouter {
       GoRoute(
         path: RouteNames.adminPayments,
         name: 'adminPayments',
-        builder: (_, state) => const _PlaceholderScreen('Payments'),
+        builder: (_, state) => const PaymentsListScreen(),
+        routes: [
+          GoRoute(
+            path: 'record',
+            name: 'adminPaymentsRecord',
+            builder: (_, state) => RecordPaymentScreen(
+              preselectedProfileId: state.extra is String
+                  ? state.extra as String
+                  : null,
+            ),
+          ),
+          GoRoute(
+            path: 'report',
+            name: 'adminPaymentsReport',
+            builder: (_, state) => const FinancialReportScreen(),
+          ),
+          GoRoute(
+            path: 'bulk-resolve/:profileId',
+            name: 'adminPaymentsBulkResolve',
+            builder: (_, state) => BulkResolveScreen(
+              profileId: state.pathParameters['profileId']!,
+            ),
+          ),
+          GoRoute(
+            path: ':paymentId',
+            name: 'adminPaymentsDetail',
+            builder: (_, state) =>
+                PaymentDetailScreen(payment: state.extra as CashPayment),
+          ),
+        ],
       ),
       GoRoute(
         path: RouteNames.adminSettings,

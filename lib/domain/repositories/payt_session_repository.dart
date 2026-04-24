@@ -8,7 +8,7 @@ abstract class PaytSessionRepository {
   /// Returns all PAYT sessions for a given profile.
   Future<List<PaytSession>> getForProfile(String profileId);
 
-  /// Returns all unpaid PAYT sessions for a given profile.
+  /// Returns all pending (unpaid) PAYT sessions for a given profile.
   Future<List<PaytSession>> getPendingForProfile(String profileId);
 
   /// Creates a new PAYT session record and returns the generated document ID.
@@ -21,9 +21,27 @@ abstract class PaytSessionRepository {
     required PaymentMethod paymentMethod,
   });
 
+  /// Writes off a PAYT session, recording the admin and reason.
+  Future<void> writeOff(
+    String id, {
+    required String writtenOffByAdminId,
+    required String writeOffReason,
+  });
+
   /// Links an attendance record to a PAYT session after check-in.
   Future<void> linkAttendanceRecord(
     String sessionId,
     String attendanceRecordId,
   );
+
+  /// Watches all PAYT sessions across all profiles, ordered by sessionDate
+  /// descending.
+  Stream<List<PaytSession>> watchAll();
+
+  /// Watches all PAYT sessions for a given profile, ordered by sessionDate
+  /// descending.
+  Stream<List<PaytSession>> watchForProfile(String profileId);
+
+  /// Watches all pending PAYT sessions for a given profile.
+  Stream<List<PaytSession>> watchPendingForProfile(String profileId);
 }
