@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/mock/mock_auth_repository.dart';
+import '../../data/mock/mock_profile_repository.dart';
 // import '../../data/repositories/firebase_auth_repository.dart'; // restore when Firebase is configured
 import '../../data/repositories/firestore_app_settings_repository.dart';
 import '../../data/repositories/firestore_attendance_repository.dart';
@@ -17,7 +18,7 @@ import '../../data/repositories/firestore_membership_repository.dart';
 import '../../data/repositories/firestore_membership_history_repository.dart';
 import '../../data/repositories/firestore_notification_repository.dart';
 import '../../data/repositories/firestore_payt_session_repository.dart';
-import '../../data/repositories/firestore_profile_repository.dart';
+// import '../../data/repositories/firestore_profile_repository.dart'; // restore when Firebase is configured
 import '../../data/repositories/firestore_rank_repository.dart';
 
 import '../../domain/repositories/app_settings_repository.dart';
@@ -49,7 +50,8 @@ final authRepositoryProvider = Provider<AuthRepository>(
 // ── Profile ────────────────────────────────────────────────────────────────
 
 final profileRepositoryProvider = Provider<ProfileRepository>(
-  (ref) => FirestoreProfileRepository(),
+  (ref) => MockProfileRepository(),
+  // TODO: swap back to FirestoreProfileRepository() once Firebase is configured
 );
 
 // ── Membership ─────────────────────────────────────────────────────────────
