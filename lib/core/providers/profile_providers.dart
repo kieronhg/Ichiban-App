@@ -3,10 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/enums.dart';
 import '../../domain/entities/profile.dart';
 import '../../domain/use_cases/profile/anonymise_profile_use_case.dart';
-
-// Sentinel that distinguishes "argument omitted" from "argument passed as null"
-// in ProfileFormState.copyWith. Using identical() avoids operator== overrides.
-const _absent = Object();
 import '../../domain/use_cases/profile/create_profile_use_case.dart';
 import '../../domain/use_cases/profile/deactivate_profile_use_case.dart';
 import '../../domain/use_cases/profile/get_profile_use_case.dart';
@@ -14,6 +10,10 @@ import '../../domain/use_cases/profile/get_profiles_use_case.dart';
 import '../../domain/use_cases/profile/set_pin_use_case.dart';
 import '../../domain/use_cases/profile/update_profile_use_case.dart';
 import 'repository_providers.dart';
+
+// Sentinel that distinguishes "argument omitted" from "argument passed as null"
+// in ProfileFormState.copyWith. Using identical() avoids operator== overrides.
+const _absent = Object();
 
 // ── Use-case providers ─────────────────────────────────────────────────────
 
@@ -395,8 +395,8 @@ class ProfileFormState {
           dataProcessingConsent ?? this.dataProcessingConsent,
       dataProcessingConsentVersion:
           identical(dataProcessingConsentVersion, _absent)
-              ? this.dataProcessingConsentVersion
-              : dataProcessingConsentVersion as String?,
+          ? this.dataProcessingConsentVersion
+          : dataProcessingConsentVersion as String?,
       registrationDate: identical(registrationDate, _absent)
           ? this.registrationDate
           : registrationDate as DateTime?,
