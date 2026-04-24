@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../data/repositories/firebase_auth_repository.dart';
+import '../../data/mock/mock_auth_repository.dart';
+// import '../../data/repositories/firebase_auth_repository.dart'; // restore when Firebase is configured
 import '../../data/repositories/firestore_app_settings_repository.dart';
 import '../../data/repositories/firestore_attendance_repository.dart';
 import '../../data/repositories/firestore_queued_check_in_repository.dart';
@@ -41,7 +42,8 @@ import '../../domain/repositories/rank_repository.dart';
 // ── Auth ───────────────────────────────────────────────────────────────────
 
 final authRepositoryProvider = Provider<AuthRepository>(
-  (ref) => FirebaseAuthRepository(),
+  (ref) => MockAuthRepository(),
+  // TODO: swap back to FirebaseAuthRepository() once Firebase is configured
 );
 
 // ── Profile ────────────────────────────────────────────────────────────────
