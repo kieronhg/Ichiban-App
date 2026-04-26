@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/repositories/firebase_auth_repository.dart';
+import '../../data/repositories/firestore_admin_user_repository.dart';
+import '../../data/repositories/firestore_app_setup_repository.dart';
 import '../../data/repositories/firestore_app_settings_repository.dart';
 import '../../data/repositories/firestore_attendance_repository.dart';
 import '../../data/repositories/firestore_queued_check_in_repository.dart';
@@ -19,6 +21,8 @@ import '../../data/repositories/firestore_notification_repository.dart';
 import '../../data/repositories/firestore_payt_session_repository.dart';
 import '../../data/repositories/firestore_rank_repository.dart';
 
+import '../../domain/repositories/admin_user_repository.dart';
+import '../../domain/repositories/app_setup_repository.dart';
 import '../../domain/repositories/app_settings_repository.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../domain/repositories/attendance_repository.dart';
@@ -42,6 +46,18 @@ import '../../domain/repositories/rank_repository.dart';
 
 final authRepositoryProvider = Provider<AuthRepository>(
   (ref) => FirebaseAuthRepository(),
+);
+
+// ── Admin Users ────────────────────────────────────────────────────────────
+
+final adminUserRepositoryProvider = Provider<AdminUserRepository>(
+  (ref) => FirestoreAdminUserRepository(),
+);
+
+// ── App Setup ──────────────────────────────────────────────────────────────
+
+final appSetupRepositoryProvider = Provider<AppSetupRepository>(
+  (ref) => FirestoreAppSetupRepository(),
 );
 
 // ── Profile ────────────────────────────────────────────────────────────────

@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/constants/app_constants.dart';
+import '../../domain/entities/admin_user.dart';
+import '../../domain/entities/app_setup.dart';
 import '../../domain/entities/profile.dart';
 import '../../domain/entities/membership.dart';
 import '../../domain/entities/membership_history.dart';
@@ -35,7 +37,9 @@ import 'converters/attendance_record_converter.dart';
 import 'converters/queued_check_in_converter.dart';
 import 'converters/notification_log_converter.dart';
 import 'converters/email_template_converter.dart';
+import 'converters/admin_user_converter.dart';
 import 'converters/app_setting_converter.dart';
+import 'converters/app_setup_converter.dart';
 
 /// Central access point for all typed Firestore collection references.
 /// All collections use withConverter so snapshots are automatically
@@ -226,5 +230,26 @@ class FirestoreCollections {
         fromFirestore: (snap, _) =>
             AppSettingConverter.fromMap(snap.id, snap.data()!),
         toFirestore: (setting, _) => AppSettingConverter.toMap(setting),
+      );
+
+  // ── Admin Users ──────────────────────────────────────────────────────────────
+
+  static CollectionReference<AdminUser> adminUsers() => _db
+      .collection(AppConstants.colAdminUsers)
+      .withConverter<AdminUser>(
+        fromFirestore: (snap, _) =>
+            AdminUserConverter.fromMap(snap.id, snap.data()!),
+        toFirestore: (adminUser, _) => AdminUserConverter.toMap(adminUser),
+      );
+
+  // ── App Setup (single-document collection) ───────────────────────────────────
+
+  static DocumentReference<AppSetup> appSetupDoc() => _db
+      .collection(AppConstants.colAppSetup)
+      .doc('status')
+      .withConverter<AppSetup>(
+        fromFirestore: (snap, _) =>
+            AppSetupConverter.fromMap(snap.data() ?? {}),
+        toFirestore: (setup, _) => AppSetupConverter.toMap(setup),
       );
 }

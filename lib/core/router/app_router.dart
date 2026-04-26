@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/providers/admin_providers.dart';
 import '../../core/providers/auth_providers.dart';
 import '../../core/providers/student_session_provider.dart';
 import '../../domain/entities/attendance_session.dart';
@@ -18,6 +19,7 @@ import '../../presentation/features/attendance/queued_check_ins_screen.dart';
 import '../../presentation/features/attendance/session_detail_screen.dart';
 import '../../presentation/features/auth/admin_login_screen.dart';
 import '../../presentation/features/auth/entry_gateway_screen.dart';
+import '../../presentation/features/auth/setup_wizard_screen.dart';
 import '../../presentation/features/auth/pin_entry_screen.dart';
 import '../../presentation/features/auth/student_select_screen.dart';
 import '../../presentation/features/disciplines/discipline_detail_screen.dart';
@@ -82,15 +84,33 @@ class AppRouter {
       final isAuthenticated = ref.read(isAdminAuthenticatedProvider);
       final isAuthLoading = ref.read(authStateProvider).isLoading;
       final isOnAdminLogin = location == RouteNames.adminLogin;
+      final isOnAdminSetup = location == RouteNames.adminSetup;
+
+      // Setup status — treat loading/error as "not complete" (show wizard).
+      final setupAsync = ref.read(appSetupStatusProvider);
+      final setupComplete = setupAsync.asData?.value.setupComplete ?? false;
 
       final session = ref.read(studentSessionProvider);
       final isOnStudentSelect = location == RouteNames.studentSelect;
       final isOnStudentPin = location == RouteNames.studentPin;
 
+      // ── Setup wizard guard ─────────────────────────────────────────────
+      // If setup is not done, the only admin page allowed is /admin/setup.
+      if (!setupComplete && isAdminRoute && !isOnAdminSetup) {
+        return RouteNames.adminSetup;
+      }
+
+      // Once setup is complete, prevent going back to wizard.
+      if (setupComplete && isOnAdminSetup) {
+        return isAuthenticated
+            ? RouteNames.adminDashboard
+            : RouteNames.adminLogin;
+      }
+
       if (isAdminRoute) {
         if (isAuthLoading) return null;
 
-        if (!isAuthenticated && !isOnAdminLogin) {
+        if (!isAuthenticated && !isOnAdminLogin && !isOnAdminSetup) {
           return RouteNames.adminLogin;
         }
 
@@ -114,6 +134,11 @@ class AppRouter {
       }
 
       if (isEntryPage) {
+        // If setup hasn't been completed yet, go to wizard.
+        if (!setupComplete) {
+          return RouteNames.adminSetup;
+        }
+
         if (!isAuthLoading && isAuthenticated) {
           return RouteNames.adminDashboard;
         }
@@ -131,6 +156,11 @@ class AppRouter {
         path: RouteNames.entry,
         name: 'entry',
         builder: (_, state) => const EntryGatewayScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.adminSetup,
+        name: 'adminSetup',
+        builder: (_, state) => const SetupWizardScreen(),
       ),
       GoRoute(
         path: RouteNames.adminLogin,
@@ -429,5 +459,6 @@ class _RouterRefreshNotifier extends ChangeNotifier {
   _RouterRefreshNotifier(WidgetRef ref) {
     ref.listen(authStateProvider, (prev, next) => notifyListeners());
     ref.listen(studentSessionProvider, (prev, next) => notifyListeners());
+    ref.listen(appSetupStatusProvider, (prev, next) => notifyListeners());
   }
 }

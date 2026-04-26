@@ -22,6 +22,8 @@ class AppConstants {
   static const String colNotificationLogs = 'notificationLogs';
   static const String colEmailTemplates = 'emailTemplates';
   static const String colAppSettings = 'appSettings';
+  static const String colAdminUsers = 'adminUsers';
+  static const String colAppSetup = 'appSetup';
 
   // Shared preferences keys
   static const String prefActiveStudentId = 'active_student_id';

@@ -19,6 +19,11 @@ abstract class AuthRepository {
 
   /// Sends a password-reset email to [email].
   Future<void> sendPasswordReset({required String email});
+
+  /// Creates a new Firebase Auth account and returns the new user's UID.
+  /// Used by the setup wizard to create the first owner account.
+  /// Throws [AuthException] on failure.
+  Future<String> createUser({required String email, required String password});
 }
 
 /// Typed exception thrown by [AuthRepository] implementations.
