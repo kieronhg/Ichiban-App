@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/constants/app_constants.dart';
 import '../../domain/entities/profile.dart';
 import '../../domain/entities/membership.dart';
+import '../../domain/entities/membership_history.dart';
 import '../../domain/entities/membership_pricing.dart';
 import '../../domain/entities/payt_session.dart';
 import '../../domain/entities/cash_payment.dart';
@@ -19,6 +20,7 @@ import '../../domain/entities/email_template.dart';
 import '../../domain/entities/app_setting.dart';
 import 'converters/profile_converter.dart';
 import 'converters/membership_converter.dart';
+import 'converters/membership_history_converter.dart';
 import 'converters/membership_pricing_converter.dart';
 import 'converters/payt_session_converter.dart';
 import 'converters/cash_payment_converter.dart';
@@ -61,6 +63,16 @@ class FirestoreCollections {
         fromFirestore: (snap, _) =>
             MembershipConverter.fromMap(snap.id, snap.data()!),
         toFirestore: (membership, _) => MembershipConverter.toMap(membership),
+      );
+
+  // ── Membership History ──────────────────────────────────────────────────────
+
+  static CollectionReference<MembershipHistory> membershipHistory() => _db
+      .collection(AppConstants.colMembershipHistory)
+      .withConverter<MembershipHistory>(
+        fromFirestore: (snap, _) =>
+            MembershipHistoryConverter.fromMap(snap.id, snap.data()!),
+        toFirestore: (record, _) => MembershipHistoryConverter.toMap(record),
       );
 
   // ── Membership Pricing ──────────────────────────────────────────────────────

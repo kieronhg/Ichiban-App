@@ -28,6 +28,8 @@ class MembershipConverter {
       stripeSubscriptionId: map['stripeSubscriptionId'] as String?,
       createdByAdminId: map['createdByAdminId'] as String,
       createdAt: (map['createdAt'] as Timestamp).toDate(),
+      cancelledAt: (map['cancelledAt'] as Timestamp?)?.toDate(),
+      cancelledByAdminId: map['cancelledByAdminId'] as String?,
       notes: map['notes'] as String?,
       isActive: map['isActive'] as bool,
     );
@@ -58,6 +60,10 @@ class MembershipConverter {
       'stripeSubscriptionId': membership.stripeSubscriptionId,
       'createdByAdminId': membership.createdByAdminId,
       'createdAt': Timestamp.fromDate(membership.createdAt),
+      'cancelledAt': membership.cancelledAt != null
+          ? Timestamp.fromDate(membership.cancelledAt!)
+          : null,
+      'cancelledByAdminId': membership.cancelledByAdminId,
       'notes': membership.notes,
       'isActive': membership.isActive,
     };

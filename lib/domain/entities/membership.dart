@@ -33,6 +33,8 @@ class Membership extends Equatable {
 
   final String createdByAdminId;
   final DateTime createdAt;
+  final DateTime? cancelledAt;
+  final String? cancelledByAdminId;
   final String? notes;
   final bool isActive;
 
@@ -53,6 +55,8 @@ class Membership extends Equatable {
     this.stripeSubscriptionId,
     required this.createdByAdminId,
     required this.createdAt,
+    this.cancelledAt,
+    this.cancelledByAdminId,
     this.notes,
     required this.isActive,
   });
@@ -87,6 +91,8 @@ class Membership extends Equatable {
     String? stripeSubscriptionId,
     String? createdByAdminId,
     DateTime? createdAt,
+    DateTime? cancelledAt,
+    String? cancelledByAdminId,
     String? notes,
     bool? isActive,
   }) {
@@ -108,6 +114,8 @@ class Membership extends Equatable {
       stripeSubscriptionId: stripeSubscriptionId ?? this.stripeSubscriptionId,
       createdByAdminId: createdByAdminId ?? this.createdByAdminId,
       createdAt: createdAt ?? this.createdAt,
+      cancelledAt: cancelledAt ?? this.cancelledAt,
+      cancelledByAdminId: cancelledByAdminId ?? this.cancelledByAdminId,
       notes: notes ?? this.notes,
       isActive: isActive ?? this.isActive,
     );
@@ -131,6 +139,8 @@ class Membership extends Equatable {
     stripeSubscriptionId,
     createdByAdminId,
     createdAt,
+    cancelledAt,
+    cancelledByAdminId,
     notes,
     isActive,
   ];

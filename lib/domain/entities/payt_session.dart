@@ -1,6 +1,8 @@
 import 'package:equatable/equatable.dart';
 import 'enums.dart';
 
+const _absent = Object();
+
 class PaytSession extends Equatable {
   final String id;
   final String profileId;
@@ -17,8 +19,13 @@ class PaytSession extends Equatable {
   // GBP snapshot at time of session
   final double amount;
 
-  // Set when admin logs a cash payment
+  // Set when admin resolves payment
   final String? recordedByAdminId;
+
+  // Set when admin writes off the session
+  final String? writtenOffByAdminId;
+  final DateTime? writtenOffAt;
+  final String? writeOffReason;
 
   final DateTime createdAt;
   final String? notes;
@@ -34,39 +41,60 @@ class PaytSession extends Equatable {
     this.paidAt,
     required this.amount,
     this.recordedByAdminId,
+    this.writtenOffByAdminId,
+    this.writtenOffAt,
+    this.writeOffReason,
     required this.createdAt,
     this.notes,
   });
 
   bool get isPaid => paymentStatus == PaytPaymentStatus.paid;
+  bool get isPending => paymentStatus == PaytPaymentStatus.pending;
+  bool get isWrittenOff => paymentStatus == PaytPaymentStatus.writtenOff;
 
   PaytSession copyWith({
     String? id,
     String? profileId,
     String? disciplineId,
     DateTime? sessionDate,
-    String? attendanceRecordId,
+    Object? attendanceRecordId = _absent,
     PaymentMethod? paymentMethod,
     PaytPaymentStatus? paymentStatus,
-    DateTime? paidAt,
+    Object? paidAt = _absent,
     double? amount,
-    String? recordedByAdminId,
+    Object? recordedByAdminId = _absent,
+    Object? writtenOffByAdminId = _absent,
+    Object? writtenOffAt = _absent,
+    Object? writeOffReason = _absent,
     DateTime? createdAt,
-    String? notes,
+    Object? notes = _absent,
   }) {
     return PaytSession(
       id: id ?? this.id,
       profileId: profileId ?? this.profileId,
       disciplineId: disciplineId ?? this.disciplineId,
       sessionDate: sessionDate ?? this.sessionDate,
-      attendanceRecordId: attendanceRecordId ?? this.attendanceRecordId,
+      attendanceRecordId: identical(attendanceRecordId, _absent)
+          ? this.attendanceRecordId
+          : attendanceRecordId as String?,
       paymentMethod: paymentMethod ?? this.paymentMethod,
       paymentStatus: paymentStatus ?? this.paymentStatus,
-      paidAt: paidAt ?? this.paidAt,
+      paidAt: identical(paidAt, _absent) ? this.paidAt : paidAt as DateTime?,
       amount: amount ?? this.amount,
-      recordedByAdminId: recordedByAdminId ?? this.recordedByAdminId,
+      recordedByAdminId: identical(recordedByAdminId, _absent)
+          ? this.recordedByAdminId
+          : recordedByAdminId as String?,
+      writtenOffByAdminId: identical(writtenOffByAdminId, _absent)
+          ? this.writtenOffByAdminId
+          : writtenOffByAdminId as String?,
+      writtenOffAt: identical(writtenOffAt, _absent)
+          ? this.writtenOffAt
+          : writtenOffAt as DateTime?,
+      writeOffReason: identical(writeOffReason, _absent)
+          ? this.writeOffReason
+          : writeOffReason as String?,
       createdAt: createdAt ?? this.createdAt,
-      notes: notes ?? this.notes,
+      notes: identical(notes, _absent) ? this.notes : notes as String?,
     );
   }
 
@@ -82,6 +110,9 @@ class PaytSession extends Equatable {
     paidAt,
     amount,
     recordedByAdminId,
+    writtenOffByAdminId,
+    writtenOffAt,
+    writeOffReason,
     createdAt,
     notes,
   ];

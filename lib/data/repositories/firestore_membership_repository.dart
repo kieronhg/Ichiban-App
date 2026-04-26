@@ -12,6 +12,15 @@ class FirestoreMembershipRepository implements MembershipRepository {
   }
 
   @override
+  Future<List<Membership>> getForProfile(String profileId) async {
+    final snap = await FirestoreCollections.memberships()
+        .where('memberProfileIds', arrayContains: profileId)
+        .orderBy('createdAt', descending: true)
+        .get();
+    return snap.docs.map((d) => d.data()).toList();
+  }
+
+  @override
   Future<Membership?> getActiveForProfile(String profileId) async {
     final snap = await FirestoreCollections.memberships()
         .where('memberProfileIds', arrayContains: profileId)
@@ -60,6 +69,14 @@ class FirestoreMembershipRepository implements MembershipRepository {
   }
 
   @override
+  Future<List<Membership>> getAll() async {
+    final snap = await FirestoreCollections.memberships()
+        .orderBy('createdAt', descending: true)
+        .get();
+    return snap.docs.map((d) => d.data()).toList();
+  }
+
+  @override
   Future<String> create(Membership membership) async {
     final ref = await FirestoreCollections.memberships().add(membership);
     return ref.id;
@@ -78,39 +95,57 @@ class FirestoreMembershipRepository implements MembershipRepository {
   }
 
   @override
-  Future<void> addFamilyMember(String membershipId, String profileId) async {
-    final ref = FirestoreCollections.memberships().doc(membershipId);
+  Future<void> renew({
+    required String id,
+    required DateTime newRenewalDate,
+    required double newAmount,
+    required PaymentMethod paymentMethod,
+    FamilyPricingTier? newFamilyTier,
+  }) async {
+    final data = <String, dynamic>{
+      'status': MembershipStatus.active.name,
+      'subscriptionRenewalDate': Timestamp.fromDate(newRenewalDate),
+      'monthlyAmount': newAmount,
+      'paymentMethod': paymentMethod.name,
+      'isActive': true,
+    };
+    if (newFamilyTier != null) {
+      data['familyPricingTier'] = newFamilyTier.name;
+    }
+    await FirestoreCollections.memberships().doc(id).update(data);
+  }
 
-    // Add the profile to the array
-    await ref.update({
+  @override
+  Future<void> cancel({
+    required String id,
+    required String adminId,
+    required DateTime cancelledAt,
+    String? notes,
+  }) async {
+    final data = <String, dynamic>{
+      'status': MembershipStatus.cancelled.name,
+      'cancelledAt': Timestamp.fromDate(cancelledAt),
+      'cancelledByAdminId': adminId,
+      'isActive': false,
+    };
+    if (notes != null) data['notes'] = notes;
+    await FirestoreCollections.memberships().doc(id).update(data);
+  }
+
+  @override
+  Future<void> addFamilyMember(String membershipId, String profileId) async {
+    // Per handover Part 9: tier does NOT recalculate on add — only at renewal.
+    await FirestoreCollections.memberships().doc(membershipId).update({
       'memberProfileIds': FieldValue.arrayUnion([profileId]),
     });
-
-    // Re-fetch to get the updated count and recalculate tier
-    final snap = await ref.get();
-    final updated = snap.data()!;
-    final newTier = Membership.deriveFamilyTier(
-      updated.memberProfileIds.length,
-    );
-    await ref.update({'familyPricingTier': newTier.name});
   }
 
   @override
   Future<void> removeFamilyMember(String membershipId, String profileId) async {
-    final ref = FirestoreCollections.memberships().doc(membershipId);
-
-    // Remove the profile from the array
-    await ref.update({
+    // Per handover Part 9: tier does NOT recalculate on remove — only at renewal.
+    await FirestoreCollections.memberships().doc(membershipId).update({
       'memberProfileIds': FieldValue.arrayRemove([profileId]),
     });
-
-    // Re-fetch to get the updated count and recalculate tier
-    final snap = await ref.get();
-    final updated = snap.data()!;
-    final newTier = Membership.deriveFamilyTier(
-      updated.memberProfileIds.length,
-    );
-    await ref.update({'familyPricingTier': newTier.name});
   }
 
   @override

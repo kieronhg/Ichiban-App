@@ -50,6 +50,21 @@ class FirestorePaytSessionRepository implements PaytSessionRepository {
   }
 
   @override
+  Future<void> writeOff(
+    String id, {
+    required String writtenOffByAdminId,
+    required String writeOffReason,
+  }) async {
+    await FirestoreCollections.paytSessions().doc(id).update({
+      'paymentStatus': PaytPaymentStatus.writtenOff.name,
+      'paymentMethod': PaymentMethod.writtenOff.name,
+      'writtenOffByAdminId': writtenOffByAdminId,
+      'writtenOffAt': Timestamp.fromDate(DateTime.now()),
+      'writeOffReason': writeOffReason,
+    });
+  }
+
+  @override
   Future<void> linkAttendanceRecord(
     String sessionId,
     String attendanceRecordId,
@@ -57,5 +72,31 @@ class FirestorePaytSessionRepository implements PaytSessionRepository {
     await FirestoreCollections.paytSessions().doc(sessionId).update({
       'attendanceRecordId': attendanceRecordId,
     });
+  }
+
+  @override
+  Stream<List<PaytSession>> watchAll() {
+    return FirestoreCollections.paytSessions()
+        .orderBy('sessionDate', descending: true)
+        .snapshots()
+        .map((snap) => snap.docs.map((d) => d.data()).toList());
+  }
+
+  @override
+  Stream<List<PaytSession>> watchForProfile(String profileId) {
+    return FirestoreCollections.paytSessions()
+        .where('profileId', isEqualTo: profileId)
+        .orderBy('sessionDate', descending: true)
+        .snapshots()
+        .map((snap) => snap.docs.map((d) => d.data()).toList());
+  }
+
+  @override
+  Stream<List<PaytSession>> watchPendingForProfile(String profileId) {
+    return FirestoreCollections.paytSessions()
+        .where('profileId', isEqualTo: profileId)
+        .where('paymentStatus', isEqualTo: PaytPaymentStatus.pending.name)
+        .snapshots()
+        .map((snap) => snap.docs.map((d) => d.data()).toList());
   }
 }

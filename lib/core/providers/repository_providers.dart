@@ -9,13 +9,14 @@ import '../../data/repositories/firestore_discipline_repository.dart';
 import '../../data/repositories/firestore_email_template_repository.dart';
 import '../../data/repositories/firestore_enrollment_repository.dart';
 import '../../data/repositories/firestore_grading_repository.dart';
+import '../../data/repositories/firestore_profile_repository.dart';
 import '../../data/repositories/firestore_grading_event_repository.dart';
 import '../../data/repositories/firestore_grading_event_student_repository.dart';
 import '../../data/repositories/firestore_membership_pricing_repository.dart';
 import '../../data/repositories/firestore_membership_repository.dart';
+import '../../data/repositories/firestore_membership_history_repository.dart';
 import '../../data/repositories/firestore_notification_repository.dart';
 import '../../data/repositories/firestore_payt_session_repository.dart';
-import '../../data/repositories/firestore_profile_repository.dart';
 import '../../data/repositories/firestore_rank_repository.dart';
 
 import '../../domain/repositories/app_settings_repository.dart';
@@ -31,6 +32,7 @@ import '../../domain/repositories/grading_event_repository.dart';
 import '../../domain/repositories/grading_event_student_repository.dart';
 import '../../domain/repositories/membership_pricing_repository.dart';
 import '../../domain/repositories/membership_repository.dart';
+import '../../domain/repositories/membership_history_repository.dart';
 import '../../domain/repositories/notification_repository.dart';
 import '../../domain/repositories/payt_session_repository.dart';
 import '../../domain/repositories/profile_repository.dart';
@@ -53,6 +55,11 @@ final profileRepositoryProvider = Provider<ProfileRepository>(
 final membershipRepositoryProvider = Provider<MembershipRepository>(
   (ref) => FirestoreMembershipRepository(),
 );
+
+final membershipHistoryRepositoryProvider =
+    Provider<MembershipHistoryRepository>(
+      (ref) => FirestoreMembershipHistoryRepository(),
+    );
 
 final membershipPricingRepositoryProvider =
     Provider<MembershipPricingRepository>(

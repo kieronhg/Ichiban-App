@@ -3,6 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/repositories/auth_repository.dart';
 import 'repository_providers.dart';
 
+// Sentinel that distinguishes "argument omitted" from "argument passed as null"
+// in copyWith. Using identical() instead of == avoids any risk of a custom
+// operator overriding the comparison.
+const _absent = Object();
+
 // ── Auth state ─────────────────────────────────────────────────────────────
 
 /// Emits the current admin UID whenever Firebase auth state changes.
@@ -118,16 +123,25 @@ class SignInState {
 
   SignInState copyWith({
     bool? isLoading,
-    String? errorMessage,
-    String? emailError,
-    String? passwordError,
+    // Nullable fields use Object? + _absent sentinel so callers can explicitly
+    // pass null to clear the field. Omitting the argument preserves the current
+    // value; passing null clears it.
+    Object? errorMessage = _absent,
+    Object? emailError = _absent,
+    Object? passwordError = _absent,
     bool? resetEmailSent,
   }) {
     return SignInState(
       isLoading: isLoading ?? this.isLoading,
-      errorMessage: errorMessage ?? this.errorMessage,
-      emailError: emailError ?? this.emailError,
-      passwordError: passwordError ?? this.passwordError,
+      errorMessage: identical(errorMessage, _absent)
+          ? this.errorMessage
+          : errorMessage as String?,
+      emailError: identical(emailError, _absent)
+          ? this.emailError
+          : emailError as String?,
+      passwordError: identical(passwordError, _absent)
+          ? this.passwordError
+          : passwordError as String?,
       resetEmailSent: resetEmailSent ?? this.resetEmailSent,
     );
   }

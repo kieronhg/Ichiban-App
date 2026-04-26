@@ -21,6 +21,9 @@ class PaytSessionConverter {
       paidAt: (map['paidAt'] as Timestamp?)?.toDate(),
       amount: (map['amount'] as num).toDouble(),
       recordedByAdminId: map['recordedByAdminId'] as String?,
+      writtenOffByAdminId: map['writtenOffByAdminId'] as String?,
+      writtenOffAt: (map['writtenOffAt'] as Timestamp?)?.toDate(),
+      writeOffReason: map['writeOffReason'] as String?,
       createdAt: (map['createdAt'] as Timestamp).toDate(),
       notes: map['notes'] as String?,
     );
@@ -39,6 +42,11 @@ class PaytSessionConverter {
           : null,
       'amount': session.amount,
       'recordedByAdminId': session.recordedByAdminId,
+      'writtenOffByAdminId': session.writtenOffByAdminId,
+      'writtenOffAt': session.writtenOffAt != null
+          ? Timestamp.fromDate(session.writtenOffAt!)
+          : null,
+      'writeOffReason': session.writeOffReason,
       'createdAt': Timestamp.fromDate(session.createdAt),
       'notes': session.notes,
     };

@@ -33,7 +33,10 @@ class _StudentSelectScreenState extends ConsumerState<StudentSelectScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        automaticallyImplyLeading: false,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.go(RouteNames.entry),
+        ),
         title: const Text('Who are you?'),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(64),

@@ -4,45 +4,58 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/providers/auth_providers.dart';
 import '../../core/providers/student_session_provider.dart';
+import '../../domain/entities/attendance_session.dart';
+import '../../domain/entities/cash_payment.dart';
+import '../../domain/entities/discipline.dart';
+import '../../domain/entities/grading_event.dart';
+import '../../domain/entities/grading_event_student.dart';
+import '../../domain/entities/membership.dart';
 import '../../domain/entities/profile.dart';
+import '../../domain/entities/rank.dart';
+import '../../presentation/features/attendance/attendance_list_screen.dart';
+import '../../presentation/features/attendance/create_attendance_session_screen.dart';
+import '../../presentation/features/attendance/queued_check_ins_screen.dart';
+import '../../presentation/features/attendance/session_detail_screen.dart';
 import '../../presentation/features/auth/admin_login_screen.dart';
-import '../../presentation/features/auth/student_select_screen.dart';
+import '../../presentation/features/auth/entry_gateway_screen.dart';
 import '../../presentation/features/auth/pin_entry_screen.dart';
+import '../../presentation/features/auth/student_select_screen.dart';
+import '../../presentation/features/disciplines/discipline_detail_screen.dart';
+import '../../presentation/features/disciplines/discipline_form_screen.dart';
+import '../../presentation/features/disciplines/discipline_list_screen.dart';
+import '../../presentation/features/disciplines/rank_form_screen.dart';
+import '../../presentation/features/enrollment/bulk_enrol_preview_screen.dart';
+import '../../presentation/features/enrollment/bulk_enrol_upload_screen.dart';
+import '../../presentation/features/enrollment/csv_enrolment_parser.dart';
+import '../../presentation/features/enrollment/enrol_discipline_screen.dart';
+import '../../presentation/features/grading/create_grading_event_screen.dart';
+import '../../presentation/features/grading/grading_event_detail_screen.dart';
+import '../../presentation/features/grading/grading_list_screen.dart';
+import '../../presentation/features/grading/nominate_students_screen.dart';
+import '../../presentation/features/grading/record_results_screen.dart';
+import '../../presentation/features/memberships/convert_membership_plan_screen.dart';
+import '../../presentation/features/memberships/create_membership_wizard_screen.dart';
+import '../../presentation/features/memberships/membership_detail_screen.dart';
+import '../../presentation/features/memberships/membership_list_screen.dart';
+import '../../presentation/features/memberships/renew_membership_screen.dart';
+import '../../presentation/features/payments/bulk_resolve_screen.dart';
+import '../../presentation/features/payments/financial_report_screen.dart';
+import '../../presentation/features/payments/payment_detail_screen.dart';
+import '../../presentation/features/payments/payments_list_screen.dart';
+import '../../presentation/features/payments/record_payment_screen.dart';
 import '../../presentation/features/profiles/profile_detail_screen.dart';
 import '../../presentation/features/profiles/profile_form_screen.dart';
 import '../../presentation/features/profiles/profile_list_screen.dart';
 import '../../presentation/features/profiles/student_profile_screen.dart';
-import '../../presentation/features/disciplines/discipline_list_screen.dart';
-import '../../presentation/features/disciplines/discipline_detail_screen.dart';
-import '../../presentation/features/disciplines/discipline_form_screen.dart';
-import '../../presentation/features/disciplines/rank_form_screen.dart';
-import '../../presentation/features/enrollment/enrol_discipline_screen.dart';
-import '../../presentation/features/enrollment/bulk_enrol_upload_screen.dart';
-import '../../presentation/features/enrollment/bulk_enrol_preview_screen.dart';
-import '../../presentation/features/enrollment/csv_enrolment_parser.dart';
-import '../../presentation/features/attendance/attendance_list_screen.dart';
-import '../../presentation/features/attendance/create_attendance_session_screen.dart';
-import '../../presentation/features/attendance/session_detail_screen.dart';
-import '../../presentation/features/attendance/queued_check_ins_screen.dart';
-import '../../presentation/features/grading/grading_list_screen.dart';
-import '../../presentation/features/grading/create_grading_event_screen.dart';
-import '../../presentation/features/grading/grading_event_detail_screen.dart';
-import '../../presentation/features/grading/nominate_students_screen.dart';
-import '../../presentation/features/grading/record_results_screen.dart';
-import '../../presentation/features/student/student_home_screen.dart';
 import '../../presentation/features/student/self_check_in_screen.dart';
 import '../../presentation/features/student/student_grades_screen.dart';
-import '../../domain/entities/attendance_session.dart';
-import '../../domain/entities/discipline.dart';
-import '../../domain/entities/grading_event.dart';
-import '../../domain/entities/grading_event_student.dart';
-import '../../domain/entities/rank.dart';
+import '../../presentation/features/student/student_home_screen.dart';
 import 'route_names.dart';
 
-// Placeholder screens — replaced during feature implementation phases
 class _PlaceholderScreen extends StatelessWidget {
-  final String label;
   const _PlaceholderScreen(this.label);
+
+  final String label;
 
   @override
   Widget build(BuildContext context) {
@@ -58,32 +71,67 @@ class _PlaceholderScreen extends StatelessWidget {
 class AppRouter {
   AppRouter._();
 
-  // ── Admin router ───────────────────────────────────────────────────────
-
-  static GoRouter adminRouter({required WidgetRef ref}) => GoRouter(
-    initialLocation: RouteNames.adminDashboard,
+  static GoRouter router({required WidgetRef ref}) => GoRouter(
+    initialLocation: RouteNames.entry,
     redirect: (context, state) {
+      final location = state.matchedLocation;
+      final isEntryPage = location == RouteNames.entry;
+      final isAdminRoute = location.startsWith('/admin');
+      final isStudentRoute = location.startsWith('/student');
+
       final isAuthenticated = ref.read(isAdminAuthenticatedProvider);
       final isAuthLoading = ref.read(authStateProvider).isLoading;
-      final onLoginPage = state.matchedLocation == RouteNames.adminLogin;
+      final isOnAdminLogin = location == RouteNames.adminLogin;
 
-      // Still resolving auth state — don't redirect yet
-      if (isAuthLoading) return null;
+      final session = ref.read(studentSessionProvider);
+      final isOnStudentSelect = location == RouteNames.studentSelect;
+      final isOnStudentPin = location == RouteNames.studentPin;
 
-      // Not authenticated → send to login (unless already there)
-      if (!isAuthenticated && !onLoginPage) {
-        return RouteNames.adminLogin;
+      if (isAdminRoute) {
+        if (isAuthLoading) return null;
+
+        if (!isAuthenticated && !isOnAdminLogin) {
+          return RouteNames.adminLogin;
+        }
+
+        if (isAuthenticated && isOnAdminLogin) {
+          return RouteNames.adminDashboard;
+        }
       }
 
-      // Authenticated + on login page → send to dashboard
-      if (isAuthenticated && onLoginPage) {
-        return RouteNames.adminDashboard;
+      if (isStudentRoute) {
+        if (!session.isProfileSelected) {
+          return isOnStudentSelect ? null : RouteNames.studentSelect;
+        }
+
+        if (!session.isAuthenticated) {
+          return isOnStudentPin ? null : RouteNames.studentPin;
+        }
+
+        if (isOnStudentSelect || isOnStudentPin) {
+          return RouteNames.studentHome;
+        }
+      }
+
+      if (isEntryPage) {
+        if (!isAuthLoading && isAuthenticated) {
+          return RouteNames.adminDashboard;
+        }
+
+        if (session.isAuthenticated) {
+          return RouteNames.studentHome;
+        }
       }
 
       return null;
     },
-    refreshListenable: _AuthChangeNotifier(ref),
+    refreshListenable: _RouterRefreshNotifier(ref),
     routes: [
+      GoRoute(
+        path: RouteNames.entry,
+        name: 'entry',
+        builder: (_, state) => const EntryGatewayScreen(),
+      ),
       GoRoute(
         path: RouteNames.adminLogin,
         name: 'adminLogin',
@@ -94,8 +142,6 @@ class AppRouter {
         name: 'adminDashboard',
         builder: (_, state) => const _PlaceholderScreen('Dashboard'),
       ),
-
-      // ── Profiles ──────────────────────────────────────────────
       GoRoute(
         path: RouteNames.adminProfiles,
         name: 'adminProfiles',
@@ -128,8 +174,6 @@ class AppRouter {
           ),
         ],
       ),
-
-      // ── Disciplines & Ranks ────────────────────────────────────
       GoRoute(
         path: RouteNames.adminDisciplines,
         name: 'adminDisciplines',
@@ -181,7 +225,6 @@ class AppRouter {
           ),
         ],
       ),
-      // ── Enrollment (top-level bulk enrol entry point) ──────────
       GoRoute(
         path: RouteNames.adminEnrollment,
         name: 'adminEnrollment',
@@ -265,49 +308,80 @@ class AppRouter {
       GoRoute(
         path: RouteNames.adminMemberships,
         name: 'adminMemberships',
-        builder: (_, state) => const _PlaceholderScreen('Memberships'),
+        builder: (_, state) => const MembershipListScreen(),
+        routes: [
+          GoRoute(
+            path: 'create',
+            name: 'adminMembershipsCreate',
+            builder: (_, state) => CreateMembershipWizardScreen(
+              preselectedProfileId: state.extra is String
+                  ? state.extra as String
+                  : null,
+            ),
+          ),
+          GoRoute(
+            path: ':membershipId',
+            name: 'adminMembershipsDetail',
+            builder: (_, state) =>
+                MembershipDetailScreen(membership: state.extra as Membership),
+            routes: [
+              GoRoute(
+                path: 'renew',
+                name: 'adminMembershipsRenew',
+                builder: (_, state) => RenewMembershipScreen(
+                  membership: state.extra as Membership,
+                ),
+              ),
+              GoRoute(
+                path: 'convert',
+                name: 'adminMembershipsConvert',
+                builder: (_, state) => ConvertMembershipPlanScreen(
+                  membership: state.extra as Membership,
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
       GoRoute(
         path: RouteNames.adminPayments,
         name: 'adminPayments',
-        builder: (_, state) => const _PlaceholderScreen('Payments'),
+        builder: (_, state) => const PaymentsListScreen(),
+        routes: [
+          GoRoute(
+            path: 'record',
+            name: 'adminPaymentsRecord',
+            builder: (_, state) => RecordPaymentScreen(
+              preselectedProfileId: state.extra is String
+                  ? state.extra as String
+                  : null,
+            ),
+          ),
+          GoRoute(
+            path: 'report',
+            name: 'adminPaymentsReport',
+            builder: (_, state) => const FinancialReportScreen(),
+          ),
+          GoRoute(
+            path: 'bulk-resolve/:profileId',
+            name: 'adminPaymentsBulkResolve',
+            builder: (_, state) => BulkResolveScreen(
+              profileId: state.pathParameters['profileId']!,
+            ),
+          ),
+          GoRoute(
+            path: ':paymentId',
+            name: 'adminPaymentsDetail',
+            builder: (_, state) =>
+                PaymentDetailScreen(payment: state.extra as CashPayment),
+          ),
+        ],
       ),
       GoRoute(
         path: RouteNames.adminSettings,
         name: 'adminSettings',
         builder: (_, state) => const _PlaceholderScreen('Settings'),
       ),
-    ],
-  );
-
-  // ── Student router ─────────────────────────────────────────────────────
-
-  static GoRouter studentRouter({required WidgetRef ref}) => GoRouter(
-    initialLocation: RouteNames.studentSelect,
-    redirect: (context, state) {
-      final session = ref.read(studentSessionProvider);
-      final location = state.matchedLocation;
-
-      final onSelect = location == RouteNames.studentSelect;
-      final onPin = location == RouteNames.studentPin;
-
-      if (!session.isProfileSelected) {
-        // No profile picked — must go to select screen
-        return onSelect ? null : RouteNames.studentSelect;
-      }
-
-      if (!session.isAuthenticated) {
-        // Profile selected but PIN not yet entered
-        return onPin ? null : RouteNames.studentPin;
-      }
-
-      // Fully authenticated — don't let them go back to select/pin
-      if (onSelect || onPin) return RouteNames.studentHome;
-
-      return null;
-    },
-    refreshListenable: _StudentSessionChangeNotifier(ref),
-    routes: [
       GoRoute(
         path: RouteNames.studentSelect,
         name: 'studentSelect',
@@ -344,7 +418,6 @@ class AppRouter {
         path: RouteNames.studentProfile,
         name: 'studentProfile',
         builder: (_, state) => StudentProfileScreen(
-          // Profile ID comes from the active session, not the route
           profileId: ref.read(studentSessionProvider).profileId ?? '',
         ),
       ),
@@ -352,20 +425,9 @@ class AppRouter {
   );
 }
 
-// ── Riverpod → Listenable bridges ─────────────────────────────────────────
-
-/// Notifies go_router's [refreshListenable] whenever Firebase auth state
-/// changes, triggering re-evaluation of the admin router's redirect.
-class _AuthChangeNotifier extends ChangeNotifier {
-  _AuthChangeNotifier(WidgetRef ref) {
+class _RouterRefreshNotifier extends ChangeNotifier {
+  _RouterRefreshNotifier(WidgetRef ref) {
     ref.listen(authStateProvider, (prev, next) => notifyListeners());
-  }
-}
-
-/// Notifies go_router's [refreshListenable] whenever the student session
-/// changes, triggering re-evaluation of the student router's redirect.
-class _StudentSessionChangeNotifier extends ChangeNotifier {
-  _StudentSessionChangeNotifier(WidgetRef ref) {
     ref.listen(studentSessionProvider, (prev, next) => notifyListeners());
   }
 }
