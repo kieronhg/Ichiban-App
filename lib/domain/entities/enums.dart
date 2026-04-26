@@ -1,3 +1,5 @@
+enum AdminRole { owner, coach }
+
 enum RankType { kyu, dan, mon, ungraded }
 
 enum ProfileType { adultStudent, juniorStudent, coach, parentGuardian }

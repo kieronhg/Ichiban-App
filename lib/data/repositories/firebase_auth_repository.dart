@@ -41,6 +41,22 @@ class FirebaseAuthRepository implements AuthRepository {
     }
   }
 
+  @override
+  Future<String> createUser({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      final credential = await _auth.createUserWithEmailAndPassword(
+        email: email.trim(),
+        password: password,
+      );
+      return credential.user!.uid;
+    } on FirebaseAuthException catch (e) {
+      throw AuthException(_friendlyMessage(e.code), code: e.code);
+    }
+  }
+
   // ── Helpers ──────────────────────────────────────────────────────────────
 
   String _friendlyMessage(String code) => switch (code) {

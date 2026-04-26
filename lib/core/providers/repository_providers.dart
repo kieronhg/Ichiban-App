@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../data/mock/mock_auth_repository.dart';
-import '../../data/mock/mock_profile_repository.dart';
-// import '../../data/repositories/firebase_auth_repository.dart'; // restore when Firebase is configured
+import '../../data/repositories/firebase_auth_repository.dart';
+import '../../data/repositories/firestore_admin_user_repository.dart';
+import '../../data/repositories/firestore_app_setup_repository.dart';
 import '../../data/repositories/firestore_app_settings_repository.dart';
 import '../../data/repositories/firestore_attendance_repository.dart';
 import '../../data/repositories/firestore_queued_check_in_repository.dart';
@@ -11,6 +11,7 @@ import '../../data/repositories/firestore_discipline_repository.dart';
 import '../../data/repositories/firestore_email_template_repository.dart';
 import '../../data/repositories/firestore_enrollment_repository.dart';
 import '../../data/repositories/firestore_grading_repository.dart';
+import '../../data/repositories/firestore_profile_repository.dart';
 import '../../data/repositories/firestore_grading_event_repository.dart';
 import '../../data/repositories/firestore_grading_event_student_repository.dart';
 import '../../data/repositories/firestore_membership_pricing_repository.dart';
@@ -18,9 +19,10 @@ import '../../data/repositories/firestore_membership_repository.dart';
 import '../../data/repositories/firestore_membership_history_repository.dart';
 import '../../data/repositories/firestore_notification_repository.dart';
 import '../../data/repositories/firestore_payt_session_repository.dart';
-// import '../../data/repositories/firestore_profile_repository.dart'; // restore when Firebase is configured
 import '../../data/repositories/firestore_rank_repository.dart';
 
+import '../../domain/repositories/admin_user_repository.dart';
+import '../../domain/repositories/app_setup_repository.dart';
 import '../../domain/repositories/app_settings_repository.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../domain/repositories/attendance_repository.dart';
@@ -43,15 +45,25 @@ import '../../domain/repositories/rank_repository.dart';
 // ── Auth ───────────────────────────────────────────────────────────────────
 
 final authRepositoryProvider = Provider<AuthRepository>(
-  (ref) => MockAuthRepository(),
-  // TODO: swap back to FirebaseAuthRepository() once Firebase is configured
+  (ref) => FirebaseAuthRepository(),
+);
+
+// ── Admin Users ────────────────────────────────────────────────────────────
+
+final adminUserRepositoryProvider = Provider<AdminUserRepository>(
+  (ref) => FirestoreAdminUserRepository(),
+);
+
+// ── App Setup ──────────────────────────────────────────────────────────────
+
+final appSetupRepositoryProvider = Provider<AppSetupRepository>(
+  (ref) => FirestoreAppSetupRepository(),
 );
 
 // ── Profile ────────────────────────────────────────────────────────────────
 
 final profileRepositoryProvider = Provider<ProfileRepository>(
-  (ref) => MockProfileRepository(),
-  // TODO: swap back to FirestoreProfileRepository() once Firebase is configured
+  (ref) => FirestoreProfileRepository(),
 );
 
 // ── Membership ─────────────────────────────────────────────────────────────

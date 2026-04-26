@@ -46,4 +46,13 @@ class MockAuthRepository implements AuthRepository {
   Future<void> sendPasswordReset({required String email}) async {
     // No-op in mock — just silently succeed.
   }
+
+  @override
+  Future<String> createUser({
+    required String email,
+    required String password,
+  }) async {
+    // Mock: return a fake UID.
+    return 'mock-created-uid';
+  }
 }

@@ -7,15 +7,14 @@ import '../../domain/use_cases/payments/edit_payment_use_case.dart';
 import '../../domain/use_cases/payments/record_standalone_payment_use_case.dart';
 import '../../domain/use_cases/payments/resolve_payt_session_use_case.dart';
 import '../../domain/use_cases/payments/write_off_payt_session_use_case.dart';
+import 'admin_session_provider.dart';
 import 'repository_providers.dart';
 
-// ── Role stub ──────────────────────────────────────────────────────────────
-// TODO(auth-session): replace with real role check once Auth & Session design
-// is implemented.
-
-/// Whether the current admin is a super admin. Super admins can edit payment
-/// records and view the financial report.
-final isSuperAdminProvider = Provider<bool>((ref) => false);
+/// Whether the current admin is an owner (can edit payments, view reports).
+/// Delegates to the real auth session — no longer a stub.
+final isSuperAdminProvider = Provider<bool>(
+  (ref) => ref.watch(isOwnerProvider),
+);
 
 // ── Use-case providers ─────────────────────────────────────────────────────
 
