@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/providers/admin_session_provider.dart';
 import '../../../core/providers/attendance_providers.dart';
 import '../../../core/providers/discipline_providers.dart';
 import '../../../domain/entities/attendance_session.dart';
@@ -17,14 +18,29 @@ class AttendanceListScreen extends ConsumerStatefulWidget {
 }
 
 class _AttendanceListScreenState extends ConsumerState<AttendanceListScreen> {
-  String? _selectedDisciplineId; // null = all disciplines
+  String? _selectedDisciplineId; // null = all disciplines (owners only)
+  bool _initialized = false;
+
+  /// For coaches, lock the filter to their first assigned discipline on first
+  /// build, so they never accidentally see sessions from other disciplines.
+  void _initFilter(bool isOwner, List<String> assignedIds) {
+    if (_initialized) return;
+    _initialized = true;
+    if (!isOwner && assignedIds.isNotEmpty) {
+      _selectedDisciplineId = assignedIds.first;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final isOwner = ref.watch(isOwnerProvider);
+    final assignedIds = ref.watch(assignedDisciplineIdsProvider);
+    _initFilter(isOwner, assignedIds);
+
     final sessionsAsync = ref.watch(
       attendanceSessionListProvider(_selectedDisciplineId),
     );
-    final disciplinesAsync = ref.watch(disciplineListProvider);
+    final disciplinesAsync = ref.watch(accessibleDisciplineListProvider);
     final pendingQueueAsync = ref.watch(pendingQueuedCheckInsProvider);
     final pendingCount = pendingQueueAsync.asData?.value.length ?? 0;
 
@@ -51,10 +67,13 @@ class _AttendanceListScreenState extends ConsumerState<AttendanceListScreen> {
           // ── Discipline filter ──────────────────────────────────────────
           disciplinesAsync.when(
             loading: () => const SizedBox.shrink(),
-            error: (_, _) => const SizedBox.shrink(),
+            error: (e, _) => const SizedBox.shrink(),
             data: (disciplines) => Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
               child: DropdownButtonFormField<String?>(
+                // Keep the widget in sync when the filter is initialised
+                // programmatically (e.g. after the coach's disciplines load).
+                key: ValueKey(_selectedDisciplineId),
                 initialValue: _selectedDisciplineId,
                 decoration: const InputDecoration(
                   labelText: 'Filter by Discipline',
@@ -66,10 +85,12 @@ class _AttendanceListScreenState extends ConsumerState<AttendanceListScreen> {
                   ),
                 ),
                 items: [
-                  const DropdownMenuItem(
-                    value: null,
-                    child: Text('All Disciplines'),
-                  ),
+                  // "All" is only available to owners.
+                  if (isOwner)
+                    const DropdownMenuItem(
+                      value: null,
+                      child: Text('All Disciplines'),
+                    ),
                   ...disciplines.map(
                     (d) => DropdownMenuItem(value: d.id, child: Text(d.name)),
                   ),

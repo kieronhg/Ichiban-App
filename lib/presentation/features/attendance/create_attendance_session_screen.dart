@@ -190,7 +190,8 @@ class _StepSelectDiscipline extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final disciplinesAsync = ref.watch(activeDisciplineListProvider);
+    // Coaches see only their assigned disciplines; owners see all active ones.
+    final disciplinesAsync = ref.watch(accessibleActiveDisciplineListProvider);
 
     return disciplinesAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),

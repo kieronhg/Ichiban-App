@@ -23,6 +23,10 @@ abstract class ProfileRepository {
   /// Soft-deletes a profile by setting isActive to false.
   Future<void> deactivate(String id);
 
+  /// Clears the PIN hash for a profile so the student must set a new PIN
+  /// before they can sign in again.
+  Future<void> resetPin(String id);
+
   /// Anonymises a profile under Right to Erasure.
   ///
   /// Replaces all personal data fields with placeholder values and sets

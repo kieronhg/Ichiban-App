@@ -153,6 +153,11 @@ class Profile extends Equatable {
     bool? isActive,
     String? fcmToken,
     String? pinHash,
+
+    /// Pass `true` to explicitly clear the PIN hash to null.
+    /// Necessary because the standard [pinHash] parameter cannot distinguish
+    /// "clear to null" from "leave unchanged" when using `??` semantics.
+    bool clearPinHash = false,
     String? parentProfileId,
     String? secondParentProfileId,
     String? payingParentId,
@@ -194,7 +199,7 @@ class Profile extends Equatable {
       registrationDate: registrationDate ?? this.registrationDate,
       isActive: isActive ?? this.isActive,
       fcmToken: fcmToken ?? this.fcmToken,
-      pinHash: pinHash ?? this.pinHash,
+      pinHash: clearPinHash ? null : (pinHash ?? this.pinHash),
       parentProfileId: parentProfileId ?? this.parentProfileId,
       secondParentProfileId:
           secondParentProfileId ?? this.secondParentProfileId,

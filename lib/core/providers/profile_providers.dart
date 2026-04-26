@@ -7,6 +7,7 @@ import '../../domain/use_cases/profile/create_profile_use_case.dart';
 import '../../domain/use_cases/profile/deactivate_profile_use_case.dart';
 import '../../domain/use_cases/profile/get_profile_use_case.dart';
 import '../../domain/use_cases/profile/get_profiles_use_case.dart';
+import '../../domain/use_cases/profile/reset_pin_use_case.dart';
 import '../../domain/use_cases/profile/set_pin_use_case.dart';
 import '../../domain/use_cases/profile/update_profile_use_case.dart';
 import 'repository_providers.dart';
@@ -39,6 +40,10 @@ final deactivateProfileUseCaseProvider = Provider<DeactivateProfileUseCase>(
 
 final setPinUseCaseProvider = Provider<SetPinUseCase>(
   (ref) => SetPinUseCase(ref.watch(profileRepositoryProvider)),
+);
+
+final resetPinUseCaseProvider = Provider<ResetPinUseCase>(
+  (ref) => ResetPinUseCase(ref.watch(profileRepositoryProvider)),
 );
 
 final anonymiseProfileUseCaseProvider = Provider<AnonymiseProfileUseCase>(

@@ -72,6 +72,11 @@ class FirestoreProfileRepository implements ProfileRepository {
   /// Nullable fields are set to null.
   /// [dateOfBirth] is set to the Unix epoch (1970-01-01) as a safe placeholder.
   @override
+  Future<void> resetPin(String id) async {
+    await FirestoreCollections.profiles().doc(id).update({'pinHash': null});
+  }
+
+  @override
   Future<void> anonymise(String id) async {
     await FirestoreCollections.profiles().doc(id).update({
       // Required String fields — replaced with placeholder
