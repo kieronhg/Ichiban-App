@@ -23,6 +23,7 @@ class AppConstants {
   static const String colEmailTemplates = 'emailTemplates';
   static const String colAppSettings = 'appSettings';
   static const String colAdminUsers = 'adminUsers';
+  static const String colCoachProfiles = 'coachProfiles';
   static const String colAppSetup = 'appSetup';
 
   // Shared preferences keys

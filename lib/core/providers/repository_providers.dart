@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/repositories/firebase_auth_repository.dart';
 import '../../data/repositories/firestore_admin_user_repository.dart';
+import '../../data/repositories/firestore_coach_profile_repository.dart';
 import '../../data/repositories/firestore_app_setup_repository.dart';
 import '../../data/repositories/firestore_app_settings_repository.dart';
 import '../../data/repositories/firestore_attendance_repository.dart';
@@ -22,6 +23,7 @@ import '../../data/repositories/firestore_payt_session_repository.dart';
 import '../../data/repositories/firestore_rank_repository.dart';
 
 import '../../domain/repositories/admin_user_repository.dart';
+import '../../domain/repositories/coach_profile_repository.dart';
 import '../../domain/repositories/app_setup_repository.dart';
 import '../../domain/repositories/app_settings_repository.dart';
 import '../../domain/repositories/auth_repository.dart';
@@ -52,6 +54,12 @@ final authRepositoryProvider = Provider<AuthRepository>(
 
 final adminUserRepositoryProvider = Provider<AdminUserRepository>(
   (ref) => FirestoreAdminUserRepository(),
+);
+
+// ── Coach Profiles ─────────────────────────────────────────────────────────
+
+final coachProfileRepositoryProvider = Provider<CoachProfileRepository>(
+  (ref) => FirestoreCoachProfileRepository(),
 );
 
 // ── App Setup ──────────────────────────────────────────────────────────────

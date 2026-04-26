@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/constants/app_constants.dart';
 import '../../domain/entities/admin_user.dart';
 import '../../domain/entities/app_setup.dart';
+import '../../domain/entities/coach_profile.dart';
 import '../../domain/entities/profile.dart';
 import '../../domain/entities/membership.dart';
 import '../../domain/entities/membership_history.dart';
@@ -38,6 +39,7 @@ import 'converters/queued_check_in_converter.dart';
 import 'converters/notification_log_converter.dart';
 import 'converters/email_template_converter.dart';
 import 'converters/admin_user_converter.dart';
+import 'converters/coach_profile_converter.dart';
 import 'converters/app_setting_converter.dart';
 import 'converters/app_setup_converter.dart';
 
@@ -240,6 +242,16 @@ class FirestoreCollections {
         fromFirestore: (snap, _) =>
             AdminUserConverter.fromMap(snap.id, snap.data()!),
         toFirestore: (adminUser, _) => AdminUserConverter.toMap(adminUser),
+      );
+
+  // ── Coach Profiles ────────────────────────────────────────────────────────────
+
+  static CollectionReference<CoachProfile> coachProfiles() => _db
+      .collection(AppConstants.colCoachProfiles)
+      .withConverter<CoachProfile>(
+        fromFirestore: (snap, _) =>
+            CoachProfileConverter.fromMap(snap.id, snap.data()!),
+        toFirestore: (profile, _) => CoachProfileConverter.toMap(profile),
       );
 
   // ── App Setup (single-document collection) ───────────────────────────────────

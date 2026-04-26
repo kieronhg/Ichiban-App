@@ -57,6 +57,12 @@ class RouteNames {
   static const String adminTeamEdit = '/admin/team/:uid/edit';
   static const String adminNotifications = '/admin/notifications';
   static const String adminSettings = '/admin/settings';
+  static const String adminMyProfile = '/admin/my-profile';
+  static const String adminMyProfileEdit = '/admin/my-profile/edit';
+  static const String adminMyProfileDbs = '/admin/my-profile/dbs';
+  static const String adminMyProfileFirstAid = '/admin/my-profile/firstaid';
+  static const String adminTeamComplianceEdit =
+      '/admin/team/:uid/compliance/edit';
 
   // Student
   static const String studentSelect = '/student/select';

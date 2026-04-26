@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/providers/admin_providers.dart';
+import '../../core/providers/admin_session_provider.dart';
 import '../../core/providers/auth_providers.dart';
 import '../../core/providers/student_session_provider.dart';
+import '../../domain/entities/enums.dart';
 import '../../domain/entities/admin_user.dart';
 import '../../domain/entities/attendance_session.dart';
 import '../../domain/entities/cash_payment.dart';
@@ -22,6 +24,11 @@ import '../../presentation/features/admin/admin_user_detail_screen.dart';
 import '../../presentation/features/admin/admin_user_list_screen.dart';
 import '../../presentation/features/admin/edit_admin_user_screen.dart';
 import '../../presentation/features/admin/invite_coach_screen.dart';
+import '../../presentation/features/admin/owner_edit_coach_compliance_screen.dart';
+import '../../presentation/features/coach/edit_dbs_details_screen.dart';
+import '../../presentation/features/coach/edit_first_aid_details_screen.dart';
+import '../../presentation/features/coach/edit_personal_details_screen.dart';
+import '../../presentation/features/coach/my_profile_screen.dart';
 import '../../presentation/features/auth/admin_login_screen.dart';
 import '../../presentation/features/auth/entry_gateway_screen.dart';
 import '../../presentation/features/auth/setup_wizard_screen.dart';
@@ -120,7 +127,23 @@ class AppRouter {
         }
 
         if (isAuthenticated && isOnAdminLogin) {
-          return RouteNames.adminDashboard;
+          // Coaches land on their personal profile; owners go to dashboard.
+          final role = ref.read(currentAdminUserProvider)?.role;
+          return role == AdminRole.coach
+              ? RouteNames.adminMyProfile
+              : RouteNames.adminDashboard;
+        }
+
+        // Coaches cannot access the dashboard directly — redirect to My Profile.
+        if (isAuthenticated && location == RouteNames.adminDashboard) {
+          final role = ref.read(currentAdminUserProvider)?.role;
+          if (role == AdminRole.coach) return RouteNames.adminMyProfile;
+        }
+
+        // My Profile is coach-only — owners do not have this page.
+        if (isAuthenticated && location.startsWith(RouteNames.adminMyProfile)) {
+          final role = ref.read(currentAdminUserProvider)?.role;
+          if (role == AdminRole.owner) return RouteNames.adminDashboard;
         }
       }
 
@@ -145,7 +168,10 @@ class AppRouter {
         }
 
         if (!isAuthLoading && isAuthenticated) {
-          return RouteNames.adminDashboard;
+          final role = ref.read(currentAdminUserProvider)?.role;
+          return role == AdminRole.coach
+              ? RouteNames.adminMyProfile
+              : RouteNames.adminDashboard;
         }
 
         if (session.isAuthenticated) {
@@ -434,6 +460,14 @@ class AppRouter {
                 builder: (_, state) =>
                     EditAdminUserScreen(adminUser: state.extra as AdminUser),
               ),
+              GoRoute(
+                path: 'compliance/edit',
+                name: 'adminTeamComplianceEdit',
+                builder: (_, state) => OwnerEditCoachComplianceScreen(
+                  adminUserId: state.pathParameters['uid']!,
+                  type: state.extra as CoachComplianceType,
+                ),
+              ),
             ],
           ),
         ],
@@ -442,6 +476,28 @@ class AppRouter {
         path: RouteNames.adminSettings,
         name: 'adminSettings',
         builder: (_, state) => const _PlaceholderScreen('Settings'),
+      ),
+      GoRoute(
+        path: RouteNames.adminMyProfile,
+        name: 'adminMyProfile',
+        builder: (_, state) => const MyProfileScreen(),
+        routes: [
+          GoRoute(
+            path: 'edit',
+            name: 'coachMyProfileEdit',
+            builder: (_, state) => const EditPersonalDetailsScreen(),
+          ),
+          GoRoute(
+            path: 'dbs',
+            name: 'coachMyProfileDbs',
+            builder: (_, state) => const EditDbsDetailsScreen(),
+          ),
+          GoRoute(
+            path: 'firstaid',
+            name: 'coachMyProfileFirstAid',
+            builder: (_, state) => const EditFirstAidDetailsScreen(),
+          ),
+        ],
       ),
       GoRoute(
         path: RouteNames.studentSelect,

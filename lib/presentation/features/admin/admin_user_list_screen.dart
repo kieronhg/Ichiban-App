@@ -63,7 +63,8 @@ class AdminUserListScreen extends ConsumerWidget {
           return ListView.separated(
             padding: const EdgeInsets.symmetric(vertical: 8),
             itemCount: sorted.length,
-            separatorBuilder: (context, _) => const Divider(height: 1, indent: 72),
+            separatorBuilder: (context, _) =>
+                const Divider(height: 1, indent: 72),
             itemBuilder: (context, i) => _AdminTile(
               admin: sorted[i],
               onTap: () => context.pushNamed(

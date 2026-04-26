@@ -1,11 +1,14 @@
 import '../../entities/admin_user.dart';
+import '../../entities/coach_profile.dart';
 import '../../entities/enums.dart';
 import '../../repositories/admin_user_repository.dart';
+import '../../repositories/coach_profile_repository.dart';
 
 class CreateAdminUserUseCase {
-  const CreateAdminUserUseCase(this._repo);
+  const CreateAdminUserUseCase(this._repo, this._coachProfileRepo);
 
   final AdminUserRepository _repo;
+  final CoachProfileRepository _coachProfileRepo;
 
   /// Writes the adminUsers Firestore document for a new admin.
   ///
@@ -54,5 +57,18 @@ class CreateAdminUserUseCase {
     );
 
     await _repo.create(adminUser);
+
+    // Every coach gets a coachProfiles document with default compliance values.
+    if (role == AdminRole.coach) {
+      await _coachProfileRepo.create(
+        CoachProfile(
+          adminUserId: firebaseUid,
+          dbs: DbsRecord.defaults,
+          firstAid: FirstAidRecord.defaults,
+          createdAt: adminUser.createdAt,
+          createdByAdminId: createdByAdminId,
+        ),
+      );
+    }
   }
 }
