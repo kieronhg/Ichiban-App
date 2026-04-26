@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/providers/admin_session_provider.dart';
 import '../../../core/providers/grading_providers.dart';
 import '../../../core/providers/discipline_providers.dart';
 import '../../../core/router/route_names.dart';
@@ -23,6 +24,7 @@ class GradingListScreen extends ConsumerStatefulWidget {
 class _GradingListScreenState extends ConsumerState<GradingListScreen> {
   GradingEventStatus? _statusFilter; // null = all
   late String? _disciplineFilter;
+  bool _initialized = false;
 
   @override
   void initState() {
@@ -30,15 +32,32 @@ class _GradingListScreenState extends ConsumerState<GradingListScreen> {
     _disciplineFilter = widget.preFilterDisciplineId;
   }
 
+  /// For coaches, lock the filter to their first assigned discipline on first
+  /// build so they never see events from other disciplines.
+  void _initFilter(bool isOwner, List<String> assignedIds) {
+    if (_initialized || widget.preFilterDisciplineId != null) {
+      _initialized = true;
+      return;
+    }
+    _initialized = true;
+    if (!isOwner && assignedIds.isNotEmpty) {
+      _disciplineFilter = assignedIds.first;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isOwner = ref.watch(isOwnerProvider);
+    final assignedIds = ref.watch(assignedDisciplineIdsProvider);
+    _initFilter(isOwner, assignedIds);
+
     final eventsAsync = _disciplineFilter != null
         ? ref.watch(gradingEventsForDisciplineProvider(_disciplineFilter!))
         : ref.watch(gradingEventListProvider);
-    final disciplinesAsync = ref.watch(disciplineListProvider);
+    final accessibleAsync = ref.watch(accessibleDisciplineListProvider);
 
     final disciplineMap = {
-      for (final d in disciplinesAsync.asData?.value ?? <dynamic>[])
+      for (final d in accessibleAsync.asData?.value ?? <dynamic>[])
         d.id as String: d.name as String,
     };
 
@@ -53,6 +72,45 @@ class _GradingListScreenState extends ConsumerState<GradingListScreen> {
       ),
       body: Column(
         children: [
+          // ── Discipline filter ──────────────────────────────────────────
+          accessibleAsync.when(
+            loading: () => const SizedBox.shrink(),
+            error: (e, _) => const SizedBox.shrink(),
+            data: (disciplines) {
+              // Only show the filter dropdown when there are multiple
+              // disciplines to choose from, or the user is an owner.
+              if (!isOwner && disciplines.length <= 1) {
+                return const SizedBox.shrink();
+              }
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                child: DropdownButtonFormField<String?>(
+                  key: ValueKey(_disciplineFilter),
+                  initialValue: _disciplineFilter,
+                  decoration: const InputDecoration(
+                    labelText: 'Filter by Discipline',
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                  ),
+                  items: [
+                    if (isOwner)
+                      const DropdownMenuItem(
+                        value: null,
+                        child: Text('All Disciplines'),
+                      ),
+                    ...disciplines.map(
+                      (d) => DropdownMenuItem(value: d.id, child: Text(d.name)),
+                    ),
+                  ],
+                  onChanged: (v) => setState(() => _disciplineFilter = v),
+                ),
+              );
+            },
+          ),
           // ── Status filter chips ─────────────────────────────────────────
           _StatusFilterBar(
             selected: _statusFilter,
@@ -95,7 +153,7 @@ class _GradingListScreenState extends ConsumerState<GradingListScreen> {
                 return ListView.separated(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
                   itemCount: filtered.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 8),
+                  separatorBuilder: (context, _) => const SizedBox(height: 8),
                   itemBuilder: (context, i) {
                     final event = filtered[i];
                     return _GradingEventTile(

@@ -24,6 +24,15 @@ abstract class AuthRepository {
   /// Used by the setup wizard to create the first owner account.
   /// Throws [AuthException] on failure.
   Future<String> createUser({required String email, required String password});
+
+  /// Creates a new Firebase Auth account WITHOUT signing the new user in.
+  /// Used when an already-authenticated admin creates a coach account —
+  /// the admin's own session must not be displaced.
+  /// Throws [AuthException] on failure.
+  Future<String> createUserWithoutSignIn({
+    required String email,
+    required String password,
+  });
 }
 
 /// Typed exception thrown by [AuthRepository] implementations.

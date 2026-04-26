@@ -51,6 +51,10 @@ class RouteNames {
   static const String adminPaymentsReport = '/admin/payments/report';
   static const String adminPaymentsBulkResolve =
       '/admin/payments/bulk-resolve/:profileId';
+  static const String adminTeam = '/admin/team';
+  static const String adminTeamInvite = '/admin/team/invite';
+  static const String adminTeamDetail = '/admin/team/:uid';
+  static const String adminTeamEdit = '/admin/team/:uid/edit';
   static const String adminNotifications = '/admin/notifications';
   static const String adminSettings = '/admin/settings';
 

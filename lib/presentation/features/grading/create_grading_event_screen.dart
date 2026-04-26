@@ -109,7 +109,8 @@ class _CreateGradingEventScreenState
 
   @override
   Widget build(BuildContext context) {
-    final disciplinesAsync = ref.watch(activeDisciplineListProvider);
+    // Coaches see only their assigned disciplines; owners see all active ones.
+    final disciplinesAsync = ref.watch(accessibleActiveDisciplineListProvider);
     final disciplines = disciplinesAsync.asData?.value ?? [];
     _tryPreselect(disciplines);
 

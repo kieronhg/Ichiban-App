@@ -128,6 +128,15 @@ class MockProfileRepository implements ProfileRepository {
   }
 
   @override
+  Future<void> resetPin(String id) async {
+    final i = _profiles.indexWhere((p) => p.id == id);
+    if (i != -1) {
+      _profiles[i] = _profiles[i].copyWith(clearPinHash: true);
+      _notify();
+    }
+  }
+
+  @override
   Future<void> anonymise(String id) async {
     final i = _profiles.indexWhere((p) => p.id == id);
     if (i != -1) {

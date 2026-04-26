@@ -8,6 +8,7 @@ import '../../../core/providers/attendance_providers.dart';
 import '../../../core/providers/grading_providers.dart';
 import '../../../core/providers/membership_providers.dart';
 import '../../../core/providers/payments_providers.dart';
+import '../../../core/providers/admin_session_provider.dart';
 import '../../../core/providers/profile_providers.dart';
 import '../../../core/providers/enrollment_providers.dart';
 import '../../../core/providers/discipline_providers.dart';
@@ -256,6 +257,16 @@ class _PersonalTab extends StatelessWidget {
         _MembershipSummarySection(profileId: profile.id),
         const SizedBox(height: 24),
 
+        // ── Reset PIN ─────────────────────────────────────────────────
+        if (profile.pinHash != null && !profile.isAnonymised) ...[
+          OutlinedButton.icon(
+            icon: const Icon(Icons.pin_outlined),
+            label: const Text('Reset PIN'),
+            onPressed: () => _confirmResetPin(context, ref),
+          ),
+          const SizedBox(height: 12),
+        ],
+
         // ── Deactivate ────────────────────────────────────────────────
         if (profile.isActive)
           OutlinedButton.icon(
@@ -387,6 +398,54 @@ class _PersonalTab extends StatelessWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Erasure failed: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _confirmResetPin(BuildContext context, WidgetRef ref) async {
+    final isOwner = ref.read(isOwnerProvider);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Reset PIN?'),
+        content: Text(
+          'This will clear ${profile.firstName}\'s PIN. '
+          'They will be unable to sign in until '
+          '${isOwner ? 'you assign' : 'an owner assigns'} a new PIN.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Reset PIN'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !context.mounted) return;
+
+    try {
+      await ref.read(resetPinUseCaseProvider).call(profile.id);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${profile.firstName}\'s PIN has been cleared.'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to reset PIN: $e'),
             backgroundColor: AppColors.error,
           ),
         );

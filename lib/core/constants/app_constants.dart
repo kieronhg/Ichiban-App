@@ -36,4 +36,14 @@ class AppConstants {
 
   // PIN length
   static const int pinLength = 4;
+
+  // Student PIN lockout
+  /// Number of consecutive wrong PINs before the screen locks.
+  static const int pinMaxAttempts = 5;
+
+  /// How long (minutes) the PIN screen stays locked after max attempts.
+  static const int pinLockoutMinutes = 5;
+
+  /// Minutes of inactivity before the student session auto-signs-out.
+  static const int studentSessionTimeoutMinutes = 5;
 }

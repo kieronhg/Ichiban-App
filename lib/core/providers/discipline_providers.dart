@@ -12,6 +12,7 @@ import '../../domain/use_cases/rank/delete_rank_use_case.dart';
 import '../../domain/use_cases/rank/get_ranks_use_case.dart';
 import '../../domain/use_cases/rank/reorder_ranks_use_case.dart';
 import '../../domain/use_cases/rank/update_rank_use_case.dart';
+import 'admin_session_provider.dart';
 import 'auth_providers.dart';
 import 'repository_providers.dart';
 
@@ -77,6 +78,37 @@ final disciplineProvider = StreamProvider.family<Discipline?, String>((
   final list = ref.watch(disciplineListProvider).asData?.value ?? [];
   yield list.where((d) => d.id == id).firstOrNull;
 });
+
+/// All disciplines the current admin is permitted to see.
+///
+/// Owners see every discipline (same as [disciplineListProvider]).
+/// Coaches see only the disciplines in their [assignedDisciplineIds].
+final accessibleDisciplineListProvider = Provider<AsyncValue<List<Discipline>>>(
+  (ref) {
+    final all = ref.watch(disciplineListProvider);
+    final adminUser = ref.watch(currentAdminUserProvider);
+    if (adminUser == null || adminUser.isOwner) return all;
+    final assignedIds = adminUser.assignedDisciplineIds.toSet();
+    return all.whenData(
+      (list) => list.where((d) => assignedIds.contains(d.id)).toList(),
+    );
+  },
+);
+
+/// Active disciplines the current admin is permitted to see.
+///
+/// Same scoping as [accessibleDisciplineListProvider] but limited to active
+/// disciplines only — used by create-session and create-grading-event wizards.
+final accessibleActiveDisciplineListProvider =
+    Provider<AsyncValue<List<Discipline>>>((ref) {
+      final active = ref.watch(activeDisciplineListProvider);
+      final adminUser = ref.watch(currentAdminUserProvider);
+      if (adminUser == null || adminUser.isOwner) return active;
+      final assignedIds = adminUser.assignedDisciplineIds.toSet();
+      return active.whenData(
+        (list) => list.where((d) => assignedIds.contains(d.id)).toList(),
+      );
+    });
 
 /// All ranks for a discipline, ordered by displayOrder ascending, live.
 final rankListProvider = StreamProvider.family<List<Rank>, String>(

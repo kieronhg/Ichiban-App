@@ -55,4 +55,13 @@ class MockAuthRepository implements AuthRepository {
     // Mock: return a fake UID.
     return 'mock-created-uid';
   }
+
+  @override
+  Future<String> createUserWithoutSignIn({
+    required String email,
+    required String password,
+  }) async {
+    // Mock: return a fake UID without touching current session.
+    return 'mock-created-uid-${email.hashCode}';
+  }
 }
