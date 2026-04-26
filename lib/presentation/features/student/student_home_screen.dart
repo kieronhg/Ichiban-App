@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/theme/app_colors.dart';
+import '../../../core/providers/admin_providers.dart';
+import '../../../core/providers/discipline_providers.dart';
+import '../../../core/providers/enrollment_providers.dart';
 import '../../../core/providers/profile_providers.dart';
 import '../../../core/providers/student_session_provider.dart';
 import '../../../core/router/route_names.dart';
+import '../../../core/theme/app_colors.dart';
 
 /// Landing screen shown to a student after PIN authentication.
 ///
@@ -32,6 +35,38 @@ class _StudentHomeScreenState extends ConsumerState<StudentHomeScreen> {
         : null;
 
     final firstName = profileAsync?.asData?.value?.firstName ?? 'Student';
+
+    // Resolve coaches per discipline for enrolled disciplines.
+    final enrollmentsAsync = session.profileId != null
+        ? ref.watch(allEnrollmentsForStudentProvider(session.profileId!))
+        : null;
+    final activeEnrollments =
+        enrollmentsAsync?.asData?.value.where((e) => e.isActive).toList() ??
+        [];
+
+    final allAdminsAsync = ref.watch(adminUserListProvider);
+    final allAdmins = allAdminsAsync.asData?.value ?? [];
+    final allDisciplinesAsync = ref.watch(disciplineListProvider);
+    final disciplineMap = {
+      for (final d in allDisciplinesAsync.asData?.value ?? []) d.id: d,
+    };
+
+    // Build a map: disciplineId → coach names string.
+    final coachNamesByDiscipline = <String, String>{};
+    for (final enrol in activeEnrollments) {
+      final coaches = allAdmins
+          .where(
+            (a) =>
+                a.isCoach &&
+                a.isActive &&
+                a.assignedDisciplineIds.contains(enrol.disciplineId),
+          )
+          .map((a) => a.fullName)
+          .toList();
+      if (coaches.isNotEmpty) {
+        coachNamesByDiscipline[enrol.disciplineId] = coaches.join(', ');
+      }
+    }
 
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
@@ -91,11 +126,43 @@ class _StudentHomeScreenState extends ConsumerState<StudentHomeScreen> {
                         const SizedBox(height: 4),
                         Text(
                           'Ready to train today?',
-                          style: TextStyle(
+                          style: const TextStyle(
                             color: AppColors.textSecondary,
                             fontSize: 15,
                           ),
                         ),
+                        // ── Coach names per discipline ─────────────
+                        if (coachNamesByDiscipline.isNotEmpty) ...[
+                          const SizedBox(height: 16),
+                          const Divider(height: 1),
+                          const SizedBox(height: 12),
+                          ...coachNamesByDiscipline.entries.map((entry) {
+                            final disciplineName =
+                                disciplineMap[entry.key]?.name ?? entry.key;
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 4),
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.person_outline,
+                                    size: 14,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      '$disciplineName: ${entry.value}',
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }),
+                        ],
                       ],
                     ),
                   ),

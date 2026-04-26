@@ -52,6 +52,13 @@ enum NotificationType {
   gradingEligibility,
   gradingPromotion,
   licenceReminder,
+  coachComplianceSubmitted,
+  coachComplianceVerified,
+  coachComplianceExpiring,
 }
+
+enum DbsStatus { notSubmitted, pending, clear, expired }
+
+enum CoachComplianceType { dbs, firstAid }
 
 enum EmailDeliveryStatus { sent, failed }

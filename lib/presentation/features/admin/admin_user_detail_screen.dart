@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 import '../../../core/providers/admin_providers.dart';
 import '../../../core/providers/admin_session_provider.dart';
+import '../../../core/providers/coach_profile_providers.dart';
 import '../../../core/providers/discipline_providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../domain/entities/admin_user.dart';
+import '../../../domain/entities/coach_profile.dart';
 import '../../../domain/entities/discipline.dart';
 import '../../../domain/entities/enums.dart';
 
@@ -116,6 +119,10 @@ class _DetailBody extends ConsumerWidget {
             },
           ),
         ],
+
+        // ── Compliance section (owner view, coach only) ────────────────
+        if (isOwner && admin.isCoach)
+          _ComplianceSection(adminUserId: admin.firebaseUid),
 
         // ── Owner-only actions (cannot act on yourself) ────────────────
         if (isOwner && !isSelf) ...[
@@ -534,6 +541,338 @@ class _ActionTile extends StatelessWidget {
       ),
       contentPadding: EdgeInsets.zero,
       trailing: const Icon(Icons.chevron_right, color: AppColors.textSecondary),
+    );
+  }
+}
+
+// ── Compliance section ─────────────────────────────────────────────────────
+
+class _ComplianceSection extends ConsumerWidget {
+  const _ComplianceSection({required this.adminUserId});
+
+  final String adminUserId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final profileAsync = ref.watch(coachProfileProvider(adminUserId));
+    final ownerUid = ref.read(currentAdminUserProvider)?.firebaseUid ?? '';
+
+    return profileAsync.when(
+      loading: () => const Padding(
+        padding: EdgeInsets.symmetric(vertical: 16),
+        child: Center(child: CircularProgressIndicator()),
+      ),
+      error: (e, _) => const SizedBox.shrink(),
+      data: (profile) {
+        if (profile == null) return const SizedBox.shrink();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 28),
+            Text(
+              'Compliance',
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 12),
+            _ComplianceCard(
+              title: 'DBS Check',
+              type: CoachComplianceType.dbs,
+              adminUserId: adminUserId,
+              ownerUid: ownerUid,
+              profile: profile,
+            ),
+            const SizedBox(height: 12),
+            _ComplianceCard(
+              title: 'First Aid Certification',
+              type: CoachComplianceType.firstAid,
+              adminUserId: adminUserId,
+              ownerUid: ownerUid,
+              profile: profile,
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _ComplianceCard extends ConsumerWidget {
+  const _ComplianceCard({
+    required this.title,
+    required this.type,
+    required this.adminUserId,
+    required this.ownerUid,
+    required this.profile,
+  });
+
+  final String title;
+  final CoachComplianceType type;
+  final String adminUserId;
+  final String ownerUid;
+  final CoachProfile profile;
+
+  bool get _isDbs => type == CoachComplianceType.dbs;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final fmt = DateFormat('dd/MM/yyyy');
+
+    final pending = _isDbs
+        ? profile.dbs.pendingVerification
+        : profile.firstAid.pendingVerification;
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: pending
+              ? AppColors.warning.withAlpha(100)
+              : AppColors.surfaceVariant,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                ),
+              ),
+              TextButton(
+                onPressed: () => context.pushNamed(
+                  'adminTeamComplianceEdit',
+                  pathParameters: {'uid': adminUserId},
+                  extra: type,
+                ),
+                child: const Text('Edit'),
+              ),
+            ],
+          ),
+          if (_isDbs) ...[
+            _ComplianceRow(
+              label: 'Status',
+              child: _DbsStatusBadge(status: profile.dbs.status),
+            ),
+            if (profile.dbs.certificateNumber != null)
+              _ComplianceRow(
+                label: 'Certificate',
+                text: profile.dbs.certificateNumber!,
+              ),
+            if (profile.dbs.issueDate != null)
+              _ComplianceRow(
+                label: 'Issued',
+                text: fmt.format(profile.dbs.issueDate!),
+              ),
+            if (profile.dbs.expiryDate != null)
+              _ComplianceRow(
+                label: 'Expires',
+                text: fmt.format(profile.dbs.expiryDate!),
+                expiryDate: profile.dbs.expiryDate,
+              ),
+          ] else ...[
+            if (profile.firstAid.certificationName != null)
+              _ComplianceRow(
+                label: 'Certification',
+                text: profile.firstAid.certificationName!,
+              ),
+            if (profile.firstAid.issuingBody != null)
+              _ComplianceRow(
+                label: 'Issued by',
+                text: profile.firstAid.issuingBody!,
+              ),
+            if (profile.firstAid.issueDate != null)
+              _ComplianceRow(
+                label: 'Issued',
+                text: fmt.format(profile.firstAid.issueDate!),
+              ),
+            if (profile.firstAid.expiryDate != null)
+              _ComplianceRow(
+                label: 'Expires',
+                text: fmt.format(profile.firstAid.expiryDate!),
+                expiryDate: profile.firstAid.expiryDate,
+              ),
+            if (profile.firstAid.certificationName == null &&
+                profile.firstAid.certificationName == null)
+              Text(
+                'No details recorded.',
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+              ),
+          ],
+          if (pending) ...[
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.warning.withAlpha(20),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Text(
+                      'Coach submitted update — awaiting verification',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.warning,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                FilledButton(
+                  onPressed: () => _verify(context, ref, ownerUid),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.success,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 8,
+                    ),
+                    textStyle: const TextStyle(fontSize: 13),
+                  ),
+                  child: const Text('Verify'),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _verify(
+    BuildContext context,
+    WidgetRef ref,
+    String ownerUid,
+  ) async {
+    try {
+      await ref
+          .read(verifyCoachComplianceUseCaseProvider)
+          .call(
+            adminUserId: adminUserId,
+            type: type,
+            verifiedByAdminId: ownerUid,
+          );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Compliance details verified.'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().replaceFirst(RegExp(r'^.*?: ?'), '')),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+}
+
+class _ComplianceRow extends StatelessWidget {
+  const _ComplianceRow({
+    required this.label,
+    this.text,
+    this.child,
+    this.expiryDate,
+  });
+
+  final String label;
+  final String? text;
+  final Widget? child;
+  final DateTime? expiryDate;
+
+  @override
+  Widget build(BuildContext context) {
+    Color? textColor;
+    if (expiryDate != null) {
+      final diff = expiryDate!.difference(DateTime.now()).inDays;
+      if (diff < 0) {
+        textColor = AppColors.error;
+      } else if (diff <= 60) {
+        textColor = AppColors.warning;
+      }
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 90,
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+          if (child != null)
+            child!
+          else
+            Expanded(
+              child: Text(
+                text ?? '',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: textColor,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DbsStatusBadge extends StatelessWidget {
+  const _DbsStatusBadge({required this.status});
+
+  final DbsStatus status;
+
+  @override
+  Widget build(BuildContext context) {
+    final (label, color) = switch (status) {
+      DbsStatus.clear => ('Clear', AppColors.success),
+      DbsStatus.pending => ('Pending', AppColors.warning),
+      DbsStatus.expired => ('Expired', AppColors.error),
+      DbsStatus.notSubmitted => ('Not Submitted', AppColors.textSecondary),
+    };
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withAlpha(26),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withAlpha(77)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: color,
+        ),
+      ),
     );
   }
 }

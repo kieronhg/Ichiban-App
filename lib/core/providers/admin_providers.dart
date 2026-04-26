@@ -11,6 +11,7 @@ import '../../domain/use_cases/admin/promote_to_owner_use_case.dart';
 import '../../domain/use_cases/admin/reactivate_admin_user_use_case.dart';
 import '../../domain/use_cases/admin/update_admin_user_use_case.dart';
 import 'repository_providers.dart';
+// coachProfileRepositoryProvider is in repository_providers.dart
 
 // ── Use case providers ─────────────────────────────────────────────────────
 
@@ -19,7 +20,10 @@ final getAdminUserUseCaseProvider = Provider<GetAdminUserUseCase>(
 );
 
 final createAdminUserUseCaseProvider = Provider<CreateAdminUserUseCase>(
-  (ref) => CreateAdminUserUseCase(ref.watch(adminUserRepositoryProvider)),
+  (ref) => CreateAdminUserUseCase(
+    ref.watch(adminUserRepositoryProvider),
+    ref.watch(coachProfileRepositoryProvider),
+  ),
 );
 
 final updateAdminUserUseCaseProvider = Provider<UpdateAdminUserUseCase>(
