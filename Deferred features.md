@@ -111,28 +111,6 @@ In the Grading feature, when an admin selects a student and a target rank:
 
 ---
 
-## 6. Student PIN — Behaviour When No PIN Set
-
-**Source:** Auth feature (Phase 2)
-**Depends on:** Nothing. Can be clarified with product owner and built now.
-
-**What it is:**
-The `pinHash` field on `Profile` is nullable. A student profile can exist without
-a PIN set (e.g. newly created profiles, or profiles created before PIN was a feature).
-
-**Current behaviour:**
-The PIN entry screen (`/student/pin`) will receive a null `pinHash` and the
-behaviour is undefined — it may crash or silently fail.
-
-**What needs deciding / building:**
-Agree with product owner on the flow, then implement:
-- Option A: If no PIN is set, the student is asked to create one before proceeding
-- Option B: Admin must set a PIN before the profile can be used on the student app
-- Option C: A temporary default PIN is assigned at profile creation
-
-`SetPinUseCase` already exists in `lib/domain/use_cases/profile/set_pin_use_case.dart` ✅
-
----
 
 ## 8. Dashboard Screen
 

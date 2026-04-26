@@ -883,3 +883,87 @@ confusion during testing.
 - [ ] ✅ `/admin/payments/report` → `FinancialReportScreen`
 - [ ] ✅ `/admin/payments/bulk-resolve/:profileId` → `BulkResolveScreen`
 - [ ] ✅ `/admin/payments/:paymentId` → `PaymentDetailScreen` (requires `CashPayment` in `extra`)
+
+---
+
+## Sessions C–E — Auth, Coach Management, Role Guards
+
+### PIN lockout (`pin_entry_screen.dart`)
+
+- [ ] ✅ Entering wrong PIN 5 times locks out for 5 minutes
+- [ ] ✅ Countdown timer displays MM:SS and ticks down every second
+- [ ] ✅ Numpad is hidden while locked — tapping locked screen does nothing
+- [ ] ✅ After lockout expires, attempts reset and numpad reappears automatically
+- [ ] ✅ Warning "1 attempt remaining" shown after 4th wrong PIN
+- [ ] ✅ No-PIN banner shown when `profile.pinHash == null`; numpad hidden
+- [ ] ⚠️ Lockout state is in-memory — restarting the app resets the counter
+
+### Session timeout (`student_home_screen.dart`)
+
+- [ ] ✅ Tapping/swiping student home screen stamps activity and resets idle timer
+- [ ] ✅ After 5 minutes of no interaction, student is signed out and redirected to student select
+- [ ] ⚠️ Timeout check runs every 30s — maximum actual idle before signout is 5m 30s
+
+### Coach management
+
+#### Team List (`/admin/team`)
+- [ ] ✅ Lists all admin users sorted owners-first then alpha by last name
+- [ ] ✅ Owner badge shown in amber; Coach badge shown in blue
+- [ ] ✅ Deactivated users shown with strikethrough name and grey avatar
+- [ ] ✅ "Invite Coach" FAB only visible when current user is owner
+- [ ] ✅ Tapping a row navigates to team detail
+
+#### Invite Coach (`/admin/team/invite`)
+- [ ] ✅ Requires first name, last name, email, temporary password (≥ 8 chars)
+- [ ] ✅ Password show/hide toggle works
+- [ ] ✅ At least one discipline must be checked before submitting
+- [ ] ✅ Warning shown if no active disciplines exist
+- [ ] ✅ Creating account does NOT sign out the current admin (secondary Firebase app)
+- [ ] ✅ On success: snackbar shown, returns to team list; new coach appears in list
+- [ ] ✅ Duplicate email shows friendly Firebase error message
+- [ ] ⚠️ Coach receives no automated welcome email — must be given credentials manually
+
+#### Team Detail (`/admin/team/:uid`)
+- [ ] ✅ Shows profile card, role badge, status badge, email, last login, disciplines
+- [ ] ✅ Edit button only visible to owners; navigates to edit screen
+- [ ] ✅ Owner cannot perform actions on themselves (no action section visible)
+- [ ] ✅ Deactivate → confirmation dialog → coach status becomes "Deactivated"
+- [ ] ✅ Reactivate → confirmation → coach status becomes "Active"
+- [ ] ✅ Promote to Owner → confirmation → role badge changes to Owner
+- [ ] ✅ Demote to Coach → discipline-select bottom sheet → must pick ≥ 1 discipline → role changes to Coach
+- [ ] ✅ Delete → double-confirmation → coach removed from list; navigates back
+- [ ] ⚠️ Deleting a coach does NOT remove their Firebase Auth account — must be done manually in Firebase Console
+
+#### Edit Coach / Admin (`/admin/team/:uid/edit`)
+- [ ] ✅ Pre-fills first name, last name, email from existing record
+- [ ] ✅ Coach discipline checkboxes pre-checked with current assignments
+- [ ] ✅ Coach must remain assigned to ≥ 1 discipline on save
+- [ ] ✅ Owner edit form does not show discipline section
+- [ ] ✅ Save shows success snackbar and navigates back
+
+### PIN Reset
+
+- [ ] ✅ "Reset PIN" button visible on profile detail Personal tab when `pinHash != null`
+- [ ] ✅ Confirmation dialog mentions student will be unable to sign in until new PIN assigned
+- [ ] ✅ After reset: `pinHash` cleared in Firestore; student sees no-PIN banner at next lock screen
+- [ ] ✅ Button not shown for anonymised profiles
+
+### Role Guards (coaches)
+
+#### Attendance list
+- [ ] ✅ Coach's discipline dropdown initialises to their first assigned discipline (not "All")
+- [ ] ✅ "All Disciplines" option absent from dropdown for coaches
+- [ ] ✅ Dropdown only shows disciplines the coach is assigned to
+
+#### Create Attendance Session — Step 1 (Select Discipline)
+- [ ] ✅ Coaches only see their assigned active disciplines in the list
+- [ ] ✅ Owners see all active disciplines
+
+#### Grading Events list
+- [ ] ✅ Coaches with 1 assigned discipline: no dropdown shown; events auto-filtered to that discipline
+- [ ] ✅ Coaches with 2+ disciplines: dropdown shown with their disciplines only; no "All" option
+- [ ] ✅ Owners see full discipline filter including "All Disciplines"
+
+#### Create Grading Event — Discipline dropdown
+- [ ] ✅ Coaches only see their assigned active disciplines
+- [ ] ✅ Owners see all active disciplines
