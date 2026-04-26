@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/providers/admin_providers.dart';
 import '../../core/providers/auth_providers.dart';
 import '../../core/providers/student_session_provider.dart';
+import '../../domain/entities/admin_user.dart';
 import '../../domain/entities/attendance_session.dart';
 import '../../domain/entities/cash_payment.dart';
 import '../../domain/entities/discipline.dart';
@@ -17,6 +18,10 @@ import '../../presentation/features/attendance/attendance_list_screen.dart';
 import '../../presentation/features/attendance/create_attendance_session_screen.dart';
 import '../../presentation/features/attendance/queued_check_ins_screen.dart';
 import '../../presentation/features/attendance/session_detail_screen.dart';
+import '../../presentation/features/admin/admin_user_detail_screen.dart';
+import '../../presentation/features/admin/admin_user_list_screen.dart';
+import '../../presentation/features/admin/edit_admin_user_screen.dart';
+import '../../presentation/features/admin/invite_coach_screen.dart';
 import '../../presentation/features/auth/admin_login_screen.dart';
 import '../../presentation/features/auth/entry_gateway_screen.dart';
 import '../../presentation/features/auth/setup_wizard_screen.dart';
@@ -404,6 +409,32 @@ class AppRouter {
             name: 'adminPaymentsDetail',
             builder: (_, state) =>
                 PaymentDetailScreen(payment: state.extra as CashPayment),
+          ),
+        ],
+      ),
+      GoRoute(
+        path: RouteNames.adminTeam,
+        name: 'adminTeam',
+        builder: (_, state) => const AdminUserListScreen(),
+        routes: [
+          GoRoute(
+            path: 'invite',
+            name: 'adminTeamInvite',
+            builder: (_, state) => const InviteCoachScreen(),
+          ),
+          GoRoute(
+            path: ':uid',
+            name: 'adminTeamDetail',
+            builder: (_, state) =>
+                AdminUserDetailScreen(uid: state.pathParameters['uid']!),
+            routes: [
+              GoRoute(
+                path: 'edit',
+                name: 'adminTeamEdit',
+                builder: (_, state) =>
+                    EditAdminUserScreen(adminUser: state.extra as AdminUser),
+              ),
+            ],
           ),
         ],
       ),

@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 import '../../domain/repositories/auth_repository.dart';
 
@@ -54,6 +55,34 @@ class FirebaseAuthRepository implements AuthRepository {
       return credential.user!.uid;
     } on FirebaseAuthException catch (e) {
       throw AuthException(_friendlyMessage(e.code), code: e.code);
+    }
+  }
+
+  @override
+  Future<String> createUserWithoutSignIn({
+    required String email,
+    required String password,
+  }) async {
+    // Use a temporary secondary Firebase app so that creating the new account
+    // does not displace the currently signed-in admin in the primary app.
+    FirebaseApp? secondaryApp;
+    try {
+      secondaryApp = await Firebase.initializeApp(
+        name: 'coach-creation-${DateTime.now().millisecondsSinceEpoch}',
+        options: Firebase.app().options,
+      );
+      final secondaryAuth = FirebaseAuth.instanceFor(app: secondaryApp);
+      final credential = await secondaryAuth.createUserWithEmailAndPassword(
+        email: email.trim(),
+        password: password,
+      );
+      final uid = credential.user!.uid;
+      await secondaryAuth.signOut();
+      return uid;
+    } on FirebaseAuthException catch (e) {
+      throw AuthException(_friendlyMessage(e.code), code: e.code);
+    } finally {
+      await secondaryApp?.delete();
     }
   }
 
