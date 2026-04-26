@@ -1,40 +1,49 @@
 # Ichiban App — Full Project Handover
 
-**Date produced:** 19 April 2026  
+**Date produced:** 24 April 2026
 **Purpose:** Complete context for a new Claude chat session to continue development without any prior conversation history.
 
 ---
 
 ## 1. Project Overview
 
-**Ichiban** is a dojo management application for a martial arts club. It is built in Flutter and targets two separate app flavors:
+**Ichiban** is a dojo management application for a martial arts club. It is built in Flutter and targets two separate app flavours:
 
-| Flavor | Entry point | Purpose |
+| Flavour | Entry point | Purpose |
 |---|---|---|
 | **admin** | `lib/main_admin.dart` | Club administrators manage profiles, memberships, disciplines, grading, attendance, payments |
-| **student** | `lib/main_student.dart` | Students view their own profile, attendance, and grades |
+| **student** | `lib/main_student.dart` | Students view their own profile, attendance history, and grades; check in to sessions |
 
 **Tech stack:**
-- Flutter / Dart (SDK ^3.11.4)
+- Flutter / Dart (SDK ^3.11.4) — Flutter SDK at `G:\flutter` (no spaces — important for test runner)
 - Firebase (Auth, Firestore, Cloud Messaging)
 - Riverpod 3 for state management (`flutter_riverpod: ^3.1.0`)
 - go_router 17 for navigation
 - equatable for entity equality
 - intl for date formatting
 - crypto for PIN hashing
-- flutter_stripe + pay for payments (data layer only — UI not yet built)
+- share_plus for CSV export (financial report)
 
 **Git worktree (active branch):**
-`G:\Ichiban app\Ichiban App\.claude\worktrees\confident-driscoll\`  
+`G:\Ichiban app\Ichiban App\.claude\worktrees\confident-driscoll\`
 Branch: `claude/confident-driscoll`
 
 All work should be done in the worktree path above, not the main project root.
+
+**After generating any code always run in order:**
+```
+cd "G:\Ichiban app\Ichiban App\.claude\worktrees\confident-driscoll"
+flutter pub get
+dart format .
+flutter analyze
+```
+Fix all warnings before considering the task complete.
 
 ---
 
 ## 2. Architecture
 
-The project follows **Clean Architecture** with three layers:
+Clean Architecture with three layers:
 
 ```
 lib/
@@ -60,14 +69,23 @@ lib/
 lib/presentation/features/
 ├── auth/
 ├── profiles/
-└── disciplines/
+├── disciplines/
+├── memberships/
+├── enrollment/
+├── attendance/
+├── grading/
+├── payments/
+└── student/
 ```
+
+**Design system source of truth:** `lib/core/theme/app_theme.dart`
+Never hardcode colours, font sizes, or spacing values in widgets. Add tokens there first, then reference them.
 
 ---
 
 ## 3. Firestore Collections
 
-All collection names are defined in `lib/core/constants/app_constants.dart`.
+All collection names are constants in `lib/core/constants/app_constants.dart`.
 
 | Firestore collection | Dart constant | Entity |
 |---|---|---|
@@ -79,6 +97,7 @@ All collection names are defined in `lib/core/constants/app_constants.dart`.
 | `paytSessions` | `colPaytSessions` | `PaytSession` |
 | `cashPayments` | `colCashPayments` | `CashPayment` |
 | `enrollments` | `colEnrollments` | `Enrollment` |
+| `gradingEvents` | `colGradingEvents` | `GradingEvent` |
 | `gradingRecords` | `colGradingRecords` | `GradingRecord` |
 | `attendanceSessions` | `colAttendanceSessions` | `AttendanceSession` |
 | `attendanceRecords` | `colAttendanceRecords` | `AttendanceRecord` |
@@ -86,44 +105,115 @@ All collection names are defined in `lib/core/constants/app_constants.dart`.
 | `emailTemplates` | `colEmailTemplates` | `EmailTemplate` |
 | `appSettings` | `colAppSettings` | `AppSetting` |
 
-**Pattern:** All collections use `withConverter` via `FirestoreCollections` — repositories never call `.data()` manually.
+**Pattern:** All collections use `withConverter` via `FirestoreCollections`. Repositories never call `.data()` manually.
 
 ```dart
-// Example usage in a repository
+// Usage in a repository
 final snap = await FirestoreCollections.profiles().doc(id).get();
 final profile = snap.data(); // already a typed Profile
 ```
 
 ---
 
-## 4. Entities
+## 4. Entities & Enums
 
-### Profile (`lib/domain/entities/profile.dart`)
-All fields — including the complete list of GDPR fields (`isAnonymised`, `anonymisedAt`, `dataProcessingConsent`, `dataProcessingConsentDate`, `dataProcessingConsentVersion`) and family link fields (`parentProfileId`, `secondParentProfileId`, `payingParentId`).
+### `lib/domain/entities/enums.dart`
+Key enums relevant to the latest work:
 
-Key computed getters: `fullName`, `isJunior`, `isAdult`, `isCoach`, `isParentGuardian`.
+| Enum | Values |
+|---|---|
+| `PaymentMethod` | `cash`, `card`, `bankTransfer`, `stripe`, `writtenOff`, `none` |
+| `PaymentType` | `membership`, `payt`, `other` |
+| `PaytPaymentStatus` | `pending`, `paid`, `writtenOff` |
+| `MembershipStatus` | `active`, `trial`, `lapsed`, `expired`, `cancelled`, `pendingRenewal` |
+| `MembershipPlanType` | `monthly`, `termly`, `annual`, `payAsYouTrain`, `trial`, `complimentary` |
+| `ProfileType` | `adultStudent`, `juniorStudent`, `coach`, `parentGuardian` |
+| `RankType` | `kyu`, `dan`, `mon`, `ungraded` |
+| `CheckInMethod` | `selfCheckIn`, `adminMarkAttendance`, `queueResolution` |
 
-### Discipline (`lib/domain/entities/discipline.dart`)
-`id`, `name`, `description?`, `isActive`, `createdByAdminId`, `createdAt`
+**All switches over enums must be exhaustive.** When adding a new enum value, grep for every switch on that enum and add the new case.
 
-### Rank (`lib/domain/entities/rank.dart`)
-`id`, `disciplineId`, `name`, `displayOrder`, `colourHex?`, `rankType` (enum), `monCount?`, `minAttendanceForGrading?`, `createdAt`
+### `lib/domain/entities/profile.dart`
+Full GDPR fields: `isAnonymised`, `anonymisedAt`, `dataProcessingConsent`, `dataProcessingConsentDate`, `dataProcessingConsentVersion`.
+Family link fields: `parentProfileId`, `secondParentProfileId`, `payingParentId`.
+Computed getters: `fullName`, `isJunior`, `isAdult`, `isCoach`, `isParentGuardian`.
 
-### Enums (`lib/domain/entities/enums.dart`)
-`RankType` (kyu, dan, mon, ungraded), `ProfileType` (adultStudent, juniorStudent, coach, parentGuardian), `MembershipPlanType`, `MembershipStatus`, `PaymentMethod`, `NotificationChannel`, `NotificationType`, `EmailDeliveryStatus`, `CheckInMethod`, `PaytPaymentStatus`, `FamilyPricingTier`
+### `lib/domain/entities/cash_payment.dart`
+```dart
+class CashPayment extends Equatable {
+  final String id;
+  final String profileId;
+  final double amount;
+  final PaymentMethod paymentMethod;
+  final PaymentType paymentType;       // membership | payt | other
+  final DateTime recordedAt;
+  final String recordedByAdminId;
+  final String? membershipId;          // set for PaymentType.membership
+  final String? paytSessionId;         // set for PaymentType.payt
+  final String? notes;
+  final String? editedByAdminId;       // set on edit (super-admin only)
+  final DateTime? editedAt;
+}
+```
+
+### `lib/domain/entities/payt_session.dart`
+```dart
+class PaytSession extends Equatable {
+  final String id;
+  final String profileId;
+  final String disciplineId;
+  final String? attendanceRecordId;
+  final DateTime sessionDate;
+  final double amount;                 // price snapshot at time of check-in
+  final PaytPaymentStatus paymentStatus; // pending | paid | writtenOff
+  final PaymentMethod paymentMethod;
+  final DateTime? paidAt;
+  final String? paidByAdminId;
+  final String? writtenOffByAdminId;
+  final DateTime? writtenOffAt;
+  final String? writeOffReason;
+}
+```
 
 ---
 
-## 5. Repository Pattern
+## 5. Repository Interfaces
 
-Each domain repository interface is in `lib/domain/repositories/`. The Firestore implementation is in `lib/data/repositories/`.
+All in `lib/domain/repositories/`. Key additions from Payments build:
 
-Providers are in `lib/core/providers/repository_providers.dart` — each returns the concrete Firestore class cast to the abstract interface.
-
+### `cash_payment_repository.dart`
 ```dart
-final profileRepositoryProvider = Provider<ProfileRepository>(
-  (ref) => FirestoreProfileRepository(),
-);
+abstract interface class CashPaymentRepository {
+  Future<String> create(CashPayment payment);
+  Future<void> edit(String id, {
+    required double amount,
+    required PaymentMethod paymentMethod,
+    required PaymentType paymentType,
+    String? notes,
+    required String editedByAdminId,
+  });
+  Stream<List<CashPayment>> watchAll();
+  Stream<List<CashPayment>> watchForProfile(String profileId);
+  Stream<List<CashPayment>> watchForMembership(String membershipId);
+}
+```
+
+### `payt_session_repository.dart`
+```dart
+abstract interface class PaytSessionRepository {
+  Future<String> create(PaytSession session);
+  Future<void> markPaid(String id, {
+    required PaymentMethod paymentMethod,
+    required String paidByAdminId,
+  });
+  Future<void> writeOff(String id, {
+    required String writtenOffByAdminId,
+    required String writeOffReason,
+  });
+  Stream<List<PaytSession>> watchAll();
+  Stream<List<PaytSession>> watchForProfile(String profileId);
+  Stream<List<PaytSession>> watchPendingForProfile(String profileId);
+}
 ```
 
 ---
@@ -131,210 +221,273 @@ final profileRepositoryProvider = Provider<ProfileRepository>(
 ## 6. Providers
 
 ### `lib/core/providers/repository_providers.dart`
-All 14 repository providers. Always read/watch these through the domain interface — never instantiate repositories directly.
+All repository providers. Always use these — never instantiate repositories directly.
+
+### `lib/core/providers/payments_providers.dart` ← NEW (Payments build)
+```dart
+// Auth stub — replace when real auth session implemented
+final isSuperAdminProvider = Provider<bool>((ref) => false); // TODO(auth-session)
+
+// Use case providers
+resolvePaytSessionUseCaseProvider
+bulkResolvePaytSessionsUseCaseProvider
+writeOffPaytSessionUseCaseProvider
+recordStandalonePaymentUseCaseProvider
+editPaymentUseCaseProvider          // super-admin only
+
+// Stream providers
+allPaytSessionsProvider              // StreamProvider<List<PaytSession>>
+paytSessionsForProfileProvider       // StreamProvider.family<List<PaytSession>, String>
+pendingPaytSessionsForProfileProvider// StreamProvider.family<List<PaytSession>, String>
+allCashPaymentsProvider              // StreamProvider<List<CashPayment>>
+cashPaymentsForProfileProvider       // StreamProvider.family<List<CashPayment>, String>
+cashPaymentsForMembershipProvider    // StreamProvider.family<List<CashPayment>, String>
+
+// Derived providers
+outstandingBalanceProvider           // Provider.family<double, String> (sum pending PaytSessions)
+pendingPaytSessionCountProvider      // Provider.family<int, String>
+```
 
 ### `lib/core/providers/profile_providers.dart`
-- `getProfilesUseCaseProvider`, `getProfileUseCaseProvider`, `createProfileUseCaseProvider`, `updateProfileUseCaseProvider`, `deactivateProfileUseCaseProvider`, `setPinUseCaseProvider`, `anonymiseProfileUseCaseProvider`
-- `profileListProvider` — `StreamProvider<List<Profile>>` (all profiles live)
-- `profilesByTypeProvider` — `StreamProvider.family<List<Profile>, ProfileType>`
-- `profileProvider` — `StreamProvider.family<Profile?, String>` (single profile by ID)
-- `profileFormNotifierProvider` — `NotifierProvider.autoDispose<ProfileFormNotifier, ProfileFormState>`
+`profileListProvider`, `profilesByTypeProvider`, `profileProvider(id)`, `profileFormNotifierProvider`, plus use-case providers.
 
 ### `lib/core/providers/discipline_providers.dart`
-- 9 use-case providers for disciplines and ranks
-- `disciplineListProvider` — all disciplines (active + inactive), live
-- `activeDisciplineListProvider` — active disciplines only, live
-- `disciplineProvider` — `StreamProvider.family<Discipline?, String>` (filtered from disciplineListProvider stream)
-- `rankListProvider` — `StreamProvider.family<List<Rank>, String>` (by disciplineId)
-- `disciplineFormNotifierProvider` — autoDispose notifier for discipline create/edit form
-- `rankFormNotifierProvider` — autoDispose notifier for rank create/edit form
+`disciplineListProvider`, `activeDisciplineListProvider`, `disciplineProvider(id)`, `rankListProvider(disciplineId)`, form notifiers.
 
-### `lib/core/providers/app_settings_providers.dart`
-- `privacyPolicyVersionProvider` — `FutureProvider<String>` reading from `appSettings/privacyPolicyVersion`
+### `lib/core/providers/attendance_providers.dart`
+All attendance use-case providers. Note: `createAttendanceSessionUseCaseProvider`, `markAttendanceUseCaseProvider`, and `selfCheckInUseCaseProvider` all inject `membershipRepositoryProvider` and `paytSessionRepositoryProvider` for PAYT auto-creation.
 
-### `lib/core/providers/auth_providers.dart`
-- `authRepositoryProvider`, `authStateProvider`, `isAdminAuthenticatedProvider`, `currentAdminProvider`
+### `lib/core/providers/membership_providers.dart`
+All membership use-case providers and stream providers including `membershipsByStatusProvider`.
 
-### `lib/core/providers/student_session_provider.dart`
-- `studentSessionProvider` — `NotifierProvider<StudentSessionNotifier, StudentSession>`
-- Session state: `profileId?`, `isProfileSelected`, `isAuthenticated`
-- Call `selectProfile(id)` → then `authenticate(pinHash)` to log in
-- Call `clearSession()` to sign out
+### `lib/core/providers/grading_providers.dart`
+All grading use-case providers and stream providers.
+
+### `lib/core/providers/enrollment_providers.dart`
+All enrollment use-case providers.
 
 ---
 
-## 7. Routing
+## 7. Use Cases — Payments
+
+All in `lib/domain/use_cases/payments/`:
+
+| File | What it does |
+|---|---|
+| `resolve_payt_session_use_case.dart` | Marks a PaytSession paid + creates CashPayment(type: payt) |
+| `bulk_resolve_payt_sessions_use_case.dart` | Loops `ResolvePaytSessionUseCase` for a list of sessions |
+| `write_off_payt_session_use_case.dart` | Calls `paytRepo.writeOff` — no CashPayment written |
+| `record_standalone_payment_use_case.dart` | Creates CashPayment(type: other) with no linked entity |
+| `edit_payment_use_case.dart` | Calls `cashRepo.edit` — super-admin only |
+
+---
+
+## 8. PAYT Auto-Creation (Attendance Integration)
+
+When a student with an active PAYT membership attends a session, a pending `PaytSession` is automatically created. This happens in **three places**:
+
+1. **`self_check_in_use_case.dart`** — student self check-in via kiosk
+2. **`mark_attendance_use_case.dart`** — coach marks attendance in admin app
+3. **`create_attendance_session_use_case.dart`** — queue resolution during session close
+
+All three use cases now accept `MembershipRepository` and `PaytSessionRepository` in their constructors. After creating an `AttendanceRecord`, they:
+1. Call `membershipRepo.getActiveForProfile(studentId)` to find the active membership
+2. Check `membership.isPayAsYouTrain`
+3. If true, create a `PaytSession` with `amount: membership.monthlyAmount` (price snapshot) and link `attendanceRecordId`
+
+---
+
+## 9. Routing
 
 `lib/core/router/app_router.dart` — two separate GoRouter instances.
+Route name constants are in `lib/core/router/route_names.dart`. Always use named routes.
 
 ### Admin router
-- Auth guard: if not authenticated, redirect to `/admin/login`
-- `/admin/login` → `AdminLoginScreen`
-- `/admin/dashboard` → `_PlaceholderScreen` ⚠️
-- `/admin/profiles` → `ProfileListScreen`
-  - `/admin/profiles/create` → `ProfileFormScreen()`
-  - `/admin/profiles/:id` → `ProfileDetailScreen(profileId)`
-    - `/admin/profiles/:id/edit` → `ProfileFormScreen(existingProfile: extra)`
-- `/admin/disciplines` → `DisciplineListScreen`
-  - `/admin/disciplines/create` → `DisciplineFormScreen()`
-  - `/admin/disciplines/:disciplineId` → `DisciplineDetailScreen`
-    - `/admin/disciplines/:disciplineId/edit` → `DisciplineFormScreen(existingDiscipline: extra)`
-    - `/admin/disciplines/:disciplineId/ranks/create` → `RankFormScreen(disciplineId, nextDisplayOrder: extra)`
-    - `/admin/disciplines/:disciplineId/ranks/:rankId/edit` → `RankFormScreen(disciplineId, existingRank: extra)`
-- `/admin/attendance`, `/admin/grading`, `/admin/memberships`, `/admin/payments`, `/admin/settings` → `_PlaceholderScreen` ⚠️
+
+```
+/admin/login            → AdminLoginScreen
+/admin/dashboard        → _PlaceholderScreen ⚠️
+/admin/profiles         → ProfileListScreen
+  /admin/profiles/create
+  /admin/profiles/:id   → ProfileDetailScreen (3 tabs: Info | Memberships | Payments)
+    /admin/profiles/:id/edit
+/admin/disciplines      → DisciplineListScreen
+  /admin/disciplines/create
+  /admin/disciplines/:disciplineId → DisciplineDetailScreen
+    /admin/disciplines/:disciplineId/edit
+    /admin/disciplines/:disciplineId/ranks/create
+    /admin/disciplines/:disciplineId/ranks/:rankId/edit
+/admin/enrollment       → EnrollmentListScreen ✅
+/admin/attendance       → AttendanceListScreen ✅
+  /admin/attendance/create
+  /admin/attendance/:sessionId
+/admin/grading          → GradingListScreen ✅
+  /admin/grading/create
+  /admin/grading/:eventId
+/admin/memberships      → MembershipListScreen ✅
+  /admin/memberships/create  (wizard)
+  /admin/memberships/:id
+/admin/payments         → PaymentsListScreen ✅
+  /admin/payments/record      ← LITERAL before :paymentId
+  /admin/payments/report      ← LITERAL before :paymentId
+  /admin/payments/bulk-resolve/:profileId
+  /admin/payments/:paymentId  → PaymentDetailScreen
+/admin/settings         → _PlaceholderScreen ⚠️
+/admin/notifications    → _PlaceholderScreen ⚠️
+```
+
+**Important:** Literal sub-routes (`record`, `report`) are registered **before** the parameterised `:paymentId` route to prevent go_router treating them as path params.
 
 ### Student router
-- Session guard (3 states: no profile selected → `/student/select`, profile selected but not authed → `/student/pin`, authed → allow)
-- `/student/select` → `StudentSelectScreen`
-- `/student/pin` → `PinEntryScreen`
-- `/student/home`, `/student/attendance`, `/student/grades` → `_PlaceholderScreen` ⚠️
-- `/student/profile` → `StudentProfileScreen`
 
-### Route names
-All route names are in `lib/core/router/route_names.dart`. Always use named routes via `context.pushNamed('routeName')` or `context.goNamed('routeName')`.
-
----
-
-## 8. Screen Patterns
-
-### Admin screen pattern (ConsumerWidget)
-```dart
-class MyScreen extends ConsumerWidget {
-  const MyScreen({super.key});
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final listAsync = ref.watch(someListProvider);
-    return listAsync.when(
-      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
-      error: (e, _) => Scaffold(appBar: AppBar(), body: Center(child: Text('Error: $e'))),
-      data: (items) => Scaffold(...),
-    );
-  }
-}
 ```
-
-### Form screen pattern (ConsumerStatefulWidget with NotifierProvider.autoDispose)
-Forms use a `NotifierProvider.autoDispose` that holds mutable form state. The form calls setters on the notifier and triggers `save()` which calls the relevant use case. Errors are shown in a SnackBar.
-
-### Navigation patterns
-- Edit screens receive their entity via `state.extra as EntityType?`
-- Detail screens receive their ID via `state.pathParameters['id']!`
-- rank create receives `nextDisplayOrder` as `(state.extra as int?) ?? 0`
-
----
-
-## 9. GDPR Implementation
-
-### Data processing consent (create/edit form)
-`lib/presentation/features/profiles/profile_form_screen.dart` contains a `_GdprConsentSection` widget:
-- **Create mode:** A mandatory `CheckboxListTile`. The current `privacyPolicyVersion` is read from `appSettings` via `privacyPolicyVersionProvider` and stamped to `dataProcessingConsentVersion` when ticked. Save is blocked while unchecked.
-- **Edit mode (consent given):** Green read-only banner showing policy version. No checkbox — directs admin to erasure process to withdraw consent.
-- **Edit mode (consent not given):** Checkbox shown.
-
-### Right to Erasure (manual, admin-triggered)
-`lib/presentation/features/profiles/profile_detail_screen.dart`:
-- 'Erase Personal Data' button visible when `!profile.isAnonymised`
-- Two-step confirmation dialog (Step 1 lists what will be wiped, Step 2 final confirm)
-- Calls `anonymiseProfileUseCaseProvider`
-
-`lib/domain/use_cases/profile/anonymise_profile_use_case.dart`:
-- Throws `ArgumentError` if ID empty
-- Throws `StateError` if already anonymised
-- Calls `repo.anonymise(id)`
-
-`lib/data/repositories/firestore_profile_repository.dart` → `anonymise(id)`:
-- Required String fields → `'[Anonymised]'` (keeps ProfileConverter working — never store empty/null for required strings)
-- `dateOfBirth` → `Timestamp.fromDate(DateTime.utc(1970))`
-- Nullable fields (`gender`, `addressLine2`, `allergiesOrMedicalNotes`, `pinHash`, `fcmToken`) → `null`
-- Sets `isAnonymised: true`, `anonymisedAt: Timestamp.now()`
-
-### Anonymised profile display
-`profile_detail_screen.dart` hides personal/contact/emergency sections when `profile.isAnonymised`. Shows grey banner with date. Profile types, member-since, photo consent remain visible.
-
----
-
-## 10. Nullable Int `copyWith` Sentinel Pattern
-
-Standard Dart `copyWith` cannot distinguish "pass null to clear" from "omit to keep". For `Rank.monCount` and `Rank.minAttendanceForGrading` (and similarly in `RankFormState`):
-
-```dart
-const _absent = Object(); // module-private sentinel
-
-RankFormState copyWith({
-  Object? monCount = _absent,
-  Object? minAttendanceForGrading = _absent,
-  // ...
-}) => RankFormState(
-  monCount: monCount == _absent ? this.monCount : monCount as int?,
-  // ...
-);
+/student/select         → StudentSelectScreen
+/student/pin            → PinEntryScreen
+/student/home           → StudentHomeScreen ✅
+/student/checkin        → SelfCheckInScreen ✅
+/student/grades         → StudentGradesScreen ✅
+/student/attendance     → _PlaceholderScreen ⚠️
+/student/profile        → StudentProfileScreen
 ```
 
 ---
 
-## 11. What Is Fully Built
+## 10. What Is Fully Built
 
 | Feature | Screens | Domain | Data |
 |---|---|---|---|
-| Auth (admin Firebase) | ✅ | ✅ | ✅ |
-| Auth (student PIN session) | ✅ | ✅ | ✅ |
+| Admin Firebase auth | ✅ | ✅ | ✅ |
+| Student PIN session auth | ✅ | ✅ | ✅ |
 | Database seeder | — | — | ✅ |
 | Profiles (CRUD, GDPR consent, anonymisation) | ✅ | ✅ | ✅ |
 | Disciplines (list, create, edit, detail) | ✅ | ✅ | ✅ |
 | Ranks (create, edit, delete, reorder drag) | ✅ | ✅ | ✅ |
-| App settings (read-only from Firestore) | — | ✅ | ✅ |
-
-**Data layer only built (entities + repos + converters), screens not yet built:**
-Memberships, MembershipPricing, Enrollment, GradingRecord, AttendanceSessions, AttendanceRecords, CashPayments, PaytSessions, NotificationLogs, EmailTemplates
+| App settings (read-only) | — | ✅ | ✅ |
+| Enrollment | ✅ | ✅ | ✅ |
+| Memberships (create wizard, detail, renew, cancel, PAYT) | ✅ | ✅ | ✅ |
+| Attendance (sessions, mark, self check-in, queue) | ✅ | ✅ | ✅ |
+| Grading (events, nominate, results, student grades view) | ✅ | ✅ | ✅ |
+| Payments (list, detail, PAYT resolve, bulk resolve, record, report) | ✅ | ✅ | ✅ |
+| Student home | ✅ | — | — |
+| Student self check-in | ✅ | ✅ | ✅ |
+| Student grades view | ✅ | — | — |
 
 ---
 
-## 12. What Is NOT Built Yet (Placeholder Screens)
+## 11. What Is NOT Built Yet
 
-These routes exist in the router but point to `_PlaceholderScreen`:
+Routes still pointing to `_PlaceholderScreen`:
 - `/admin/dashboard`
-- `/admin/attendance`
-- `/admin/grading`
-- `/admin/memberships`
-- `/admin/payments`
 - `/admin/settings`
-- `/student/home`
-- `/student/attendance`
-- `/student/grades`
+- `/admin/notifications`
+- `/student/attendance` (student's own attendance history)
 
-See `G:\Ichiban app\Ichiban App\Deferred features.md` for full deferred items list with context. **Always read that file when starting a new session.**
+See `G:\Ichiban app\Ichiban App\Deferred features.md` for the full deferred items list with implementation context. **Read that file at the start of every session.**
 
 ---
 
-## 13. Support Files
+## 12. Active TODO Stubs — Auth Session
+
+Throughout the codebase, admin IDs are hardcoded pending real auth integration. Search for `TODO(auth-session)` to find all of them:
+
+| File | Hardcoded value | What it should be |
+|---|---|---|
+| `record_payment_screen.dart` | `'admin'` | Current admin's UID from auth session |
+| `bulk_resolve_screen.dart` | `'admin'` | Current admin's UID |
+| `payment_detail_screen.dart` | `'superadmin'` | Current super-admin's UID |
+| `payments_providers.dart` | `isSuperAdminProvider` returns `false` | Read from auth session claims |
+| Multiple attendance screens | `'admin'` | Current admin's UID |
+| Multiple grading screens | `'admin'` | Current admin's UID |
+
+When the auth/session feature is built, replace all `TODO(auth-session)` occurrences with reads from the auth provider.
+
+---
+
+## 13. Coding Patterns
+
+### Sentinel copyWith for nullable fields
+Standard `copyWith` cannot distinguish "clear to null" from "omit (keep existing)". For nullable int/string fields in entities and form states:
+
+```dart
+const _absent = Object();
+
+MyEntity copyWith({Object? someNullableField = _absent}) => MyEntity(
+  someNullableField: identical(someNullableField, _absent)
+      ? this.someNullableField
+      : someNullableField as int?,
+);
+```
+
+Used on `Rank.monCount`, `Rank.minAttendanceForGrading`, and their form state equivalents.
+
+### Exhaustive switches
+All `switch` expressions over enums must cover every value. When you add a new enum value, run `flutter analyze` and fix every non-exhaustive switch.
+
+When `PaymentMethod.writtenOff` was added it required fixes in:
+- `create_membership_wizard_screen.dart`
+- `membership_detail_screen.dart` (two switches)
+
+### `DropdownButtonFormField` — use `initialValue`, not `value`
+Flutter 3.33.0+ deprecates `value:` on `FormField` subclasses. Always use `initialValue:`.
+
+### `outstandingBalanceProvider` fold type
+When folding a stream of doubles, always provide an explicit type parameter to avoid nullable inference:
+```dart
+sessions.fold<double>(0.0, (sum, s) => sum + s.amount)
+```
+
+### Router sub-route ordering
+In go_router, literal path segments must be declared before parameterised ones:
+```dart
+GoRoute(path: 'record', ...),    // BEFORE
+GoRoute(path: 'report', ...),    // BEFORE
+GoRoute(path: ':paymentId', ...) // AFTER
+```
+
+---
+
+## 14. Tests
+
+28 passing unit tests in `test/providers/`. Run with:
+```
+cd "G:\Ichiban app\Ichiban App\.claude\worktrees\confident-driscoll"
+flutter test
+```
+
+---
+
+## 15. Support Files
 
 | File | Purpose |
 |---|---|
-| `G:\Ichiban app\Ichiban App\testing notes\testing_notes.md` | Checklist of all test cases for every built feature. Add new items after every feature. |
-| `G:\Ichiban app\Ichiban App\Deferred features.md` | All deferred items with enough context to build them cold. **Read on every session start. Delete items when built. Add items when discovered.** |
+| `G:\Ichiban app\Ichiban App\.claude\worktrees\confident-driscoll\Deferred features.md` | All deferred items with context to build them cold. Read on every session start. Delete when built. |
+| `G:\Ichiban app\Ichiban App\testing notes\testing_notes.md` | Checklist of all test cases for every built feature. Append after every feature build. |
 | `C:\Users\kiero\.claude\projects\G--Ichiban-app-Ichiban-App\memory\MEMORY.md` | Persistent memory rules for this project. |
 
 ---
 
-## 14. Working Protocol
+## 16. Working Protocol
 
 1. **Before any work:** Read `Deferred features.md`. If any item can be built as part of the current handover, build it first, then delete it from the file.
-2. **After any feature:** Add test cases to `testing notes/testing_notes.md`.
-3. **When discovering something that can't be built now:** Add it to `Deferred features.md` immediately with enough context to act cold.
-4. **When building a deferred item:** Delete it from `Deferred features.md` as soon as it is done — not "mark as done", DELETE the entry.
-5. Always work in the worktree: `G:\Ichiban app\Ichiban App\.claude\worktrees\confident-driscoll\`
-6. Follow clean architecture strictly — no Firebase imports in domain layer, no business logic in screens.
-7. Use the `withConverter` pattern — all Firestore access goes through `FirestoreCollections`.
-8. Use `NotifierProvider.autoDispose` for all form state.
-9. Screens use `AsyncValue.when(loading, error, data)` — never `.value!`.
-10. Show errors in `SnackBar`, not crashes or bare `print`.
+2. **Present a plan and wait for approval before writing any code.**
+3. **After any feature:** Append test cases to `testing notes/testing_notes.md`.
+4. **When discovering something deferred:** Add to `Deferred features.md` immediately with enough context to act cold.
+5. **When a deferred item is built:** Delete the entry from `Deferred features.md` — do not mark as done, DELETE it.
+6. **Commits:** Only commit when explicitly asked. Never `--no-verify`.
+7. Work strictly in the worktree path; never edit main project root.
+8. Clean Architecture — no Firebase imports in domain, no business logic in screens.
+9. Use `withConverter` pattern — all Firestore access goes through `FirestoreCollections`.
+10. Use `NotifierProvider.autoDispose` for all form state.
+11. Screens use `AsyncValue.when(loading, error, data)` — never `.value!`.
+12. Show errors in `SnackBar`, not crashes or bare `print`.
 
 ---
 
-## 15. Key Known Issues / Gotchas
+## 17. Known Issues / Gotchas
 
 - **Bundle ID is temporary:** `com.ichibanapp` — update Android/iOS/Firebase once trading name confirmed.
-- **Rank delete has no guard:** `DeleteRankUseCase` has no check for students currently holding that rank. A guard must be added before production. This is tracked in `Deferred features.md`.
-- **Student PIN with null pinHash:** Behaviour undefined when a profile has no PIN set. Tracked in `Deferred features.md`.
-- **`createdByAdminId` on disciplines:** Will be an empty string if admin is somehow unauthenticated. Should not be reachable in practice due to router guard.
-- **Anonymised profiles appear in profile list** as '[Anonymised] [Anonymised]' — whether to add a visual treatment or filter needs product owner input. Tracked in `Deferred features.md`.
+- **Student PIN with null `pinHash`:** Behaviour is undefined when a profile has no PIN set. Tracked in `Deferred features.md` item 6.
+- **`isSuperAdminProvider` stub:** Currently hard-wired to `false`. The Edit button on `PaymentDetailScreen` will never appear until this is wired to real auth claims.
+- **Firebase not initialised in tests:** `Firebase.initializeApp()` is commented out in test files. Firestore-dependent providers are tested via mocks only.
+- **PAYT session amount is a price snapshot:** `membership.monthlyAmount` is copied at check-in time. If the membership price changes later, existing pending sessions keep the original amount.
+- **Write-off has no CashPayment:** A written-off PAYT session produces no `CashPayment` audit record — only the `PaytSession` status field changes. This is by design.
