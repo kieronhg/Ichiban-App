@@ -8,6 +8,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/providers/profile_providers.dart';
 import '../../../core/providers/student_session_provider.dart';
 import '../../../core/router/route_names.dart';
+import '../../../core/services/fcm_service.dart';
 import '../../../core/theme/app_colors.dart';
 
 class PinEntryScreen extends ConsumerStatefulWidget {
@@ -116,6 +117,8 @@ class _PinEntryScreenState extends ConsumerState<PinEntryScreen>
 
     if (correct) {
       ref.read(studentSessionProvider.notifier).authenticate();
+      // Fire and forget — token capture failure must not block login.
+      FcmService.captureAndSaveMemberToken(profileId).ignore();
       context.go(RouteNames.studentHome);
     } else {
       ref.read(studentSessionProvider.notifier).recordFailedAttempt();

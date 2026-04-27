@@ -22,6 +22,8 @@ class AdminUserConverter {
       deactivatedAt: (map['deactivatedAt'] as Timestamp?)?.toDate(),
       deactivatedByAdminId: map['deactivatedByAdminId'] as String?,
       lastLoginAt: (map['lastLoginAt'] as Timestamp?)?.toDate(),
+      fcmToken: map['fcmToken'] as String?,
+      fcmTokenUpdatedAt: (map['fcmTokenUpdatedAt'] as Timestamp?)?.toDate(),
     );
   }
 
@@ -42,6 +44,10 @@ class AdminUserConverter {
       'deactivatedByAdminId': adminUser.deactivatedByAdminId,
       'lastLoginAt': adminUser.lastLoginAt != null
           ? Timestamp.fromDate(adminUser.lastLoginAt!)
+          : null,
+      'fcmToken': adminUser.fcmToken,
+      'fcmTokenUpdatedAt': adminUser.fcmTokenUpdatedAt != null
+          ? Timestamp.fromDate(adminUser.fcmTokenUpdatedAt!)
           : null,
     };
   }

@@ -20,6 +20,7 @@ import '../../domain/entities/attendance_record.dart';
 import '../../domain/entities/queued_check_in.dart';
 import '../../domain/entities/notification_log.dart';
 import '../../domain/entities/email_template.dart';
+import '../../domain/entities/announcement.dart';
 import '../../domain/entities/app_setting.dart';
 import 'converters/profile_converter.dart';
 import 'converters/membership_converter.dart';
@@ -38,6 +39,7 @@ import 'converters/attendance_record_converter.dart';
 import 'converters/queued_check_in_converter.dart';
 import 'converters/notification_log_converter.dart';
 import 'converters/email_template_converter.dart';
+import 'converters/announcement_converter.dart';
 import 'converters/admin_user_converter.dart';
 import 'converters/coach_profile_converter.dart';
 import 'converters/app_setting_converter.dart';
@@ -202,6 +204,17 @@ class FirestoreCollections {
         fromFirestore: (snap, _) =>
             NotificationLogConverter.fromMap(snap.id, snap.data()!),
         toFirestore: (log, _) => NotificationLogConverter.toMap(log),
+      );
+
+  // ── Announcements ────────────────────────────────────────────────────────────
+
+  static CollectionReference<Announcement> announcements() => _db
+      .collection(AppConstants.colAnnouncements)
+      .withConverter<Announcement>(
+        fromFirestore: (snap, _) =>
+            AnnouncementConverter.fromMap(snap.id, snap.data()!),
+        toFirestore: (announcement, _) =>
+            AnnouncementConverter.toMap(announcement),
       );
 
   // ── Email Templates ──────────────────────────────────────────────────────────

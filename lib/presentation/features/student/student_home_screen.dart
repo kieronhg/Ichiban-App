@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/providers/admin_providers.dart';
 import '../../../core/providers/discipline_providers.dart';
 import '../../../core/providers/enrollment_providers.dart';
+import '../../../core/providers/notification_providers.dart';
 import '../../../core/providers/profile_providers.dart';
 import '../../../core/providers/student_session_provider.dart';
 import '../../../core/router/route_names.dart';
@@ -77,6 +78,8 @@ class _StudentHomeScreenState extends ConsumerState<StudentHomeScreen> {
           automaticallyImplyLeading: false,
           title: const Text('Student Portal'),
           actions: [
+            if (session.profileId != null)
+              _StudentBellButton(profileId: session.profileId!),
             TextButton.icon(
               onPressed: () {
                 ref.read(studentSessionProvider.notifier).signOut();
@@ -124,9 +127,9 @@ class _StudentHomeScreenState extends ConsumerState<StudentHomeScreen> {
                               ?.copyWith(fontWeight: FontWeight.w700),
                         ),
                         const SizedBox(height: 4),
-                        Text(
+                        const Text(
                           'Ready to train today?',
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: AppColors.textSecondary,
                             fontSize: 15,
                           ),
@@ -212,6 +215,57 @@ class _StudentHomeScreenState extends ConsumerState<StudentHomeScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+// ── Bell button for student AppBar ─────────────────────────────────────────
+
+class _StudentBellButton extends ConsumerWidget {
+  const _StudentBellButton({required this.profileId});
+
+  final String profileId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final notifications =
+        ref.watch(studentNotificationsProvider(profileId)).asData?.value ?? [];
+    final unread = notifications.where((n) => n.isRead != true).length;
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        IconButton(
+          icon: const Icon(Icons.notifications_outlined),
+          tooltip: 'Notifications',
+          onPressed: () => context.pushNamed('studentNotifications'),
+        ),
+        if (unread > 0)
+          Positioned(
+            right: 6,
+            top: 6,
+            child: IgnorePointer(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                decoration: const BoxDecoration(
+                  color: AppColors.error,
+                  borderRadius: BorderRadius.all(Radius.circular(8)),
+                ),
+                child: Text(
+                  unread > 99 ? '99+' : '$unread',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: AppColors.textOnPrimary,
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                    height: 1.2,
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

@@ -18,6 +18,7 @@ import '../../data/repositories/firestore_grading_event_student_repository.dart'
 import '../../data/repositories/firestore_membership_pricing_repository.dart';
 import '../../data/repositories/firestore_membership_repository.dart';
 import '../../data/repositories/firestore_membership_history_repository.dart';
+import '../../data/repositories/firestore_announcement_repository.dart';
 import '../../data/repositories/firestore_notification_repository.dart';
 import '../../data/repositories/firestore_payt_session_repository.dart';
 import '../../data/repositories/firestore_rank_repository.dart';
@@ -39,6 +40,7 @@ import '../../domain/repositories/grading_event_student_repository.dart';
 import '../../domain/repositories/membership_pricing_repository.dart';
 import '../../domain/repositories/membership_repository.dart';
 import '../../domain/repositories/membership_history_repository.dart';
+import '../../domain/repositories/announcement_repository.dart';
 import '../../domain/repositories/notification_repository.dart';
 import '../../domain/repositories/payt_session_repository.dart';
 import '../../domain/repositories/profile_repository.dart';
@@ -143,6 +145,10 @@ final queuedCheckInRepositoryProvider = Provider<QueuedCheckInRepository>(
 
 final notificationRepositoryProvider = Provider<NotificationRepository>(
   (ref) => FirestoreNotificationRepository(),
+);
+
+final announcementRepositoryProvider = Provider<AnnouncementRepository>(
+  (ref) => FirestoreAnnouncementRepository(),
 );
 
 // ── Settings & Templates ───────────────────────────────────────────────────

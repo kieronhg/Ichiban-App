@@ -21,6 +21,7 @@ class AppConstants {
   static const String colQueuedCheckIns = 'queuedCheckIns';
   static const String colNotificationLogs = 'notificationLogs';
   static const String colEmailTemplates = 'emailTemplates';
+  static const String colAnnouncements = 'announcements';
   static const String colAppSettings = 'appSettings';
   static const String colAdminUsers = 'adminUsers';
   static const String colCoachProfiles = 'coachProfiles';

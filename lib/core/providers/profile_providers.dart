@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../domain/entities/communication_preferences.dart';
 import '../../domain/entities/enums.dart';
 import '../../domain/entities/profile.dart';
 import '../../domain/use_cases/profile/anonymise_profile_use_case.dart';
@@ -105,7 +106,7 @@ class ProfileFormNotifier extends Notifier<ProfileFormState> {
   void setPhotoVideoConsent(bool v) =>
       state = state.copyWith(photoVideoConsent: v);
   void setNotes(String? v) => state = state.copyWith(notes: v);
-  void setCommunicationPreferences(List<NotificationChannel> v) =>
+  void setCommunicationPreferences(CommunicationPreferences v) =>
       state = state.copyWith(communicationPreferences: v);
   void setParentProfileId(String? v) =>
       state = state.copyWith(parentProfileId: v);
@@ -200,7 +201,7 @@ class ProfileFormState {
   final String? allergiesOrMedicalNotes;
   final bool photoVideoConsent;
   final String? notes;
-  final List<NotificationChannel> communicationPreferences;
+  final CommunicationPreferences communicationPreferences;
   final String? parentProfileId;
   final String? secondParentProfileId;
   final String? payingParentId;
@@ -239,7 +240,7 @@ class ProfileFormState {
     allergiesOrMedicalNotes: null,
     photoVideoConsent: false,
     notes: null,
-    communicationPreferences: [],
+    communicationPreferences: CommunicationPreferences.empty,
     parentProfileId: null,
     secondParentProfileId: null,
     payingParentId: null,
@@ -272,7 +273,7 @@ class ProfileFormState {
     allergiesOrMedicalNotes: p.allergiesOrMedicalNotes,
     photoVideoConsent: p.photoVideoConsent,
     notes: p.notes,
-    communicationPreferences: List.of(p.communicationPreferences),
+    communicationPreferences: p.communicationPreferences,
     parentProfileId: p.parentProfileId,
     secondParentProfileId: p.secondParentProfileId,
     payingParentId: p.payingParentId,
@@ -345,7 +346,7 @@ class ProfileFormState {
     Object? allergiesOrMedicalNotes = _absent,
     bool? photoVideoConsent,
     Object? notes = _absent,
-    List<NotificationChannel>? communicationPreferences,
+    CommunicationPreferences? communicationPreferences,
     Object? parentProfileId = _absent,
     Object? secondParentProfileId = _absent,
     Object? payingParentId = _absent,
