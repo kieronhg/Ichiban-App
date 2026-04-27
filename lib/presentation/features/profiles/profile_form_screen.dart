@@ -408,26 +408,62 @@ class _ProfileFormScreenState extends ConsumerState<ProfileFormScreen> {
             _FormSection(
               title: 'Communication Preferences',
               children: [
-                ...NotificationChannel.values.map((channel) {
-                  final selected = formState.communicationPreferences.contains(
-                    channel,
-                  );
-                  return CheckboxListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(_channelLabel(channel)),
-                    value: selected,
-                    activeColor: AppColors.accent,
-                    onChanged: (v) {
-                      final updated = List<NotificationChannel>.from(
-                        formState.communicationPreferences,
-                      );
-                      (v ?? false)
-                          ? updated.add(channel)
-                          : updated.remove(channel);
-                      notifier.setCommunicationPreferences(updated);
-                    },
-                  );
-                }),
+                CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Billing & Payment Reminders'),
+                  subtitle: const Text('Renewal and overdue reminders'),
+                  value: formState
+                      .communicationPreferences
+                      .billingAndPaymentReminders,
+                  activeColor: AppColors.accent,
+                  onChanged: (v) => notifier.setCommunicationPreferences(
+                    formState.communicationPreferences.copyWith(
+                      billingAndPaymentReminders: v ?? false,
+                    ),
+                  ),
+                ),
+                CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Grading Notifications'),
+                  subtitle: const Text(
+                    'Eligibility selections and promotion results',
+                  ),
+                  value:
+                      formState.communicationPreferences.gradingNotifications,
+                  activeColor: AppColors.accent,
+                  onChanged: (v) => notifier.setCommunicationPreferences(
+                    formState.communicationPreferences.copyWith(
+                      gradingNotifications: v ?? false,
+                    ),
+                  ),
+                ),
+                CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Trial Expiry Reminders'),
+                  subtitle: const Text('Upcoming trial end notifications'),
+                  value:
+                      formState.communicationPreferences.trialExpiryReminders,
+                  activeColor: AppColors.accent,
+                  onChanged: (v) => notifier.setCommunicationPreferences(
+                    formState.communicationPreferences.copyWith(
+                      trialExpiryReminders: v ?? false,
+                    ),
+                  ),
+                ),
+                CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Dojo Announcements'),
+                  subtitle: const Text('General news and messages from staff'),
+                  value: formState
+                      .communicationPreferences
+                      .generalDojoAnnouncements,
+                  activeColor: AppColors.accent,
+                  onChanged: (v) => notifier.setCommunicationPreferences(
+                    formState.communicationPreferences.copyWith(
+                      generalDojoAnnouncements: v ?? false,
+                    ),
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 16),
@@ -485,11 +521,6 @@ class _ProfileFormScreenState extends ConsumerState<ProfileFormScreen> {
     ProfileType.juniorStudent => 'Junior Student',
     ProfileType.coach => 'Coach',
     ProfileType.parentGuardian => 'Parent / Guardian',
-  };
-
-  String _channelLabel(NotificationChannel c) => switch (c) {
-    NotificationChannel.push => 'Push notifications',
-    NotificationChannel.email => 'Email',
   };
 }
 

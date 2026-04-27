@@ -222,15 +222,31 @@ class _PersonalTab extends StatelessWidget {
 
         // ── Communication ─────────────────────────────────────────────
         _SectionCard(
-          title: 'Communication',
+          title: 'Communication Preferences',
           children: [
             _DetailRow(
-              'Preferences',
-              profile.communicationPreferences.isEmpty
-                  ? 'None set'
-                  : profile.communicationPreferences
-                        .map((c) => c.name)
-                        .join(', '),
+              'Billing & Payment',
+              profile.communicationPreferences.billingAndPaymentReminders
+                  ? 'On'
+                  : 'Off',
+            ),
+            _DetailRow(
+              'Grading',
+              profile.communicationPreferences.gradingNotifications
+                  ? 'On'
+                  : 'Off',
+            ),
+            _DetailRow(
+              'Trial Expiry',
+              profile.communicationPreferences.trialExpiryReminders
+                  ? 'On'
+                  : 'Off',
+            ),
+            _DetailRow(
+              'Announcements',
+              profile.communicationPreferences.generalDojoAnnouncements
+                  ? 'On'
+                  : 'Off',
             ),
           ],
         ),

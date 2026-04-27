@@ -16,6 +16,8 @@ class AdminUser extends Equatable {
     this.deactivatedAt,
     this.deactivatedByAdminId,
     this.lastLoginAt,
+    this.fcmToken,
+    this.fcmTokenUpdatedAt,
   });
 
   /// Firebase Auth UID — also the Firestore document ID.
@@ -39,6 +41,8 @@ class AdminUser extends Equatable {
   final DateTime? deactivatedAt;
   final String? deactivatedByAdminId;
   final DateTime? lastLoginAt;
+  final String? fcmToken;
+  final DateTime? fcmTokenUpdatedAt;
 
   String get fullName => '$firstName $lastName';
 
@@ -60,5 +64,7 @@ class AdminUser extends Equatable {
     deactivatedAt,
     deactivatedByAdminId,
     lastLoginAt,
+    fcmToken,
+    fcmTokenUpdatedAt,
   ];
 }

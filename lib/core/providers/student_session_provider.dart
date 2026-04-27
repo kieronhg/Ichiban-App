@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../constants/app_constants.dart';
+import '../services/fcm_service.dart';
 
 // ── Session state ──────────────────────────────────────────────────────────
 
@@ -132,6 +133,7 @@ class StudentSessionNotifier extends Notifier<StudentSession> {
   /// Clears the session — returns to the select screen.
   void signOut() {
     _cancelTimer();
+    FcmService.clearActiveUser();
     state = const StudentSession();
   }
 

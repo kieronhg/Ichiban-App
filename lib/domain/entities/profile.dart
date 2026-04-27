@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'communication_preferences.dart';
 import 'enums.dart';
 
 class Profile extends Equatable {
@@ -37,13 +38,14 @@ class Profile extends Equatable {
   // Admin-only notes (not visible to the member)
   final String? notes;
 
-  // Which notification channels the member has opted into
-  final List<NotificationChannel> communicationPreferences;
+  // Notification category opt-ins
+  final CommunicationPreferences communicationPreferences;
 
   // System fields
   final DateTime registrationDate;
   final bool isActive;
   final String? fcmToken;
+  final DateTime? fcmTokenUpdatedAt;
   final String? pinHash;
 
   // GDPR — data processing consent
@@ -95,7 +97,7 @@ class Profile extends Equatable {
     this.allergiesOrMedicalNotes,
     required this.photoVideoConsent,
     this.notes,
-    this.communicationPreferences = const [],
+    this.communicationPreferences = CommunicationPreferences.empty,
     this.dataProcessingConsent = false,
     this.dataProcessingConsentDate,
     this.dataProcessingConsentVersion,
@@ -104,6 +106,7 @@ class Profile extends Equatable {
     required this.registrationDate,
     required this.isActive,
     this.fcmToken,
+    this.fcmTokenUpdatedAt,
     this.pinHash,
     this.parentProfileId,
     this.secondParentProfileId,
@@ -143,7 +146,7 @@ class Profile extends Equatable {
     String? allergiesOrMedicalNotes,
     bool? photoVideoConsent,
     String? notes,
-    List<NotificationChannel>? communicationPreferences,
+    CommunicationPreferences? communicationPreferences,
     bool? dataProcessingConsent,
     DateTime? dataProcessingConsentDate,
     String? dataProcessingConsentVersion,
@@ -152,6 +155,7 @@ class Profile extends Equatable {
     DateTime? registrationDate,
     bool? isActive,
     String? fcmToken,
+    DateTime? fcmTokenUpdatedAt,
     String? pinHash,
 
     /// Pass `true` to explicitly clear the PIN hash to null.
@@ -199,6 +203,7 @@ class Profile extends Equatable {
       registrationDate: registrationDate ?? this.registrationDate,
       isActive: isActive ?? this.isActive,
       fcmToken: fcmToken ?? this.fcmToken,
+      fcmTokenUpdatedAt: fcmTokenUpdatedAt ?? this.fcmTokenUpdatedAt,
       pinHash: clearPinHash ? null : (pinHash ?? this.pinHash),
       parentProfileId: parentProfileId ?? this.parentProfileId,
       secondParentProfileId:
@@ -240,6 +245,7 @@ class Profile extends Equatable {
     registrationDate,
     isActive,
     fcmToken,
+    fcmTokenUpdatedAt,
     pinHash,
     parentProfileId,
     secondParentProfileId,

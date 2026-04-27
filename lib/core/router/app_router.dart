@@ -7,6 +7,8 @@ import '../../core/providers/auth_providers.dart';
 import '../../core/providers/student_session_provider.dart';
 import '../../domain/entities/admin_user.dart';
 import '../../domain/entities/attendance_session.dart';
+import '../../domain/entities/email_template.dart';
+import '../../domain/entities/notification_log.dart';
 import '../../domain/entities/cash_payment.dart';
 import '../../domain/entities/discipline.dart';
 import '../../domain/entities/grading_event.dart';
@@ -50,6 +52,12 @@ import '../../presentation/features/payments/financial_report_screen.dart';
 import '../../presentation/features/payments/payment_detail_screen.dart';
 import '../../presentation/features/payments/payments_list_screen.dart';
 import '../../presentation/features/payments/record_payment_screen.dart';
+import '../../presentation/features/notifications/admin_notification_detail_screen.dart';
+import '../../presentation/features/notifications/student_notification_centre_screen.dart';
+import '../../presentation/features/notifications/admin_notification_list_screen.dart';
+import '../../presentation/features/notifications/email_template_editor_screen.dart';
+import '../../presentation/features/notifications/email_template_list_screen.dart';
+import '../../presentation/features/notifications/send_announcement_screen.dart';
 import '../../presentation/features/profiles/profile_detail_screen.dart';
 import '../../presentation/features/profiles/profile_form_screen.dart';
 import '../../presentation/features/profiles/profile_list_screen.dart';
@@ -439,6 +447,39 @@ class AppRouter {
         ],
       ),
       GoRoute(
+        path: RouteNames.adminNotifications,
+        name: 'adminNotifications',
+        builder: (_, state) => const AdminNotificationListScreen(),
+        routes: [
+          GoRoute(
+            path: 'announce',
+            name: 'adminSendAnnouncement',
+            builder: (_, state) => const SendAnnouncementScreen(),
+          ),
+          GoRoute(
+            path: 'templates',
+            name: 'adminEmailTemplates',
+            builder: (_, state) => const EmailTemplateListScreen(),
+            routes: [
+              GoRoute(
+                path: ':templateKey',
+                name: 'adminEmailTemplateEditor',
+                builder: (_, state) => EmailTemplateEditorScreen(
+                  template: state.extra as EmailTemplate,
+                ),
+              ),
+            ],
+          ),
+          GoRoute(
+            path: ':notificationId',
+            name: 'adminNotificationDetail',
+            builder: (_, state) => AdminNotificationDetailScreen(
+              log: state.extra as NotificationLog,
+            ),
+          ),
+        ],
+      ),
+      GoRoute(
         path: RouteNames.adminSettings,
         name: 'adminSettings',
         builder: (_, state) => const _PlaceholderScreen('Settings'),
@@ -464,6 +505,11 @@ class AppRouter {
             builder: (_, state) => const SelfCheckInScreen(),
           ),
         ],
+      ),
+      GoRoute(
+        path: RouteNames.studentNotifications,
+        name: 'studentNotifications',
+        builder: (_, state) => const StudentNotificationCentreScreen(),
       ),
       GoRoute(
         path: RouteNames.studentAttendance,

@@ -1,1 +1,26 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"ichiban-app","appId":"1:766787564640:android:3b5a6068054cb7eb83ff05","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"ichiban-app","configurations":{"android":"1:766787564640:android:3b5a6068054cb7eb83ff05","ios":"1:766787564640:ios:4e4509f78e96a85583ff05"}}}}}}
+{
+  "functions": {
+    "source": "functions",
+    "codebase": "default"
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "ichiban-app",
+          "appId": "1:766787564640:android:3b5a6068054cb7eb83ff05",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "ichiban-app",
+          "configurations": {
+            "android": "1:766787564640:android:3b5a6068054cb7eb83ff05",
+            "ios": "1:766787564640:ios:4e4509f78e96a85583ff05"
+          }
+        }
+      }
+    }
+  }
+}

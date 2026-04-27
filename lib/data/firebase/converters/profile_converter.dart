@@ -1,22 +1,29 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../domain/entities/profile.dart';
+import '../../../domain/entities/communication_preferences.dart';
 import '../../../domain/entities/enums.dart';
 
 class ProfileConverter {
   ProfileConverter._();
 
   static Profile fromMap(String id, Map<String, dynamic> map) {
-    // profileTypes is stored as a List<String> in Firestore
     final rawTypes = (map['profileTypes'] as List<dynamic>?) ?? [];
     final profileTypes = rawTypes
         .map((t) => ProfileType.values.byName(t as String))
         .toList();
 
-    // communicationPreferences is stored as a List<String> in Firestore
-    final rawPrefs = (map['communicationPreferences'] as List<dynamic>?) ?? [];
-    final communicationPreferences = rawPrefs
-        .map((p) => NotificationChannel.values.byName(p as String))
-        .toList();
+    final rawPrefs =
+        (map['communicationPreferences'] as Map<String, dynamic>?) ?? {};
+    final communicationPreferences = CommunicationPreferences(
+      billingAndPaymentReminders:
+          (rawPrefs['billingAndPaymentReminders'] as bool?) ?? false,
+      gradingNotifications:
+          (rawPrefs['gradingNotifications'] as bool?) ?? false,
+      trialExpiryReminders:
+          (rawPrefs['trialExpiryReminders'] as bool?) ?? false,
+      generalDojoAnnouncements:
+          (rawPrefs['generalDojoAnnouncements'] as bool?) ?? false,
+    );
 
     return Profile(
       id: id,
@@ -51,6 +58,7 @@ class ProfileConverter {
       registrationDate: (map['registrationDate'] as Timestamp).toDate(),
       isActive: map['isActive'] as bool,
       fcmToken: map['fcmToken'] as String?,
+      fcmTokenUpdatedAt: (map['fcmTokenUpdatedAt'] as Timestamp?)?.toDate(),
       pinHash: map['pinHash'] as String?,
       parentProfileId: map['parentProfileId'] as String?,
       secondParentProfileId: map['secondParentProfileId'] as String?,
@@ -59,6 +67,7 @@ class ProfileConverter {
   }
 
   static Map<String, dynamic> toMap(Profile profile) {
+    final prefs = profile.communicationPreferences;
     return {
       'firstName': profile.firstName,
       'lastName': profile.lastName,
@@ -79,9 +88,12 @@ class ProfileConverter {
       'allergiesOrMedicalNotes': profile.allergiesOrMedicalNotes,
       'photoVideoConsent': profile.photoVideoConsent,
       'notes': profile.notes,
-      'communicationPreferences': profile.communicationPreferences
-          .map((p) => p.name)
-          .toList(),
+      'communicationPreferences': {
+        'billingAndPaymentReminders': prefs.billingAndPaymentReminders,
+        'gradingNotifications': prefs.gradingNotifications,
+        'trialExpiryReminders': prefs.trialExpiryReminders,
+        'generalDojoAnnouncements': prefs.generalDojoAnnouncements,
+      },
       'dataProcessingConsent': profile.dataProcessingConsent,
       'dataProcessingConsentDate': profile.dataProcessingConsentDate != null
           ? Timestamp.fromDate(profile.dataProcessingConsentDate!)
@@ -94,6 +106,9 @@ class ProfileConverter {
       'registrationDate': Timestamp.fromDate(profile.registrationDate),
       'isActive': profile.isActive,
       'fcmToken': profile.fcmToken,
+      'fcmTokenUpdatedAt': profile.fcmTokenUpdatedAt != null
+          ? Timestamp.fromDate(profile.fcmTokenUpdatedAt!)
+          : null,
       'pinHash': profile.pinHash,
       'parentProfileId': profile.parentProfileId,
       'secondParentProfileId': profile.secondParentProfileId,

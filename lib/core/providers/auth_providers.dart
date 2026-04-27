@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/services/fcm_service.dart';
 import '../../domain/repositories/auth_repository.dart';
 import 'repository_providers.dart';
 
@@ -51,9 +52,13 @@ class SignInNotifier extends Notifier<SignInState> {
     );
 
     try {
-      await ref
-          .read(authRepositoryProvider)
-          .signIn(email: email, password: password);
+      final authRepo = ref.read(authRepositoryProvider);
+      await authRepo.signIn(email: email, password: password);
+      final uid = authRepo.currentUserId;
+      if (uid != null) {
+        // Fire and forget — token capture failure must not block sign-in.
+        FcmService.captureAndSaveAdminToken(uid).ignore();
+      }
       state = state.copyWith(isLoading: false);
     } on AuthException catch (e) {
       state = state.copyWith(isLoading: false, errorMessage: e.message);
@@ -100,8 +105,10 @@ final signInNotifierProvider =
 
 /// Call ref.read(signOutProvider)() to sign the admin out.
 final signOutProvider = Provider<Future<void> Function()>(
-  (ref) =>
-      () => ref.read(authRepositoryProvider).signOut(),
+  (ref) => () async {
+    FcmService.clearActiveUser();
+    await ref.read(authRepositoryProvider).signOut();
+  },
 );
 
 // ── Sign-in state ──────────────────────────────────────────────────────────

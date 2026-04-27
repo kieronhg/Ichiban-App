@@ -46,12 +46,23 @@ enum GradingEventStatus { upcoming, completed, cancelled }
 enum NotificationChannel { push, email }
 
 enum NotificationType {
-  renewalReminderPre,
-  renewalReminderPost,
+  lapseReminderPre,
+  lapseReminderPost,
   trialExpiring,
   gradingEligibility,
   gradingPromotion,
-  licenceReminder,
+  announcement,
+  dbsExpiry,
+  firstAidExpiry,
+  complianceSubmitted,
+  complianceVerified,
+  deliveryFailure,
 }
 
-enum EmailDeliveryStatus { sent, failed }
+enum NotificationDeliveryStatus { sent, failed, suppressed }
+
+enum RecipientType { member, admin }
+
+enum AnnouncementAudience { all, discipline }
+
+enum AnnouncementChannel { push, email, both }
