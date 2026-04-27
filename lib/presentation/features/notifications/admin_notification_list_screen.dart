@@ -136,6 +136,7 @@ class _NotificationTile extends StatelessWidget {
     NotificationType.firstAidExpiry => 'First Aid Expiry',
     NotificationType.complianceSubmitted => 'Compliance Submitted',
     NotificationType.complianceVerified => 'Compliance Verified',
+    NotificationType.coachComplianceExpiring => 'Coach Compliance Expiring',
     NotificationType.deliveryFailure => 'Delivery Failure',
   };
 
