@@ -127,16 +127,6 @@ No handover document has been received for the attendance history screen yet.
 
 ---
 
-## 10. Admin Screen — Settings
-
-**Source:** App scaffold
-**Depends on:** Settings handover document (not yet received)
-
-**What it is:**
-`/admin/settings` is currently a `_PlaceholderScreen`. Will be implemented when its handover document is provided.
-
----
-
 ## 14. Grading — Push Notifications (Cloud Functions)
 
 **Source:** Grading feature implementation
@@ -280,21 +270,6 @@ wire these up:
 
 ---
 
-## 21. Coach Compliance — Settings Screen Controls
-
-**Source:** Coach Profiles handover — Part 7 / Part 13
-**Depends on:** Settings feature (item 10, not yet built)
-
-**What it is:**
-Two configurable `appSettings` documents:
-- `dbsExpiryAlertDays` — days before DBS expiry to fire alert (default 60)
-- `firstAidExpiryAlertDays` — days before first aid expiry to fire alert (default 60)
-
-Owner can edit these values in the Settings screen. The Cloud Functions (item 18)
-read these values at runtime.
-
----
-
 ## 22. Notifications — Firebase Cloud Functions (13 functions)
 
 **Source:** Notifications & Emails handover
@@ -385,3 +360,70 @@ is needed. All push-only flows are fully functional now.
 
 **Templates already exist in Firestore:** `emailTemplates` collection with 4 documents (seeded).
 Admin can edit them via the Email Template screens (already built).
+
+---
+
+## 24. Settings — `bulkAnonymise` Cloud Function (HTTP Callable)
+
+**Source:** Settings handover — Part 7 / Part 13
+**Depends on:** Settings Flutter UI ✅ (now built)
+**Scope:** Backend / Firebase Cloud Functions — NOT Flutter
+
+**What it is:**
+An HTTP callable Cloud Function that anonymises all eligible profiles in one batch.
+The Settings GDPR screen Flutter UI already calls `FirebaseFunctions.instance.httpsCallable('bulkAnonymise')`.
+The function must return `{ count: int }`.
+
+**Eligibility logic:**
+- `profiles` where `isActive = false` (or lapsed/expired/cancelled membership) AND `isAnonymised = false`
+- Membership lapse/cancellation date > `appSettings/gdprRetentionMonths` months ago
+
+**Fields to wipe per profile:**
+`firstName`, `lastName`, `dateOfBirth`, `addressLine1`, `addressLine2`, `city`, `county`,
+`postcode`, `country`, `phone`, `email`, `emergencyContactName`, `emergencyContactRelationship`,
+`emergencyContactPhone`, `allergiesOrMedicalNotes`, `gender`, `pinHash`, `fcmToken`
+
+**Profile updates:** `isAnonymised: true`, `anonymisedAt: now`
+
+**Flutter file:** `lib/domain/use_cases/settings/trigger_bulk_anonymise_use_case.dart`
+
+---
+
+## 25. Settings — `clearNotificationLogs` Cloud Function (HTTP Callable)
+
+**Source:** Settings handover — Part 11 / Part 13
+**Depends on:** Settings Flutter UI ✅ (now built)
+**Scope:** Backend / Firebase Cloud Functions — NOT Flutter
+
+**What it is:**
+An HTTP callable Cloud Function that deletes `notificationLogs` documents where
+`sentAt < today - olderThanDays`. Called from the Danger Zone settings screen.
+
+**Parameters received:** `{ olderThanDays: int }`
+**Return value:** `{ count: int }` — number of deleted records
+
+**Flutter file:** `lib/domain/use_cases/settings/clear_notification_logs_use_case.dart`
+
+---
+
+## 26. Settings — Bulk Data Export Cloud Function
+
+**Source:** Settings handover — Part 7
+**Depends on:** All feature collections (memberships, payments, grading, attendance, enrollment)
+**Scope:** Backend Cloud Function + delivery mechanism
+
+**What it is:**
+A Cloud Function that generates a full export of all non-anonymised member records
+in CSV and/or PDF format, then delivers the file(s) to the owner.
+
+**Includes:** Profiles, memberships, enrollments, grading records, attendance records, payment records.
+
+**Format options:** CSV / PDF / Both — selected by owner in the GDPR Settings screen.
+
+**Delivery:** Cloud Function generates file(s) and either:
+- Returns a download URL (Firebase Storage), or
+- Emails the export to the dojo email address
+
+**Flutter side:** The GDPR settings screen (`lib/presentation/features/settings/gdpr_settings_screen.dart`)
+already shows the export UI. Currently shows a "not yet available" snackbar when tapped.
+When the function is deployed, replace the snackbar with the actual callable.

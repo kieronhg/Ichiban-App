@@ -1183,3 +1183,102 @@ confusion during testing.
 - [ ] ⚠️ Child cards resolve from `parentProfileId` / `secondParentProfileId` on the child's profile — test with a family membership where a junior is linked to a parent
 - [ ] ⚠️ Student portal inactivity timeout resets on any tap or drag gesture — test across all three layout types
 
+---
+
+## Settings (Admin)
+
+### Settings Screen (`/admin/settings`)
+
+- [ ] ✅ Owner sees all 8 menu entries: General, Membership & Pricing, Notification Timings, GDPR & Data, Email Templates, Manage Team, Setup Wizard, Danger Zone
+- [ ] ✅ Coach sees only "Manage Team" entry (and their own profile via dashboard, not settings)
+- [ ] ✅ Tapping each entry navigates to the correct sub-screen
+
+### General Settings (`/admin/settings/general`)
+
+- [ ] ✅ Screen loads with Dojo Name, Dojo Email, and Privacy Policy Version pre-populated from Firestore
+- [ ] ✅ All three fields are editable
+- [ ] ✅ Saving without changing privacy version saves silently (no dialog)
+- [ ] ✅ Changing the privacy version shows a confirmation dialog before saving
+- [ ] ✅ Cancelling the version change dialog does NOT save
+- [ ] ✅ Confirming the version change saves the new version and flags all active members with `requiresReConsent: true`
+- [ ] ✅ Save button shows loading indicator while saving
+- [ ] ✅ Success snackbar shown after save
+- [ ] ✅ Error snackbar (red) shown if save fails
+
+### Membership & Pricing (`/admin/settings/pricing`)
+
+- [ ] ✅ All 8 membership price fields load with current Firestore values
+- [ ] ✅ Prices display as numbers (no currency symbol in field)
+- [ ] ✅ Non-numeric input shows validation error and disables Save
+- [ ] ✅ Negative price shows validation error
+- [ ] ✅ Saving unchanged prices shows no confirmation dialog; saves silently
+- [ ] ✅ Changing any price shows a confirmation dialog listing changed plans with old → new values
+- [ ] ✅ Cancelling the price change dialog does NOT save
+- [ ] ✅ Confirming saves new prices to `membershipPricing` collection and writes a `pricingChangeLogs` document for each changed plan
+- [ ] ✅ `pricingChangeLogs` document contains: planTypeKey, previousAmount, newAmount, changedByAdminId, changedAt
+- [ ] ⚠️ Verify that price changes do NOT retroactively update existing membership records
+
+### Notification Timings (`/admin/settings/notifications`)
+
+- [ ] ✅ All 7 timing fields load with current Firestore values (or defaults if not set)
+- [ ] ✅ Each field accepts only whole numbers between 1 and 365
+- [ ] ✅ Value below 1 shows inline validation error on the field
+- [ ] ✅ Value above 365 shows inline validation error on the field
+- [ ] ✅ Non-integer input shows inline validation error
+- [ ] ✅ Save button is disabled while any field has a validation error
+- [ ] ✅ Save button enabled once all fields are valid
+- [ ] ✅ Saving writes all 7 keys to `appSettings` in Firestore
+- [ ] ✅ Success snackbar shown after save
+
+### GDPR & Data (`/admin/settings/gdpr`)
+
+**Retention Period**
+
+- [ ] ✅ Lapsed member retention field loads with current `gdprRetentionMonths` (default 12)
+- [ ] ✅ Field accepts positive integers only (minimum 1)
+- [ ] ✅ Invalid value disables Save Retention Period button
+- [ ] ✅ Financial retention info box is read-only (7 years, not editable)
+- [ ] ✅ Saving updates `gdprRetentionMonths` in Firestore
+
+**Bulk Anonymisation**
+
+- [ ] ✅ Eligible count loads from Firestore (members whose membership has lapsed and retention period has expired)
+- [ ] ✅ "No members are currently eligible" shown when count is 0; button disabled
+- [ ] ✅ Count > 0 enables "Run Anonymisation" button with count in label
+- [ ] ✅ Tapping button shows confirmation dialog with exact count
+- [ ] ✅ Cancelling confirmation does nothing
+- [ ] ⚠️ Confirming calls `bulkAnonymise` Cloud Function (not yet deployed — expect graceful error snackbar)
+- [ ] ✅ After successful anonymisation, eligible count reloads and decrements to 0
+
+**Bulk Data Export**
+
+- [ ] ✅ "Export All Member Data" button opens format selection dialog
+- [ ] ✅ Dialog offers CSV, PDF, Both as SegmentedButton options
+- [ ] ✅ Tapping Export closes dialog and shows "not yet available" snackbar (CF not deployed)
+
+### Email Templates (`/admin/settings/email-templates`)
+
+- [ ] ✅ Lists all 10 template entries with names and descriptions
+- [ ] ✅ "Edit Templates" button navigates to `/admin/notifications`
+- [ ] ✅ No editing happens on this screen itself
+
+### Danger Zone (`/admin/settings/danger`)
+
+- [ ] ✅ Red warning banner visible at top of screen
+- [ ] ✅ Clear Notification Logs: input accepts number of days (1–365)
+- [ ] ✅ Invalid day count disables Clear button
+- [ ] ✅ Valid day count enables Clear button
+- [ ] ✅ Tapping Clear shows confirmation dialog
+- [ ] ✅ Cancelling confirmation does nothing
+- [ ] ⚠️ Confirming calls `clearNotificationLogs` Cloud Function (not yet deployed — expect graceful error snackbar)
+
+### Re-Consent Banner (Profile Detail)
+
+- [ ] ✅ Amber "Re-consent required" banner visible at top of profile detail when `requiresReConsent: true`
+- [ ] ✅ Banner NOT visible when `requiresReConsent: false`
+- [ ] ✅ "Record Re-Consent" button on banner shows confirmation dialog
+- [ ] ✅ Cancelling dialog does nothing
+- [ ] ✅ Confirming sets `requiresReConsent: false`, updates `dataProcessingConsentVersion` to current privacy policy version, and sets `dataProcessingConsentDate` to now
+- [ ] ✅ Banner disappears immediately after recording re-consent (no manual refresh)
+- [ ] ⚠️ Verify that after a privacy version bump, ALL active non-anonymised profiles have `requiresReConsent: true` (check a sample in Firestore console)
+
