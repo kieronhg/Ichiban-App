@@ -273,8 +273,8 @@ class _DetailBody extends ConsumerWidget {
       context,
       title: 'Delete ${admin.firstName}\'s Account?',
       message:
-          'This will permanently remove the Firestore document. '
-          'The Firebase Auth account must be removed separately.',
+          'This will permanently remove ${admin.fullName}\'s account and '
+          'sign-in access. This cannot be undone.',
       confirmLabel: 'Delete',
       isDestructive: true,
     );
