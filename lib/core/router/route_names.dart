@@ -57,6 +57,14 @@ class RouteNames {
   static const String adminTeamEdit = '/admin/team/:uid/edit';
   static const String adminNotifications = '/admin/notifications';
   static const String adminSettings = '/admin/settings';
+  static const String adminSettingsGeneral = '/admin/settings/general';
+  static const String adminSettingsPricing = '/admin/settings/pricing';
+  static const String adminSettingsNotifications =
+      '/admin/settings/notification-timings';
+  static const String adminSettingsGdpr = '/admin/settings/gdpr';
+  static const String adminSettingsEmailTemplates =
+      '/admin/settings/email-templates';
+  static const String adminSettingsDangerZone = '/admin/settings/danger-zone';
 
   // Student
   static const String studentSelect = '/student/select';

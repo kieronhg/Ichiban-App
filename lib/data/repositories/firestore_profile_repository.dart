@@ -77,6 +77,37 @@ class FirestoreProfileRepository implements ProfileRepository {
   }
 
   @override
+  Future<void> flagAllActiveForReConsent() async {
+    final snap = await FirestoreCollections.profiles()
+        .where('isActive', isEqualTo: true)
+        .where('isAnonymised', isEqualTo: false)
+        .get();
+
+    final db = FirebaseFirestore.instance;
+    final batches = <WriteBatch>[];
+    var current = db.batch();
+    var count = 0;
+
+    for (final doc in snap.docs) {
+      current.update(db.collection('profiles').doc(doc.id), {
+        'requiresReConsent': true,
+      });
+      count++;
+      // Firestore batches are limited to 500 operations
+      if (count == 500) {
+        batches.add(current);
+        current = db.batch();
+        count = 0;
+      }
+    }
+    if (count > 0) batches.add(current);
+
+    for (final batch in batches) {
+      await batch.commit();
+    }
+  }
+
+  @override
   Future<void> anonymise(String id) async {
     await FirestoreCollections.profiles().doc(id).update({
       // Required String fields — replaced with placeholder

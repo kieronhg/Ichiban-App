@@ -20,6 +20,7 @@ import '../../domain/entities/queued_check_in.dart';
 import '../../domain/entities/notification_log.dart';
 import '../../domain/entities/email_template.dart';
 import '../../domain/entities/app_setting.dart';
+import '../../domain/entities/pricing_change_log.dart';
 import 'converters/profile_converter.dart';
 import 'converters/membership_converter.dart';
 import 'converters/membership_history_converter.dart';
@@ -40,6 +41,7 @@ import 'converters/email_template_converter.dart';
 import 'converters/admin_user_converter.dart';
 import 'converters/app_setting_converter.dart';
 import 'converters/app_setup_converter.dart';
+import 'converters/pricing_change_log_converter.dart';
 
 /// Central access point for all typed Firestore collection references.
 /// All collections use withConverter so snapshots are automatically
@@ -230,6 +232,16 @@ class FirestoreCollections {
         fromFirestore: (snap, _) =>
             AppSettingConverter.fromMap(snap.id, snap.data()!),
         toFirestore: (setting, _) => AppSettingConverter.toMap(setting),
+      );
+
+  // ── Pricing Change Logs ──────────────────────────────────────────────────────
+
+  static CollectionReference<PricingChangeLog> pricingChangeLogs() => _db
+      .collection(AppConstants.colPricingChangeLogs)
+      .withConverter<PricingChangeLog>(
+        fromFirestore: (snap, _) =>
+            PricingChangeLogConverter.fromMap(snap.id, snap.data()!),
+        toFirestore: (log, _) => PricingChangeLogConverter.toMap(log),
       );
 
   // ── Admin Users ──────────────────────────────────────────────────────────────

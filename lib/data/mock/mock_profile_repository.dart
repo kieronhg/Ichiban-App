@@ -137,6 +137,16 @@ class MockProfileRepository implements ProfileRepository {
   }
 
   @override
+  Future<void> flagAllActiveForReConsent() async {
+    for (var i = 0; i < _profiles.length; i++) {
+      if (_profiles[i].isActive && !_profiles[i].isAnonymised) {
+        _profiles[i] = _profiles[i].copyWith(requiresReConsent: true);
+      }
+    }
+    _notify();
+  }
+
+  @override
   Future<void> anonymise(String id) async {
     final i = _profiles.indexWhere((p) => p.id == id);
     if (i != -1) {

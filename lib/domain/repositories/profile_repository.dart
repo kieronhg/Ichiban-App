@@ -27,6 +27,10 @@ abstract class ProfileRepository {
   /// before they can sign in again.
   Future<void> resetPin(String id);
 
+  /// Sets requiresReConsent=true on all active, non-anonymised profiles.
+  /// Used when the owner updates the privacy policy version.
+  Future<void> flagAllActiveForReConsent();
+
   /// Anonymises a profile under Right to Erasure.
   ///
   /// Replaces all personal data fields with placeholder values and sets
