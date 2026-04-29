@@ -209,28 +209,7 @@ class SetupWizardScreen extends ConsumerStatefulWidget {
 }
 
 class _SetupWizardScreenState extends ConsumerState<SetupWizardScreen> {
-  late final PageController _pageController;
-
-  @override
-  void initState() {
-    super.initState();
-    _pageController = PageController();
-  }
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
-
-  void _animateTo(int page) {
-    _pageController.animateToPage(
-      page,
-      duration: const Duration(milliseconds: 350),
-      curve: Curves.easeInOut,
-    );
-    ref.read(_wizardProvider.notifier).goTo(page);
-  }
+  void _goTo(int page) => ref.read(_wizardProvider.notifier).goTo(page);
 
   void _next() {
     final notifier = ref.read(_wizardProvider.notifier);
@@ -240,7 +219,7 @@ class _SetupWizardScreenState extends ConsumerState<SetupWizardScreen> {
       notifier.setError(error);
       return;
     }
-    _animateTo(page + 1);
+    _goTo(page + 1);
   }
 
   Future<void> _finish() async {
@@ -270,9 +249,12 @@ class _SetupWizardScreenState extends ConsumerState<SetupWizardScreen> {
           children: [
             _WizardHeader(currentPage: wizardState.page),
             Expanded(
-              child: PageView(
-                controller: _pageController,
-                physics: const NeverScrollableScrollPhysics(),
+              // IndexedStack keeps all pages alive so form state is preserved
+              // when the user navigates back. It also avoids the scroll-viewport
+              // rendering issues that PageView can exhibit on some Android
+              // configurations when NeverScrollableScrollPhysics is used.
+              child: IndexedStack(
+                index: wizardState.page,
                 children: const [
                   _WelcomePage(),
                   _OwnerAccountPage(),
@@ -287,7 +269,7 @@ class _SetupWizardScreenState extends ConsumerState<SetupWizardScreen> {
               page: wizardState.page,
               isBusy: wizardState.isBusy,
               onBack: wizardState.page > 0
-                  ? () => _animateTo(wizardState.page - 1)
+                  ? () => _goTo(wizardState.page - 1)
                   : null,
               onNext: wizardState.page < 3 ? _next : null,
               onFinish: wizardState.page == 3 ? _finish : null,
