@@ -113,37 +113,6 @@ In the Grading feature, when an admin selects a student and a target rank:
 
 
 
-## 15. Memberships — Automatic Lapse & Trial Expiry (Cloud Functions)
-
-**Source:** Memberships handover
-**Depends on:** Memberships feature ✅ (now built)
-**Scope:** Backend / Firebase Cloud Functions — NOT Flutter
-
-**What it is:**
-Two scheduled Cloud Functions that run daily to keep membership statuses current without
-requiring admin action:
-
-1. **Lapse function** — finds all `active` memberships where `subscriptionRenewalDate < today`
-   and updates their `status` to `lapsed`, sets `isActive = false`, and writes a `membershipHistory`
-   record with `changeType: lapsed`.
-
-2. **Trial expiry function** — finds all `trial` memberships where `trialExpiryDate < today`
-   and updates their `status` to `expired`, sets `isActive = false`, and writes a `membershipHistory`
-   record with `changeType: cancelled` (or a new `expired` change type if added).
-
-**Firestore fields available:**
-- `subscriptionRenewalDate` (Timestamp) on all non-trial, non-PAYT memberships
-- `trialExpiryDate` (Timestamp) on trial memberships
-- `status` (String — enum name)
-- `isActive` (bool)
-- `membershipHistory` subcollection (via `FirestoreMembershipHistoryRepository`)
-
-**Note:** The Flutter app reads `status` and `isActive` as set by these functions. No Flutter
-change is needed — lapsed/expired memberships will automatically surface correctly in all
-existing screens once the functions run.
-
----
-
 ## 16. Memberships — Stripe Payment Integration
 
 **Source:** Memberships handover
@@ -170,52 +139,13 @@ already skips the cash payment write.
 
 ---
 
-## 18. Coach Compliance — DBS & First Aid Expiry Cloud Functions
-
-**Source:** Coach Profiles handover — Part 7
-**Depends on:** Coach Profiles feature ✅ (now built)
-**Scope:** Backend / Firebase Cloud Functions — NOT Flutter
-
-**What they are:**
-Two scheduled Cloud Functions running daily:
-
-1. **DBS Expiry Check** — queries all `coachProfiles` where `dbs.expiryDate` is within
-   `appSettings/dbsExpiryAlertDays` (default 60) days of today OR already past.
-   - If already past → set `dbs.status = "expired"` on the document
-   - Push notification to the coach: "Your DBS check expires on [date]. Please renew it."
-   - Push notification to all owners: "[Coach Name]'s DBS check expires on [date]."
-   - Write `notificationLogs` record for each alert
-
-2. **First Aid Expiry Check** — same pattern for `firstAid.expiryDate`.
-   - Push notification to the coach: "Your First Aid certification expires on [date]."
-   - Push notification to all owners: "[Coach Name]'s First Aid certification expires on [date]."
-
-**Alert threshold** is read from `appSettings/dbsExpiryAlertDays` and
-`appSettings/firstAidExpiryAlertDays` (both default 60). Owner can update
-these values in the Settings screen (when built).
-
-**Note:** The Flutter app already displays `dbs.status = expired` correctly
-(shown in red with `_DbsStatusBadge`). The Cloud Function only needs to
-write the status update and fire notifications.
-
----
-
-
 ## 22. Notifications — Membership Firestore Triggers
 
 **Source:** Notifications & Emails handover
 **Depends on:** Notifications Flutter layer ✅ (now built), Firebase Blaze plan for email
 **Scope:** Backend only — `functions/` TypeScript directory
 
-**What's already built ✅:**
-- `onGradingEligibilityCreated`, `onGradingPromotionRecorded` — grading push triggers ✅
-- `onCoachComplianceUpdated` — compliance submitted/verified push triggers ✅
-- `sendAnnouncement` — HTTP callable for announcements ✅
-- `dailyLapseCheck`, `dailyTrialExpiryCheck` — scheduled membership status updates ✅
-- `dailyDbsExpiryCheck`, `dailyFirstAidExpiryCheck` — scheduled compliance expiry alerts ✅
-- `cleanStaleFcmTokens` — scheduled FCM token cleanup ✅
-
-**What still needs building:**
+**What it is:**
 Three Firestore triggers to push notifications when membership status changes:
 
 1. `onMembershipLapsed` — fires when `membership.status` changes to `lapsed`
