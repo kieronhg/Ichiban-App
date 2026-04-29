@@ -68,7 +68,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
     setState(() => _isSaving = true);
 
     try {
-      await ref
+      final paytWarnings = await ref
           .read(markAttendanceUseCaseProvider)
           .call(
             session: widget.session,
@@ -80,9 +80,23 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
         _isDirty = false;
         _isSaving = false;
       });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Attendance saved.')));
+      if (paytWarnings.isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '${paytWarnings.length} PAYT student${paytWarnings.length == 1 ? '' : 's'} '
+              'unmarked — their pending payment record${paytWarnings.length == 1 ? '' : 's'} '
+              'need manual cancellation.',
+            ),
+            backgroundColor: AppColors.warning,
+            duration: const Duration(seconds: 6),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Attendance saved.')));
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() => _isSaving = false);

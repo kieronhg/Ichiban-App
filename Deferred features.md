@@ -112,31 +112,6 @@ In the Grading feature, when an admin selects a student and a target rank:
 ---
 
 
-## 14. Grading — Push Notifications (Cloud Functions)
-
-**Source:** Grading feature implementation
-**Depends on:** Notifications Cloud Functions (item 22)
-
-**What it is:**
-The grading flow writes Firestore documents that Cloud Functions must react to in order
-to send push notifications. The Flutter-side TODO stubs have been removed — Flutter now
-owns only the business data write; Cloud Functions own notification delivery.
-
-**Cloud Function triggers needed (part of item 22):**
-
-1. **onGradingEligibilityStudentCreated** — fires when a `gradingEventStudents` document is written
-   with `isNominated = true`. Sends push to the student:
-   - Type: `gradingEligibility`, recipient: student profileId
-   - Payload: `{ gradingEventId, disciplineId, eventDate }`
-   - Writes a `notificationLogs` document
-
-2. **onGradingPromotionRecorded** — fires when a `gradingEventStudents` document is updated
-   with `outcome = promoted`. Sends push to the student:
-   - Type: `gradingPromotion`, recipient: student profileId
-   - Payload: `{ disciplineId, rankAchievedId, gradingScore, gradingDate }`
-   - Writes a `notificationLogs` document
-
----
 
 ## 15. Memberships — Automatic Lapse & Trial Expiry (Cloud Functions)
 
@@ -225,49 +200,24 @@ write the status update and fire notifications.
 
 ---
 
-## 19. Coach Compliance — Push Notifications (Stubs)
 
-**Source:** Coach Profiles handover — Part 13
-**Depends on:** Notifications / Firebase Cloud Messaging feature
-
-**What it is:**
-Three notification types introduced by the Coach Profiles feature. The use
-cases already contain TODO stubs. When notifications infrastructure is built,
-wire these up:
-
-1. **Coach submits DBS update** — `lib/domain/use_cases/coach/coach_update_dbs_use_case.dart`
-   ```
-   TODO(notifications): send push notification to all owners after save.
-   Type: coachComplianceSubmitted, payload: { adminUserId, complianceType: dbs }
-   ```
-
-2. **Coach submits first aid update** — `lib/domain/use_cases/coach/coach_update_first_aid_use_case.dart`
-   ```
-   TODO(notifications): send push notification to all owners after save.
-   Type: coachComplianceSubmitted, payload: { adminUserId, complianceType: firstAid }
-   ```
-
-3. **Owner verifies compliance** — `lib/domain/use_cases/coach/verify_coach_compliance_use_case.dart`
-   ```
-   TODO(notifications): send push notification to the coach after save.
-   Type: coachComplianceVerified, payload: { adminUserId, complianceType, verifiedByName }
-   ```
-
----
-
-## 22. Notifications — Firebase Cloud Functions (13 functions)
+## 22. Notifications — Membership Firestore Triggers
 
 **Source:** Notifications & Emails handover
 **Depends on:** Notifications Flutter layer ✅ (now built), Firebase Blaze plan for email
 **Scope:** Backend only — `functions/` TypeScript directory
 
-**What it is:**
-All notification delivery logic lives in Cloud Functions. Flutter only writes business data;
-Cloud Functions react via Firestore triggers and scheduled jobs.
+**What's already built ✅:**
+- `onGradingEligibilityCreated`, `onGradingPromotionRecorded` — grading push triggers ✅
+- `onCoachComplianceUpdated` — compliance submitted/verified push triggers ✅
+- `sendAnnouncement` — HTTP callable for announcements ✅
+- `dailyLapseCheck`, `dailyTrialExpiryCheck` — scheduled membership status updates ✅
+- `dailyDbsExpiryCheck`, `dailyFirstAidExpiryCheck` — scheduled compliance expiry alerts ✅
+- `cleanStaleFcmTokens` — scheduled FCM token cleanup ✅
 
-**Functions to build:**
+**What still needs building:**
+Three Firestore triggers to push notifications when membership status changes:
 
-### Firestore triggers
 1. `onMembershipLapsed` — fires when `membership.status` changes to `lapsed`
    → send lapse reminder push (and email on Blaze) to member
    → type: `lapseReminderPost`
@@ -279,41 +229,6 @@ Cloud Functions react via Firestore triggers and scheduled jobs.
 3. `onTrialExpiringSoon` — fires when `membership.trialExpiryDate` enters alert window
    → send trial expiry push (and email on Blaze) to member
    → type: `trialExpiring`
-
-4. `onGradingEligibilityStudentCreated` — fires when `gradingEventStudents` doc written with `isNominated = true`
-   → push to student: grading eligibility
-   → type: `gradingEligibility`
-
-5. `onGradingPromotionRecorded` — fires when `gradingEventStudents` doc updated with `outcome = promoted`
-   → push to student: grading promotion
-   → type: `gradingPromotion`
-
-6. `onCoachComplianceSubmitted` — fires when `coachProfiles.dbs` or `.firstAid` is updated
-   → push to all owners: compliance review needed
-   → type: `complianceSubmitted`
-
-7. `onCoachComplianceVerified` — fires when `coachProfiles.dbs.status` or `.firstAid.status` set to `verified`
-   → push to coach: compliance verified
-   → type: `complianceVerified`
-
-### HTTP callable
-8. `sendAnnouncement(title, body, channel, audience, disciplineId?)` — called by `SendAnnouncementUseCase`
-   → resolves recipient FCM tokens (all members or discipline members)
-   → sends push via FCM admin SDK
-   → email on Blaze plan only (gate with env var `EMAIL_ENABLED`)
-   → writes `announcements` document and `notificationLogs` for each recipient
-
-### Scheduled (daily)
-9. `dailyLapseCheck` — mark memberships lapsed, send lapseReminderPre/Post
-10. `dailyTrialExpiryCheck` — mark trials expired, send trialExpiring
-11. `dailyDbsExpiryCheck` — update DBS status, send dbsExpiry alerts
-12. `dailyFirstAidExpiryCheck` — update first aid status, send firstAidExpiry alerts
-13. `cleanStaleFcmTokens` — remove FCM tokens older than 30 days (stale device cleanup)
-
-### FCM token pattern
-- Member FCM tokens: stored at `profiles/{profileId}.fcmToken` + `fcmTokenUpdatedAt`
-- Admin FCM tokens: stored at `adminUsers/{uid}.fcmToken` + `fcmTokenUpdatedAt`
-- Flutter writes these via `FcmService` (already built); Cloud Functions read them at send time
 
 ### Email gating
 Email delivery requires Firebase Blaze plan (external network calls). Gate with:

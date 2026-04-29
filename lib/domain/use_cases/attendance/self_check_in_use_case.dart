@@ -18,6 +18,10 @@ enum SelfCheckInResult {
 
   /// Student was auto-enrolled at bottom rank before check-in succeeded.
   successWithAutoEnrol,
+
+  /// Check-in recorded, but the student's membership is lapsed or expired.
+  /// The student should be advised to contact the dojo.
+  successWithMembershipWarning,
 }
 
 class SelfCheckInUseCase {
@@ -115,8 +119,15 @@ class SelfCheckInUseCase {
       );
     }
 
-    // TODO(auth-session): if student's membership is lapsed/expired, flag for
-    // admin dashboard once Auth & Session design is implemented.
+    // If membership is lapsed or expired, check-in still succeeds but the
+    // student sees a warning to contact the dojo.
+    final membershipStatus = membership?.status;
+    final hasLapsedMembership =
+        membershipStatus == MembershipStatus.lapsed ||
+        membershipStatus == MembershipStatus.expired;
+    if (hasLapsedMembership) {
+      return SelfCheckInResult.successWithMembershipWarning;
+    }
 
     return autoEnrolled
         ? SelfCheckInResult.successWithAutoEnrol

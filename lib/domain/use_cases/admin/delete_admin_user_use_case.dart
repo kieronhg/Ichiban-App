@@ -1,3 +1,5 @@
+import 'package:cloud_functions/cloud_functions.dart';
+
 import '../../repositories/admin_user_repository.dart';
 
 class DeleteAdminUserUseCase {
@@ -5,11 +7,9 @@ class DeleteAdminUserUseCase {
 
   final AdminUserRepository _repo;
 
-  /// Deletes the adminUsers Firestore document.
+  /// Deletes the adminUsers Firestore document and the Firebase Auth account.
   ///
   /// Throws [StateError] if attempting to delete the last active owner.
-  /// The Firebase Auth account must be deleted separately via Cloud Function.
-  /// TODO(cloud-functions): wire up Firebase Auth account deletion.
   Future<void> call({
     required String uid,
     required String deletedByAdminId,
@@ -31,5 +31,8 @@ class DeleteAdminUserUseCase {
     }
 
     await _repo.delete(uid);
+    await FirebaseFunctions.instance
+        .httpsCallable('deleteAdminUser')
+        .call<Map<String, dynamic>>({'uid': uid});
   }
 }

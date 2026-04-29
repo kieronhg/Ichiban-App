@@ -1,3 +1,5 @@
+import 'package:cloud_functions/cloud_functions.dart';
+
 import '../../repositories/admin_user_repository.dart';
 
 class DeactivateAdminUserUseCase {
@@ -5,11 +7,9 @@ class DeactivateAdminUserUseCase {
 
   final AdminUserRepository _repo;
 
-  /// Soft-deactivates an admin account.
+  /// Soft-deactivates an admin account and disables their Firebase Auth account.
   ///
   /// Throws [StateError] if attempting to deactivate the last active owner.
-  /// The Firebase Auth account must be disabled separately via Cloud Function.
-  /// TODO(cloud-functions): wire up Firebase Auth account disable.
   Future<void> call({
     required String uid,
     required String deactivatedByAdminId,
@@ -31,5 +31,8 @@ class DeactivateAdminUserUseCase {
     }
 
     await _repo.deactivate(uid, deactivatedByAdminId: deactivatedByAdminId);
+    await FirebaseFunctions.instance
+        .httpsCallable('disableAdminUser')
+        .call<Map<String, dynamic>>({'uid': uid});
   }
 }

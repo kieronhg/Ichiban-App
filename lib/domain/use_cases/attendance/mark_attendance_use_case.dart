@@ -18,7 +18,10 @@ class MarkAttendanceUseCase {
   final MembershipRepository _membershipRepo;
   final PaytSessionRepository _paytRepo;
 
-  Future<void> call({
+  /// Returns the profile IDs of any PAYT students whose self-check-in record
+  /// was deleted. Their pending paytSessions records require manual cancellation
+  /// by an admin.
+  Future<List<String>> call({
     required AttendanceSession session,
     required Set<String> markedPresentIds,
     required String coachProfileId,
@@ -76,13 +79,22 @@ class MarkAttendanceUseCase {
     }
 
     // ── Delete records for students now unmarked ─────────────────────────
+    final paytUnmarkedIds = <String>[];
     for (final entry in existingByStudent.entries) {
-      if (!markedPresentIds.contains(entry.key)) {
-        await _repo.deleteRecord(entry.value.id);
-        // NOTE: Per spec, if a PAYT student is unmarked after a self check-in,
-        // any pending paytSessions record must be cancelled manually by admin.
-        // TODO(auth-session): surface a warning flag here when auth/session is built.
+      final studentId = entry.key;
+      if (!markedPresentIds.contains(studentId)) {
+        final record = entry.value;
+        await _repo.deleteRecord(record.id);
+        // If the student had self-checked in on a PAYT plan, their pending
+        // paytSessions record is not auto-cancelled — flag for admin.
+        if (record.checkInMethod == CheckInMethod.self) {
+          final membership = await _membershipRepo.getActiveForProfile(studentId);
+          if (membership != null && membership.isPayAsYouTrain) {
+            paytUnmarkedIds.add(studentId);
+          }
+        }
       }
     }
+    return paytUnmarkedIds;
   }
 }

@@ -100,6 +100,15 @@ class _SelfCheckInScreenState extends ConsumerState<SelfCheckInScreen> {
                 : "You're checked in for today's session.",
             autoEnrolled: result == SelfCheckInResult.successWithAutoEnrol,
           );
+        case SelfCheckInResult.successWithMembershipWarning:
+          _showOutcome(
+            icon: Icons.warning_amber_rounded,
+            iconColor: AppColors.warning,
+            title: 'Checked in',
+            body:
+                "You're checked in, but your membership has lapsed or expired. "
+                'Please contact the dojo to renew.',
+          );
         case SelfCheckInResult.alreadyCheckedIn:
           setState(() {
             _errorMessage = "You're already checked in to this session.";

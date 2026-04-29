@@ -6,13 +6,12 @@ admin.initializeApp();
 
 export { onGradingEligibilityCreated } from "./functions/onGradingEligibilityCreated";
 export { onGradingPromotionRecorded } from "./functions/onGradingPromotionRecorded";
-
-// TODO(coach-profiles): export compliance triggers from onCoachComplianceUpdated
-// when the Coach Profiles feature is implemented.
+export { onCoachComplianceUpdated } from "./functions/onCoachComplianceUpdated";
 
 // ── HTTP callables ─────────────────────────────────────────────────────────
 
 export { sendAnnouncement } from "./functions/sendAnnouncement";
+export { disableAdminUser, enableAdminUser, deleteAdminUser } from "./functions/adminUserAuth";
 
 // ── Scheduled functions ────────────────────────────────────────────────────
 

@@ -8,10 +8,8 @@ class VerifyCoachComplianceUseCase {
 
   /// Owner verifies a coach's pending compliance submission.
   /// Clears pendingVerification and records the verifier.
-  ///
-  /// TODO(notifications): send push notification to the coach after save.
-  /// Type: coachComplianceVerified
-  /// Payload: { adminUserId, complianceType, verifiedByName }
+  /// Push notification is sent to the coach via the onCoachComplianceUpdated
+  /// Cloud Function trigger.
   Future<void> call({
     required String adminUserId,
     required CoachComplianceType type,

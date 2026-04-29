@@ -12,11 +12,11 @@ class CreateAdminUserUseCase {
 
   /// Writes the adminUsers Firestore document for a new admin.
   ///
-  /// The Firebase Auth account must be created separately:
+  /// The Firebase Auth account is created separately by the caller:
   /// - For the first owner: via Firebase Auth createUserWithEmailAndPassword
   ///   (called directly in the setup wizard).
-  /// - For coaches: via a Cloud Function that uses the Admin SDK.
-  ///   TODO(cloud-functions): wire up coach Auth account creation.
+  /// - For coaches: via authRepository.createUserWithoutSignIn (secondary
+  ///   Firebase app — called in InviteCoachScreen before this use case).
   Future<void> call({
     required String firebaseUid,
     required String email,

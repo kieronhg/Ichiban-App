@@ -8,9 +8,8 @@ class CoachUpdateFirstAidUseCase {
 
   /// Coach submits updated first aid details. Saved immediately;
   /// pendingVerification set to true so the owner knows to review.
-  ///
-  /// TODO(notifications): send push notification to all owners after save.
-  /// Type: coachComplianceSubmitted, payload: { adminUserId, complianceType: firstAid }
+  /// Push notifications are sent to owners via the onCoachComplianceUpdated
+  /// Cloud Function trigger.
   Future<void> call({
     required String adminUserId,
     String? certificationName,

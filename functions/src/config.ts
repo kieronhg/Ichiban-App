@@ -10,6 +10,7 @@ export const COL_NOTIFICATION_LOGS = "notificationLogs";
 export const COL_ANNOUNCEMENTS = "announcements";
 export const COL_EMAIL_TEMPLATES = "emailTemplates";
 export const COL_APP_SETTINGS = "appSettings";
+export const COL_COACH_PROFILES = "coachProfiles";
 
 // Membership status values — mirror MembershipStatus enum
 export const STATUS_ACTIVE = "active";

@@ -9,9 +9,8 @@ class CoachUpdateDbsUseCase {
 
   /// Coach submits updated DBS details. Saved immediately; pendingVerification
   /// set to true so the owner knows to review.
-  ///
-  /// TODO(notifications): send push notification to all owners after save.
-  /// Type: coachComplianceSubmitted, payload: { adminUserId, complianceType: dbs }
+  /// Push notifications are sent to owners via the onCoachComplianceUpdated
+  /// Cloud Function trigger.
   Future<void> call({
     required String adminUserId,
     required DbsStatus status,
