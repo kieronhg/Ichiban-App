@@ -967,3 +967,219 @@ confusion during testing.
 #### Create Grading Event — Discipline dropdown
 - [ ] ✅ Coaches only see their assigned active disciplines
 - [ ] ✅ Owners see all active disciplines
+
+---
+
+## Coach Profiles
+
+### Coach creation — coachProfiles document
+
+- [ ] ✅ Inviting a new coach (via Invite Coach screen) creates both an `adminUsers` document AND a `coachProfiles` document
+- [ ] ✅ New `coachProfiles` document has `dbs.status = notSubmitted`, both `pendingVerification = false`
+- [ ] ✅ Demoting an owner to coach does NOT create a duplicate `coachProfiles` document if one already exists
+
+### Coach login redirect
+
+- [ ] ✅ A coach who logs in is redirected to `/admin/my-profile`, not `/admin/dashboard`
+- [ ] ✅ An owner who logs in is redirected to `/admin/dashboard`
+- [ ] ✅ A coach who manually navigates to `/admin/dashboard` is redirected to `/admin/my-profile`
+- [ ] ✅ An owner who manually navigates to `/admin/my-profile` is redirected to `/admin/dashboard`
+
+### My Profile screen (`/admin/my-profile`)
+
+- [ ] ✅ Shows coach's full name, email (read-only), assigned disciplines (read-only)
+- [ ] ✅ Shows qualifications notes if set; nothing shown if empty
+- [ ] ✅ DBS card shows correct status badge (Not Submitted / Pending / Clear / Expired)
+- [ ] ✅ Certificate number is masked by default (shows last 4 digits); tapping Show reveals full number
+- [ ] ✅ Issue date and expiry date display correctly
+- [ ] ✅ Expiry within 60 days: days-until-expiry shown in amber
+- [ ] ✅ Expiry already passed: days-since-expiry shown in red
+- [ ] ✅ Pending verification badge shows when `dbs.pendingVerification = true`
+- [ ] ✅ First Aid card shows same patterns as DBS
+- [ ] ✅ Upcoming Sessions card shows next 5 sessions for assigned disciplines; shows "No upcoming sessions" if none
+- [ ] ✅ Upcoming Gradings card shows next 3 grading events for assigned disciplines; shows "No upcoming grading events" if none
+- [ ] ✅ "View all" links on sessions/gradings cards navigate correctly
+- [ ] ✅ Screen is not accessible to owners
+
+### Edit Personal Details (`/admin/my-profile/edit`)
+
+- [ ] ✅ Form pre-populated with current first name, last name, qualifications
+- [ ] ✅ First name and last name are required; saving with either blank shows validation error
+- [ ] ✅ Saving updates `adminUsers` (name) and `coachProfiles` (qualifications)
+- [ ] ✅ No owner notification sent; no pending verification badge set
+- [ ] ✅ Success snackbar shown; screen pops after save
+
+### Update DBS Details (`/admin/my-profile/dbs`)
+
+- [ ] ✅ Form pre-populated with current DBS data
+- [ ] ✅ Status dropdown shows all four values
+- [ ] ✅ Date pickers work correctly for issue and expiry dates
+- [ ] ✅ Saving updates `coachProfiles.dbs` immediately
+- [ ] ✅ `pendingVerification` set to `true` after coach save
+- [ ] ✅ `submittedByCoachAt` set to current time
+- [ ] ✅ Warning banner shown before saving explaining owner will be notified
+- [ ] ✅ Success snackbar confirms owner notified; screen pops
+- [ ] ⚠️ Push notification to owners is a TODO stub — not sent yet (depends on notifications feature)
+
+### Update First Aid Details (`/admin/my-profile/firstaid`)
+
+- [ ] ✅ Same pattern as DBS update — all fields, pending verification, stub notification
+
+### Owner — Coach Detail Screen compliance section (`/admin/team/:uid`)
+
+- [ ] ✅ Compliance section only visible to owners, only for coaches (not shown for owner-role users)
+- [ ] ✅ DBS card shows status badge, full certificate number (unmasked), dates
+- [ ] ✅ First Aid card shows certification name, issuing body, dates
+- [ ] ✅ Expiry colour coding applies (amber ≤60 days, red = expired)
+- [ ] ✅ Pending verification banner shown when `pendingVerification = true`
+- [ ] ✅ "Verify" button clears `pendingVerification`, sets `lastUpdatedByAdminId` and `lastUpdatedAt`
+- [ ] ✅ After verify, pending banner disappears
+- [ ] ⚠️ Push notification to coach on verify is a TODO stub — not sent yet
+
+### Owner — Edit Compliance (`/admin/team/:uid/compliance/edit`)
+
+- [ ] ✅ DBS edit: status dropdown, certificate number, issue date, expiry date all editable
+- [ ] ✅ First aid edit: certification name, issuing body, issue date, expiry date all editable
+- [ ] ✅ Saving sets `pendingVerification = false` (owner edit counts as verified)
+- [ ] ✅ `lastUpdatedByAdminId` and `lastUpdatedAt` recorded on save
+- [ ] ✅ No notification sent for owner-initiated edits
+- [ ] ✅ Success snackbar; screen pops back to coach detail
+
+### Student Home — Coach display
+
+- [ ] ✅ Student enrolled in a discipline with an assigned coach sees "Discipline: Coach Name" below the welcome message
+- [ ] ✅ Multiple coaches for the same discipline shown as comma-separated names
+- [ ] ✅ Discipline with no assigned coach: row not shown (no "Discipline: " with empty value)
+- [ ] ✅ Student enrolled in multiple disciplines: each discipline shows its own coach row
+- [ ] ✅ Student with no active enrollments: no coach rows shown
+
+### Access control
+
+- [ ] ✅ Coach cannot navigate to another coach's My Profile URL (no such screen — each coach only sees their own)
+- [ ] ✅ Compliance section on Admin User Detail Screen not rendered for non-owner sessions
+- [ ] ✅ Owner compliance edit screen not accessible by coaches (router redirect via role guard)
+
+---
+
+## Notifications & Emails Feature
+
+> ⚠️ **Email delivery requires Firebase Blaze plan.** All email-channel tests below can only
+> be verified after upgrading to Blaze and setting `EMAIL_ENABLED=true` in Cloud Functions
+> environment config. Push-only tests can be run on the Spark plan.
+
+### FCM token capture
+
+- [ ] ✅ After admin login, `adminUsers/{uid}.fcmToken` is written to Firestore
+- [ ] ✅ After student PIN entry, `profiles/{profileId}.fcmToken` is written to Firestore
+- [ ] ✅ After sign-out (admin or student), token is NOT cleared from Firestore (Cloud Function cleans stale tokens daily)
+- [ ] ✅ `fcmTokenUpdatedAt` timestamp is updated alongside the token
+
+### Admin notification list
+
+- [ ] ✅ `/admin/notifications` shows a list of all notification log entries from Firestore
+- [ ] ✅ Filter sheet: selecting a type / channel / status and tapping Apply re-fetches with filters applied
+- [ ] ✅ Tapping Clear in filter sheet restores all results
+- [ ] ✅ Pull-to-refresh re-fetches the list
+- [ ] ✅ Empty state shown when no logs exist
+- [ ] ✅ Delivery status badge shows correct colour: green (sent), red (failed), grey (suppressed)
+
+### Admin notification detail
+
+- [ ] ✅ Tapping a notification log opens the detail screen
+- [ ] ✅ All populated fields are shown: title, body, channel, type, recipient type, recipient ID, sent at
+- [ ] ✅ `readAt` row shown only when present
+- [ ] ✅ Failure / suppression section shown only when either field is present
+- [ ] ✅ Announcement section shown only when `announcementId` is present
+- [ ] ✅ Status card shows correct icon and colour
+
+### Send Announcement (push only — Spark plan)
+
+- [ ] ✅ Tapping the send icon on the notification list screen opens `SendAnnouncementScreen`
+- [ ] ✅ Step 1: Next button disabled until title and body are non-empty
+- [ ] ✅ Step 2: Audience — All members can be selected; discipline dropdown appears when "Specific discipline" is selected
+- [ ] ✅ Step 3: Channel options shown; Push notification only is the default
+- [ ] ✅ Step 4: Summary card shows correct title, body, audience, and channel before sending
+- [ ] ⚠️ Tapping "Send" calls the `sendAnnouncement` Cloud Function — will fail with a functions/not-found error until Cloud Functions are deployed (Phase 22)
+- [ ] ⚠️ Email channel options (Email only, Push + Email) silently depend on Blaze plan — selecting them without Blaze will deliver only push (or fail gracefully)
+
+### Unread failure count badge (admin)
+
+- [ ] ⚠️ Bell icon in admin AppBar shows a red badge with unread delivery failure count — requires Cloud Functions deployed and at least one failed delivery in Firestore to verify
+
+### Email templates
+
+- [ ] ✅ `/admin/notifications/templates` shows all templates from `emailTemplates` collection
+- [ ] ✅ Empty state shown when collection is empty (templates are seeded by Cloud Functions on first run)
+- [ ] ✅ Tapping a template opens the editor with the current subject and body pre-filled
+- [ ] ✅ Editing subject or body enables the "Save" button in the AppBar
+- [ ] ✅ Tapping "Save" writes the updated template to Firestore and shows a success snackbar
+- [ ] ✅ `lastEditedByAdminId` and `lastEditedAt` are updated on save
+- [ ] ✅ Substitution variable hint box displays the 6 supported variables
+
+### Student notification centre
+
+- [ ] ✅ Bell icon appears in `StudentHomeScreen` AppBar when a profile is loaded
+- [ ] ✅ Unread notifications show a red count badge on the bell icon
+- [ ] ✅ Bell icon not shown if no profile is selected
+- [ ] ✅ Tapping the bell navigates to `/student/notifications`
+- [ ] ✅ Notification list shows only student-visible types: grading eligibility, grading promotion, trial expiring, announcements
+- [ ] ✅ Unread notifications have bold title, red dot, and subtle tinted background
+- [ ] ✅ Tapping an unread notification marks it as read (`isRead = true`, `readAt` stamped in Firestore)
+- [ ] ✅ "Mark all read" button marks all unread notifications in one action
+- [ ] ✅ Empty state shown when no student-visible notifications exist
+- [ ] ✅ Relative timestamps: "5m ago", "2h ago", "3d ago", "15 Jan 2026"
+- [ ] ⚠️ Grading and announcement notifications only appear after Cloud Functions are deployed (Phase 22)
+
+### Communication preferences
+
+- [ ] ✅ Profile form shows 4 toggles: Billing & Payment, Grading, Trial Expiry, General Announcements
+- [ ] ✅ Default is all-off (pre-launch, acceptable)
+- [ ] ✅ Profile detail screen shows On/Off for each preference
+- [ ] ✅ Preferences saved to Firestore as a map with 4 boolean keys
+- [ ] ⚠️ Preferences are read by Cloud Functions to suppress opted-out notifications — only testable once Cloud Functions are deployed
+
+---
+
+## Dashboards
+
+### Owner Dashboard
+
+- [ ] ✅ Owner login lands at `/admin/dashboard` showing `OwnerDashboardScreen`
+- [ ] ✅ Member metrics grid shows correct counts: Active, Trial, Lapsed, New this month
+- [ ] ✅ Financial metrics grid shows PAYT outstanding total and cash received this month
+- [ ] ✅ Alerts card appears when there are lapsed memberships, trials expiring in 7 days, >5 pending PAYT sessions, or coach DBS/first-aid within 30 days
+- [ ] ✅ No alerts card shown when there are no alert conditions
+- [ ] ✅ Membership growth chart renders a 6-month line chart (empty state shows 'No data yet')
+- [ ] ✅ Attendance trend chart renders a 4-week bar chart
+- [ ] ✅ Grading pass rate chart renders promoted/failed/absent bars for last 90 days
+- [ ] ✅ Activity feed shows up to 10 most recent events across membership history, payments, announcements, gradings
+- [ ] ✅ Pull-to-refresh invalidates chart and activity feed providers and reloads data
+- [ ] ✅ Quick actions menu: Add member → profile form, Record payment → payment screen, Create session → session form, Send announcement → announcement screen
+
+### Coach Dashboard
+
+- [ ] ✅ Coach login lands at `/admin/dashboard` showing `CoachDashboardScreen` (not owner dashboard)
+- [ ] ✅ AppBar shows coach's first name; "My Profile" button navigates to `/admin/my-profile`
+- [ ] ✅ Today's sessions card lists only sessions for the coach's assigned disciplines
+- [ ] ✅ Live attendee count pill updates in real time as students check in
+- [ ] ✅ Tapping a session navigates to the session detail screen
+- [ ] ✅ "No sessions scheduled today" shown when discipline has no sessions for today
+- [ ] ✅ Compliance card shows DBS status badge and first-aid details
+- [ ] ✅ DBS/first-aid expiry dates are colour-coded: red if expired, amber if within 30 days, grey otherwise
+- [ ] ✅ Discipline summary cards show active member count and upcoming gradings (up to 3)
+- [ ] ✅ Upcoming grading label shows "Today", "Tomorrow", or "In X days"
+
+### Student Portal — role-based layouts
+
+- [ ] ✅ Standard student (adult or junior): sees welcome card, Check In button, today's class list, membership card, inline grades
+- [ ] ✅ Today's class list only shows sessions for the student's enrolled disciplines
+- [ ] ✅ Inline grade cards show discipline name, current rank name, and grading count
+- [ ] ✅ "See all" button navigates to the full grades screen
+- [ ] ✅ Membership card shows plan type, renewal date (or trial end date), and status badge
+- [ ] ✅ Dual-role (parent + student): TabBar with "My Training" and "Family" tabs
+- [ ] ✅ My Training tab shows the student's own schedule, membership, and grades
+- [ ] ✅ Family tab lists linked children with their discipline enrolments and current ranks
+- [ ] ✅ Parent-only (no student profile types): shows family heading, membership card, linked children list
+- [ ] ⚠️ Child cards resolve from `parentProfileId` / `secondParentProfileId` on the child's profile — test with a family membership where a junior is linked to a parent
+- [ ] ⚠️ Student portal inactivity timeout resets on any tap or drag gesture — test across all three layout types
+
