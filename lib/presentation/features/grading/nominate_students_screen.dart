@@ -11,6 +11,7 @@ import '../../../domain/entities/enrollment.dart';
 import '../../../domain/entities/enums.dart';
 import '../../../domain/entities/grading_event.dart';
 import '../../../domain/entities/profile.dart';
+import '../../../domain/use_cases/grading/nominate_student_use_case.dart';
 
 class NominateStudentsScreen extends ConsumerStatefulWidget {
   const NominateStudentsScreen({super.key, required this.event});
@@ -150,7 +151,9 @@ class _NominateStudentsScreenState
     );
   }
 
-  Future<void> _nominateSelected() async {
+  Future<void> _nominateSelected({
+    Set<String> overrideIds = const {},
+  }) async {
     if (_selectedStudentIds.isEmpty) return;
 
     final enrollmentsAsync = ref.read(
@@ -158,13 +161,24 @@ class _NominateStudentsScreenState
     );
     final enrollments = enrollmentsAsync.asData?.value ?? <Enrollment>[];
     final enrollmentMap = {for (final e in enrollments) e.studentId: e};
+
+    final allProfiles = [
+      ...ref.read(profilesByTypeProvider(ProfileType.adultStudent)).asData?.value ?? <Profile>[],
+      ...ref.read(profilesByTypeProvider(ProfileType.juniorStudent)).asData?.value ?? <Profile>[],
+    ];
+    final profileMap = {for (final p in allProfiles) p.id: p};
+
     final adminId = ref.read(currentAdminIdProvider) ?? '';
 
     setState(() => _isSaving = true);
-    try {
-      for (final studentId in _selectedStudentIds) {
-        final enrollment = enrollmentMap[studentId];
-        if (enrollment == null) continue;
+
+    int nominated = 0;
+    final missingMembership = <String>[]; // studentIds
+
+    for (final studentId in _selectedStudentIds) {
+      final enrollment = enrollmentMap[studentId];
+      if (enrollment == null) continue;
+      try {
         await ref
             .read(nominateStudentUseCaseProvider)
             .call(
@@ -174,29 +188,74 @@ class _NominateStudentsScreenState
               enrollmentId: enrollment.id,
               currentRankId: enrollment.currentRankId,
               adminId: adminId,
+              allowWithoutMembership: overrideIds.contains(studentId),
             );
-      }
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '${_selectedStudentIds.length} student${_selectedStudentIds.length == 1 ? '' : 's'} nominated.',
+        nominated++;
+      } on MissingMembershipException catch (e) {
+        missingMembership.add(e.studentId);
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(e.toString()),
+              backgroundColor: AppColors.error,
             ),
-          ),
-        );
-        context.pop();
+          );
+        }
       }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString()),
-            backgroundColor: AppColors.error,
+    }
+
+    if (!mounted) return;
+    setState(() => _isSaving = false);
+
+    // If any students had no membership, prompt the owner to override.
+    if (missingMembership.isNotEmpty) {
+      final names = missingMembership.map((id) {
+        final p = profileMap[id];
+        return p != null ? '${p.firstName} ${p.lastName}' : id;
+      }).join(', ');
+
+      final override = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('No active membership'),
+          content: Text(
+            'The following student${missingMembership.length == 1 ? ' has' : 's have'} '
+            'no active membership:\n\n$names\n\n'
+            'Nominate them anyway?',
           ),
-        );
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.warning,
+                foregroundColor: Colors.black87,
+              ),
+              child: const Text('Nominate Anyway'),
+            ),
+          ],
+        ),
+      );
+
+      if (override == true && mounted) {
+        await _nominateSelected(overrideIds: missingMembership.toSet());
+        return;
       }
-    } finally {
-      if (mounted) setState(() => _isSaving = false);
+    }
+
+    if (nominated > 0 && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '$nominated student${nominated == 1 ? '' : 's'} nominated.',
+          ),
+        ),
+      );
+      context.pop();
     }
   }
 }
