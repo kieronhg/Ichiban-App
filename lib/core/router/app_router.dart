@@ -79,6 +79,7 @@ import '../../presentation/features/settings/membership_pricing_screen.dart';
 import '../../presentation/features/settings/notification_timings_screen.dart';
 import '../../presentation/features/settings/settings_screen.dart';
 import '../../presentation/features/student/self_check_in_screen.dart';
+import '../../presentation/features/student/student_attendance_screen.dart';
 import '../../presentation/features/student/student_grades_screen.dart';
 import '../../presentation/features/student/student_home_screen.dart';
 import 'route_names.dart';
@@ -608,7 +609,7 @@ class AppRouter {
       GoRoute(
         path: RouteNames.studentAttendance,
         name: 'studentAttendance',
-        builder: (_, state) => const _PlaceholderScreen('My Attendance'),
+        builder: (_, state) => const StudentAttendanceScreen(),
       ),
       GoRoute(
         path: RouteNames.studentGrades,

@@ -1,3 +1,4 @@
+import '../../../core/errors/app_exception.dart';
 import '../../repositories/grading_repository.dart';
 
 class DeleteGradingRecordUseCase {
@@ -7,7 +8,10 @@ class DeleteGradingRecordUseCase {
 
   /// Permanently deletes a grading record.
   ///
-  /// Caller must have super-admin privileges.
-  /// TODO(auth): enforce super-admin guard before calling this use case.
-  Future<void> call(String id) => _repo.delete(id);
+  /// Pass [isOwner] from [isOwnerProvider]. Throws [UnauthorizedException] if
+  /// the caller is not an owner.
+  Future<void> call(String id, {required bool isOwner}) {
+    if (!isOwner) throw const UnauthorizedException();
+    return _repo.delete(id);
+  }
 }
