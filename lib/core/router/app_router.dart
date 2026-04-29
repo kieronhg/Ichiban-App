@@ -93,22 +93,6 @@ class _DashboardScreen extends ConsumerWidget {
   }
 }
 
-class _PlaceholderScreen extends StatelessWidget {
-  const _PlaceholderScreen(this.label);
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(label)),
-      body: Center(
-        child: Text(label, style: Theme.of(context).textTheme.headlineMedium),
-      ),
-    );
-  }
-}
-
 class AppRouter {
   AppRouter._();
 
