@@ -71,6 +71,13 @@ import '../../presentation/features/profiles/profile_detail_screen.dart';
 import '../../presentation/features/profiles/profile_form_screen.dart';
 import '../../presentation/features/profiles/profile_list_screen.dart';
 import '../../presentation/features/profiles/student_profile_screen.dart';
+import '../../presentation/features/settings/danger_zone_screen.dart';
+import '../../presentation/features/settings/email_templates_settings_screen.dart';
+import '../../presentation/features/settings/gdpr_settings_screen.dart';
+import '../../presentation/features/settings/general_settings_screen.dart';
+import '../../presentation/features/settings/membership_pricing_screen.dart';
+import '../../presentation/features/settings/notification_timings_screen.dart';
+import '../../presentation/features/settings/settings_screen.dart';
 import '../../presentation/features/student/self_check_in_screen.dart';
 import '../../presentation/features/student/student_grades_screen.dart';
 import '../../presentation/features/student/student_home_screen.dart';
@@ -515,7 +522,39 @@ class AppRouter {
       GoRoute(
         path: RouteNames.adminSettings,
         name: 'adminSettings',
-        builder: (_, state) => const _PlaceholderScreen('Settings'),
+        builder: (_, state) => const SettingsScreen(),
+        routes: [
+          GoRoute(
+            path: 'general',
+            name: 'adminSettingsGeneral',
+            builder: (_, state) => const GeneralSettingsScreen(),
+          ),
+          GoRoute(
+            path: 'pricing',
+            name: 'adminSettingsPricing',
+            builder: (_, state) => const MembershipPricingScreen(),
+          ),
+          GoRoute(
+            path: 'notification-timings',
+            name: 'adminSettingsNotifications',
+            builder: (_, state) => const NotificationTimingsScreen(),
+          ),
+          GoRoute(
+            path: 'gdpr',
+            name: 'adminSettingsGdpr',
+            builder: (_, state) => const GdprSettingsScreen(),
+          ),
+          GoRoute(
+            path: 'email-templates',
+            name: 'adminSettingsEmailTemplates',
+            builder: (_, state) => const EmailTemplatesSettingsScreen(),
+          ),
+          GoRoute(
+            path: 'danger-zone',
+            name: 'adminSettingsDangerZone',
+            builder: (_, state) => const DangerZoneScreen(),
+          ),
+        ],
       ),
       GoRoute(
         path: RouteNames.adminMyProfile,

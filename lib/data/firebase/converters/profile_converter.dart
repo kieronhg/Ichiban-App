@@ -53,6 +53,7 @@ class ProfileConverter {
           (map['dataProcessingConsentDate'] as Timestamp?)?.toDate(),
       dataProcessingConsentVersion:
           map['dataProcessingConsentVersion'] as String?,
+      requiresReConsent: (map['requiresReConsent'] as bool?) ?? false,
       isAnonymised: (map['isAnonymised'] as bool?) ?? false,
       anonymisedAt: (map['anonymisedAt'] as Timestamp?)?.toDate(),
       registrationDate: (map['registrationDate'] as Timestamp).toDate(),
@@ -99,6 +100,7 @@ class ProfileConverter {
           ? Timestamp.fromDate(profile.dataProcessingConsentDate!)
           : null,
       'dataProcessingConsentVersion': profile.dataProcessingConsentVersion,
+      'requiresReConsent': profile.requiresReConsent,
       'isAnonymised': profile.isAnonymised,
       'anonymisedAt': profile.anonymisedAt != null
           ? Timestamp.fromDate(profile.anonymisedAt!)

@@ -16,6 +16,7 @@ import '../../data/repositories/firestore_profile_repository.dart';
 import '../../data/repositories/firestore_grading_event_repository.dart';
 import '../../data/repositories/firestore_grading_event_student_repository.dart';
 import '../../data/repositories/firestore_membership_pricing_repository.dart';
+import '../../data/repositories/firestore_pricing_change_log_repository.dart';
 import '../../data/repositories/firestore_membership_repository.dart';
 import '../../data/repositories/firestore_membership_history_repository.dart';
 import '../../data/repositories/firestore_announcement_repository.dart';
@@ -38,6 +39,7 @@ import '../../domain/repositories/grading_repository.dart';
 import '../../domain/repositories/grading_event_repository.dart';
 import '../../domain/repositories/grading_event_student_repository.dart';
 import '../../domain/repositories/membership_pricing_repository.dart';
+import '../../domain/repositories/pricing_change_log_repository.dart';
 import '../../domain/repositories/membership_repository.dart';
 import '../../domain/repositories/membership_history_repository.dart';
 import '../../domain/repositories/announcement_repository.dart';
@@ -91,6 +93,10 @@ final membershipPricingRepositoryProvider =
     Provider<MembershipPricingRepository>(
       (ref) => FirestoreMembershipPricingRepository(),
     );
+
+final pricingChangeLogRepositoryProvider = Provider<PricingChangeLogRepository>(
+  (ref) => FirestorePricingChangeLogRepository(),
+);
 
 // ── Payments ───────────────────────────────────────────────────────────────
 

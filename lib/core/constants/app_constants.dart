@@ -20,6 +20,7 @@ class AppConstants {
   static const String colAttendanceRecords = 'attendanceRecords';
   static const String colQueuedCheckIns = 'queuedCheckIns';
   static const String colNotificationLogs = 'notificationLogs';
+  static const String colPricingChangeLogs = 'pricingChangeLogs';
   static const String colEmailTemplates = 'emailTemplates';
   static const String colAnnouncements = 'announcements';
   static const String colAppSettings = 'appSettings';

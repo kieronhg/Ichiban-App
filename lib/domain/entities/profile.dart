@@ -58,6 +58,11 @@ class Profile extends Equatable {
   /// Version of the privacy policy agreed to (e.g. "1.0").
   final String? dataProcessingConsentVersion;
 
+  // GDPR — re-consent
+  /// True when the owner has updated the privacy policy version and this
+  /// member has not yet been recorded as having re-consented.
+  final bool requiresReConsent;
+
   // GDPR — anonymisation
   /// True once personal data has been wiped under Right to Erasure or
   /// the data retention policy.
@@ -101,6 +106,7 @@ class Profile extends Equatable {
     this.dataProcessingConsent = false,
     this.dataProcessingConsentDate,
     this.dataProcessingConsentVersion,
+    this.requiresReConsent = false,
     this.isAnonymised = false,
     this.anonymisedAt,
     required this.registrationDate,
@@ -150,6 +156,7 @@ class Profile extends Equatable {
     bool? dataProcessingConsent,
     DateTime? dataProcessingConsentDate,
     String? dataProcessingConsentVersion,
+    bool? requiresReConsent,
     bool? isAnonymised,
     DateTime? anonymisedAt,
     DateTime? registrationDate,
@@ -198,6 +205,7 @@ class Profile extends Equatable {
           dataProcessingConsentDate ?? this.dataProcessingConsentDate,
       dataProcessingConsentVersion:
           dataProcessingConsentVersion ?? this.dataProcessingConsentVersion,
+      requiresReConsent: requiresReConsent ?? this.requiresReConsent,
       isAnonymised: isAnonymised ?? this.isAnonymised,
       anonymisedAt: anonymisedAt ?? this.anonymisedAt,
       registrationDate: registrationDate ?? this.registrationDate,
@@ -240,6 +248,7 @@ class Profile extends Equatable {
     dataProcessingConsent,
     dataProcessingConsentDate,
     dataProcessingConsentVersion,
+    requiresReConsent,
     isAnonymised,
     anonymisedAt,
     registrationDate,

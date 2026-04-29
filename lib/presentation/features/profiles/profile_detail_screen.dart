@@ -10,6 +10,7 @@ import '../../../core/providers/membership_providers.dart';
 import '../../../core/providers/payments_providers.dart';
 import '../../../core/providers/admin_session_provider.dart';
 import '../../../core/providers/profile_providers.dart';
+import '../../../core/providers/settings_providers.dart';
 import '../../../core/providers/enrollment_providers.dart';
 import '../../../core/providers/discipline_providers.dart';
 import '../../../core/router/route_names.dart';
@@ -108,6 +109,8 @@ class _PersonalTab extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       children: [
         // ── Status banners ────────────────────────────────────────────
+        if (profile.requiresReConsent)
+          _ReConsentBanner(profile: profile, ref: ref),
         if (profile.isAnonymised)
           _InfoBanner(
             color: AppColors.textSecondary,
@@ -1497,6 +1500,104 @@ class _ProfileLinkRow extends StatelessWidget {
       loading: () => _DetailRow(label, '…'),
       error: (_, stack) => _DetailRow(label, profileId),
       data: (p) => _DetailRow(label, p?.fullName ?? profileId),
+    );
+  }
+}
+
+// ── Re-consent banner ────────────────────────────────────────────────────────
+
+class _ReConsentBanner extends StatelessWidget {
+  const _ReConsentBanner({required this.profile, required this.ref});
+
+  final Profile profile;
+  final WidgetRef ref;
+
+  Future<void> _recordReConsent(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Record Re-Consent'),
+        content: const Text(
+          'Confirm that this member has been informed of the updated privacy '
+          'policy and has given their consent.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Record Re-Consent'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    try {
+      await ref.read(recordReConsentUseCaseProvider).call(profile.id);
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Re-consent recorded.')));
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to record re-consent: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.warning.withAlpha(30),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.warning.withAlpha(120)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.policy_outlined, color: AppColors.warning, size: 18),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Re-consent required',
+                  style: TextStyle(
+                    color: AppColors.warning,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'This member has not consented to the updated privacy policy. '
+            'Please obtain consent and record it below.',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: () => _recordReConsent(context),
+              child: const Text('Record Re-Consent'),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

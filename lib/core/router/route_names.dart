@@ -63,6 +63,14 @@ class RouteNames {
   static const String adminEmailTemplateEditor =
       '/admin/notifications/templates/:templateKey';
   static const String adminSettings = '/admin/settings';
+  static const String adminSettingsGeneral = '/admin/settings/general';
+  static const String adminSettingsPricing = '/admin/settings/pricing';
+  static const String adminSettingsNotifications =
+      '/admin/settings/notification-timings';
+  static const String adminSettingsGdpr = '/admin/settings/gdpr';
+  static const String adminSettingsEmailTemplates =
+      '/admin/settings/email-templates';
+  static const String adminSettingsDangerZone = '/admin/settings/danger-zone';
   static const String adminMyProfile = '/admin/my-profile';
   static const String adminMyProfileEdit = '/admin/my-profile/edit';
   static const String adminMyProfileDbs = '/admin/my-profile/dbs';
