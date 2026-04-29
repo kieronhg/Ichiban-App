@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/providers/attendance_providers.dart';
 import '../../../core/providers/auth_providers.dart';
+import '../../../core/providers/discipline_providers.dart';
 import '../../../core/providers/enrollment_providers.dart';
 import '../../../core/providers/grading_providers.dart';
 import '../../../core/providers/profile_providers.dart';
@@ -11,7 +13,7 @@ import '../../../domain/entities/enrollment.dart';
 import '../../../domain/entities/enums.dart';
 import '../../../domain/entities/grading_event.dart';
 import '../../../domain/entities/profile.dart';
-import '../../../domain/use_cases/grading/nominate_student_use_case.dart';
+import '../../../domain/entities/rank.dart';
 
 class NominateStudentsScreen extends ConsumerStatefulWidget {
   const NominateStudentsScreen({super.key, required this.event});
@@ -27,6 +29,10 @@ class _NominateStudentsScreenState
     extends ConsumerState<NominateStudentsScreen> {
   final Set<String> _selectedStudentIds = {};
   bool _isSaving = false;
+
+  // Cached during build so _nominateSelected can read profile names without
+  // calling ref.read inside an async gap.
+  Map<String, Profile> _profileMap = {};
 
   @override
   Widget build(BuildContext context) {
@@ -52,7 +58,7 @@ class _NominateStudentsScreenState
       ...profilesAsync.asData?.value ?? <Profile>[],
       ...juniorProfilesAsync.asData?.value ?? <Profile>[],
     ];
-    final profileMap = {for (final p in allProfiles) p.id: p};
+    _profileMap = {for (final p in allProfiles) p.id: p};
 
     final enrollments = enrollmentsAsync.asData?.value ?? <Enrollment>[];
     final eligibleEnrollments = enrollments
@@ -116,10 +122,10 @@ class _NominateStudentsScreenState
           return ListView.separated(
             padding: const EdgeInsets.all(16),
             itemCount: eligibleEnrollments.length,
-            separatorBuilder: (_, _) => const Divider(height: 1),
+            separatorBuilder: (context, _) => const Divider(height: 1),
             itemBuilder: (context, i) {
               final enrollment = eligibleEnrollments[i];
-              final profile = profileMap[enrollment.studentId];
+              final profile = _profileMap[enrollment.studentId];
               final name = profile != null
                   ? '${profile.firstName} ${profile.lastName}'
                   : enrollment.studentId;
@@ -151,9 +157,7 @@ class _NominateStudentsScreenState
     );
   }
 
-  Future<void> _nominateSelected({
-    Set<String> overrideIds = const {},
-  }) async {
+  Future<void> _nominateSelected() async {
     if (_selectedStudentIds.isEmpty) return;
 
     final enrollmentsAsync = ref.read(
@@ -162,23 +166,61 @@ class _NominateStudentsScreenState
     final enrollments = enrollmentsAsync.asData?.value ?? <Enrollment>[];
     final enrollmentMap = {for (final e in enrollments) e.studentId: e};
 
-    final allProfiles = [
-      ...ref.read(profilesByTypeProvider(ProfileType.adultStudent)).asData?.value ?? <Profile>[],
-      ...ref.read(profilesByTypeProvider(ProfileType.juniorStudent)).asData?.value ?? <Profile>[],
-    ];
-    final profileMap = {for (final p in allProfiles) p.id: p};
+    // Ranks for this discipline sorted by displayOrder (ascending).
+    final ranks =
+        (ref.read(rankListProvider(widget.event.disciplineId)).asData?.value ??
+              <Rank>[])
+          ..sort((a, b) => a.displayOrder.compareTo(b.displayOrder));
 
-    final adminId = ref.read(currentAdminIdProvider) ?? '';
-
-    setState(() => _isSaving = true);
-
-    int nominated = 0;
-    final missingMembership = <String>[]; // studentIds
+    // ── Attendance check ─────────────────────────────────────────────────────
+    // For each selected student, find their next rank. If that rank has a
+    // minAttendanceForGrading, verify the student has enough sessions.
+    final warnings = <_AttendanceWarning>[];
 
     for (final studentId in _selectedStudentIds) {
       final enrollment = enrollmentMap[studentId];
       if (enrollment == null) continue;
-      try {
+
+      final currentIndex = ranks.indexWhere(
+        (r) => r.id == enrollment.currentRankId,
+      );
+      final nextRank = (currentIndex >= 0 && currentIndex < ranks.length - 1)
+          ? ranks[currentIndex + 1]
+          : null;
+
+      final minimum = nextRank?.minAttendanceForGrading;
+      if (minimum == null) continue; // no threshold set — skip
+
+      final records = await ref
+          .read(getAttendanceRecordsUseCaseProvider)
+          .getForStudentAndDiscipline(studentId, widget.event.disciplineId);
+
+      if (records.length < minimum) {
+        warnings.add(
+          _AttendanceWarning(
+            studentName: _profileMap[studentId]?.fullName ?? studentId,
+            targetRankName: nextRank!.name,
+            actual: records.length,
+            required: minimum,
+          ),
+        );
+      }
+    }
+
+    // ── Warning dialog ───────────────────────────────────────────────────────
+    if (warnings.isNotEmpty && mounted) {
+      final proceed = await _showAttendanceWarningDialog(warnings);
+      if (!proceed) return;
+    }
+
+    // ── Write nominations ────────────────────────────────────────────────────
+    final adminId = ref.read(currentAdminIdProvider) ?? '';
+
+    setState(() => _isSaving = true);
+    try {
+      for (final studentId in _selectedStudentIds) {
+        final enrollment = enrollmentMap[studentId];
+        if (enrollment == null) continue;
         await ref
             .read(nominateStudentUseCaseProvider)
             .call(
@@ -188,74 +230,137 @@ class _NominateStudentsScreenState
               enrollmentId: enrollment.id,
               currentRankId: enrollment.currentRankId,
               adminId: adminId,
-              allowWithoutMembership: overrideIds.contains(studentId),
             );
-        nominated++;
-      } on MissingMembershipException catch (e) {
-        missingMembership.add(e.studentId);
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(e.toString()),
-              backgroundColor: AppColors.error,
-            ),
-          );
-        }
       }
-    }
-
-    if (!mounted) return;
-    setState(() => _isSaving = false);
-
-    // If any students had no membership, prompt the owner to override.
-    if (missingMembership.isNotEmpty) {
-      final names = missingMembership.map((id) {
-        final p = profileMap[id];
-        return p != null ? '${p.firstName} ${p.lastName}' : id;
-      }).join(', ');
-
-      final override = await showDialog<bool>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('No active membership'),
-          content: Text(
-            'The following student${missingMembership.length == 1 ? ' has' : 's have'} '
-            'no active membership:\n\n$names\n\n'
-            'Nominate them anyway?',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel'),
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '${_selectedStudentIds.length} student${_selectedStudentIds.length == 1 ? '' : 's'} nominated.',
             ),
-            FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.warning,
-                foregroundColor: Colors.black87,
+          ),
+        );
+        context.pop();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  Future<bool> _showAttendanceWarningDialog(
+    List<_AttendanceWarning> warnings,
+  ) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(
+              Icons.warning_amber_rounded,
+              color: AppColors.warning,
+              size: 22,
+            ),
+            const SizedBox(width: 8),
+            const Text('Attendance Below Minimum'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              warnings.length == 1
+                  ? 'This student has not reached the minimum attendance for their target rank:'
+                  : '${warnings.length} students have not reached the minimum attendance for their target rank:',
+              style: const TextStyle(fontSize: 13),
+            ),
+            const SizedBox(height: 12),
+            ...warnings.map(
+              (w) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('• ', style: TextStyle(fontSize: 13)),
+                    Expanded(
+                      child: RichText(
+                        text: TextSpan(
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppColors.textPrimary,
+                          ),
+                          children: [
+                            TextSpan(
+                              text: w.studentName,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            TextSpan(
+                              text:
+                                  ' — ${w.actual} session${w.actual == 1 ? '' : 's'}'
+                                  ' attended, ${w.required} needed for ${w.targetRankName}.',
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              child: const Text('Nominate Anyway'),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'You can still nominate them — this is a warning only.',
+              style: TextStyle(
+                fontSize: 12,
+                color: AppColors.textSecondary,
+                fontStyle: FontStyle.italic,
+              ),
             ),
           ],
         ),
-      );
-
-      if (override == true && mounted) {
-        await _nominateSelected(overrideIds: missingMembership.toSet());
-        return;
-      }
-    }
-
-    if (nominated > 0 && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '$nominated student${nominated == 1 ? '' : 's'} nominated.',
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
           ),
-        ),
-      );
-      context.pop();
-    }
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.warning,
+              foregroundColor: AppColors.textPrimary,
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Nominate Anyway'),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
   }
+}
+
+// ── Data class for attendance warning ─────────────────────────────────────────
+
+class _AttendanceWarning {
+  const _AttendanceWarning({
+    required this.studentName,
+    required this.targetRankName,
+    required this.actual,
+    required this.required,
+  });
+
+  final String studentName;
+  final String targetRankName;
+  final int actual;
+  final int required;
 }

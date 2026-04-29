@@ -17,7 +17,10 @@ import 'repository_providers.dart';
 // ── Use-case providers ─────────────────────────────────────────────────────
 
 final createGradingEventUseCaseProvider = Provider<CreateGradingEventUseCase>(
-  (ref) => CreateGradingEventUseCase(ref.watch(gradingEventRepositoryProvider)),
+  (ref) => CreateGradingEventUseCase(
+    ref.watch(gradingEventRepositoryProvider),
+    ref.watch(disciplineRepositoryProvider),
+  ),
 );
 
 final cancelGradingEventUseCaseProvider = Provider<CancelGradingEventUseCase>(
