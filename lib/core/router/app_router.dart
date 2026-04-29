@@ -613,8 +613,18 @@ class AppRouter {
 
 class _RouterRefreshNotifier extends ChangeNotifier {
   _RouterRefreshNotifier(WidgetRef ref) {
-    ref.listen(authStateProvider, (prev, next) => notifyListeners());
-    ref.listen(studentSessionProvider, (prev, next) => notifyListeners());
-    ref.listen(appSetupStatusProvider, (prev, next) => notifyListeners());
+    _subs = [
+      ref.listenManual(authStateProvider, (_, __) => notifyListeners()),
+      ref.listenManual(studentSessionProvider, (_, __) => notifyListeners()),
+      ref.listenManual(appSetupStatusProvider, (_, __) => notifyListeners()),
+    ];
+  }
+
+  late final List<ProviderSubscription<dynamic>> _subs;
+
+  @override
+  void dispose() {
+    for (final sub in _subs) sub.close();
+    super.dispose();
   }
 }
