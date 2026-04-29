@@ -112,21 +112,6 @@ In the Grading feature, when an admin selects a student and a target rank:
 ---
 
 
-## 9. Student App Screens (Attendance History)
-
-**Source:** App scaffold
-**Depends on:** Nothing blocking
-
-**What they are:**
-The following student route is currently a `_PlaceholderScreen`:
-- `/student/attendance` — student's own attendance history
-
-`/student/home` (StudentHomeScreen), `/student/checkin` (SelfCheckInScreen), and `/student/grades`
-(StudentGradesScreen) are all fully built ✅.
-No handover document has been received for the attendance history screen yet.
-
----
-
 ## 14. Grading — Push Notifications (Cloud Functions)
 
 **Source:** Grading feature implementation

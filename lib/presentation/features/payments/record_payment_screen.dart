@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/providers/auth_providers.dart';
 import '../../../core/providers/payments_providers.dart';
 import '../../../core/providers/profile_providers.dart';
 import '../../../core/theme/app_colors.dart';
@@ -190,7 +191,7 @@ class _RecordPaymentScreenState extends ConsumerState<RecordPaymentScreen> {
             profileId: _selectedProfile!.id,
             amount: amount,
             paymentMethod: _method,
-            recordedByAdminId: 'admin', // TODO(auth-session): use real admin ID
+            recordedByAdminId: ref.read(currentAdminIdProvider) ?? '',
             notes: notes,
           );
 

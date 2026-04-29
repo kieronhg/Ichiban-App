@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/providers/auth_providers.dart';
 import '../../../core/providers/payments_providers.dart';
 import '../../../core/providers/profile_providers.dart';
 import '../../../core/theme/app_colors.dart';
@@ -106,7 +107,7 @@ class PaymentDetailScreen extends ConsumerWidget {
             paymentType: result.paymentType,
             notes: result.notes,
             editedByAdminId:
-                'superadmin', // TODO(auth-session): use real admin ID
+                ref.read(currentAdminIdProvider) ?? '',
           );
       if (context.mounted) {
         ScaffoldMessenger.of(

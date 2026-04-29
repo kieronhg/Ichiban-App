@@ -1,3 +1,4 @@
+import '../../../core/errors/app_exception.dart';
 import '../../entities/grading_record.dart';
 import '../../repositories/grading_repository.dart';
 
@@ -8,7 +9,10 @@ class EditGradingRecordUseCase {
 
   /// Updates an existing grading record.
   ///
-  /// Caller must have super-admin privileges.
-  /// TODO(auth): enforce super-admin guard before calling this use case.
-  Future<void> call(GradingRecord record) => _repo.update(record);
+  /// Pass [isOwner] from [isOwnerProvider]. Throws [UnauthorizedException] if
+  /// the caller is not an owner.
+  Future<void> call(GradingRecord record, {required bool isOwner}) {
+    if (!isOwner) throw const UnauthorizedException();
+    return _repo.update(record);
+  }
 }
