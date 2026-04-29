@@ -53,4 +53,13 @@ abstract class AttendanceRepository {
   /// Returns student IDs who have an active membership but no attendance
   /// records within the past [withinDays] days.
   Future<List<String>> getNonAttendingMemberIds({required int withinDays});
+
+  /// All sessions for a date (midnight UTC), across all disciplines.
+  Stream<List<AttendanceSession>> watchSessionsForDate(DateTime date);
+
+  /// Most-recent [limit] sessions, ordered by createdAt descending.
+  Future<List<AttendanceSession>> getRecentSessions(int limit);
+
+  /// All attendance records with a sessionDate in [from, to).
+  Future<List<AttendanceRecord>> getRecordsForPeriod(DateTime from, DateTime to);
 }

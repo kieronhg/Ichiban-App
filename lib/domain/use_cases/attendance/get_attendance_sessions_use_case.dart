@@ -15,4 +15,8 @@ class GetAttendanceSessionsUseCase {
     String disciplineId,
     DateTime date,
   ) => _repo.watchSessionsForDisciplineAndDate(disciplineId, date);
+
+  /// All sessions on a given date across all disciplines.
+  Stream<List<AttendanceSession>> watchForDate(DateTime date) =>
+      _repo.watchSessionsForDate(date);
 }

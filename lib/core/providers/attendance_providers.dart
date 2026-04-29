@@ -107,3 +107,12 @@ final todaySessionsForDisciplineProvider =
           .watch(getAttendanceSessionsUseCaseProvider)
           .watchForDisciplineAndDate(disciplineId, today);
     });
+
+/// All sessions today across every discipline (dashboard + student portal).
+final todayAllSessionsProvider = StreamProvider<List<AttendanceSession>>((ref) {
+  final now = DateTime.now();
+  final today = DateTime.utc(now.year, now.month, now.day);
+  return ref
+      .watch(getAttendanceSessionsUseCaseProvider)
+      .watchForDate(today);
+});

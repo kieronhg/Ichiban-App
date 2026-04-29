@@ -9,4 +9,7 @@ abstract class MembershipHistoryRepository {
 
   /// Watches history records for a membership in real time.
   Stream<List<MembershipHistory>> watchForMembership(String membershipId);
+
+  /// Most-recent [limit] records across all memberships, ordered by changedAt desc.
+  Future<List<MembershipHistory>> getRecent(int limit);
 }
