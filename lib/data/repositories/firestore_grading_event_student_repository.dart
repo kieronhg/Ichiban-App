@@ -71,4 +71,18 @@ class FirestoreGradingEventStudentRepository
   Future<void> delete(String id) async {
     await FirestoreCollections.gradingEventStudents().doc(id).delete();
   }
+
+  @override
+  Future<List<GradingEventStudent>> getWithOutcomeFrom(DateTime from) async {
+    final snap = await FirestoreCollections.gradingEventStudents()
+        .where(
+          'resultRecordedAt',
+          isGreaterThanOrEqualTo: Timestamp.fromDate(from),
+        )
+        .get();
+    return snap.docs
+        .map((d) => d.data())
+        .where((s) => s.outcome != null)
+        .toList();
+  }
 }

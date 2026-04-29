@@ -30,4 +30,7 @@ abstract class GradingEventStudentRepository {
 
   /// Deletes a nomination record (only allowed before results are recorded).
   Future<void> delete(String id);
+
+  /// Returns all records with a resultRecordedAt on or after [from].
+  Future<List<GradingEventStudent>> getWithOutcomeFrom(DateTime from);
 }

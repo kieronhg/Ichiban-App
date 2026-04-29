@@ -99,4 +99,12 @@ class FirestorePaytSessionRepository implements PaytSessionRepository {
         .snapshots()
         .map((snap) => snap.docs.map((d) => d.data()).toList());
   }
+
+  @override
+  Stream<List<PaytSession>> watchAllPending() {
+    return FirestoreCollections.paytSessions()
+        .where('paymentStatus', isEqualTo: PaytPaymentStatus.pending.name)
+        .snapshots()
+        .map((snap) => snap.docs.map((d) => d.data()).toList());
+  }
 }

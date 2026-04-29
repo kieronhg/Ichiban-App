@@ -31,6 +31,8 @@ import '../../presentation/features/coach/edit_dbs_details_screen.dart';
 import '../../presentation/features/coach/edit_first_aid_details_screen.dart';
 import '../../presentation/features/coach/edit_personal_details_screen.dart';
 import '../../presentation/features/coach/my_profile_screen.dart';
+import '../../presentation/features/dashboard/coach_dashboard_screen.dart';
+import '../../presentation/features/dashboard/owner_dashboard_screen.dart';
 import '../../presentation/features/auth/admin_login_screen.dart';
 import '../../presentation/features/auth/entry_gateway_screen.dart';
 import '../../presentation/features/auth/setup_wizard_screen.dart';
@@ -73,6 +75,16 @@ import '../../presentation/features/student/self_check_in_screen.dart';
 import '../../presentation/features/student/student_grades_screen.dart';
 import '../../presentation/features/student/student_home_screen.dart';
 import 'route_names.dart';
+
+class _DashboardScreen extends ConsumerWidget {
+  const _DashboardScreen();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isCoach = ref.watch(isCoachProvider);
+    return isCoach ? const CoachDashboardScreen() : const OwnerDashboardScreen();
+  }
+}
 
 class _PlaceholderScreen extends StatelessWidget {
   const _PlaceholderScreen(this.label);
@@ -135,17 +147,7 @@ class AppRouter {
         }
 
         if (isAuthenticated && isOnAdminLogin) {
-          // Coaches land on their personal profile; owners go to dashboard.
-          final role = ref.read(currentAdminUserProvider)?.role;
-          return role == AdminRole.coach
-              ? RouteNames.adminMyProfile
-              : RouteNames.adminDashboard;
-        }
-
-        // Coaches cannot access the dashboard directly — redirect to My Profile.
-        if (isAuthenticated && location == RouteNames.adminDashboard) {
-          final role = ref.read(currentAdminUserProvider)?.role;
-          if (role == AdminRole.coach) return RouteNames.adminMyProfile;
+          return RouteNames.adminDashboard;
         }
 
         // My Profile is coach-only — owners do not have this page.
@@ -176,10 +178,7 @@ class AppRouter {
         }
 
         if (!isAuthLoading && isAuthenticated) {
-          final role = ref.read(currentAdminUserProvider)?.role;
-          return role == AdminRole.coach
-              ? RouteNames.adminMyProfile
-              : RouteNames.adminDashboard;
+          return RouteNames.adminDashboard;
         }
 
         if (session.isAuthenticated) {
@@ -209,7 +208,7 @@ class AppRouter {
       GoRoute(
         path: RouteNames.adminDashboard,
         name: 'adminDashboard',
-        builder: (_, state) => const _PlaceholderScreen('Dashboard'),
+        builder: (_, state) => const _DashboardScreen(),
       ),
       GoRoute(
         path: RouteNames.adminProfiles,

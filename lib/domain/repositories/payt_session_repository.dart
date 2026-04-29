@@ -44,4 +44,7 @@ abstract class PaytSessionRepository {
 
   /// Watches all pending PAYT sessions for a given profile.
   Stream<List<PaytSession>> watchPendingForProfile(String profileId);
+
+  /// Watches all pending PAYT sessions across all profiles.
+  Stream<List<PaytSession>> watchAllPending();
 }

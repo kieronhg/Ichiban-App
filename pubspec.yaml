@@ -39,6 +39,9 @@ dependencies:
   intl: ^0.20.2
   collection: ^1.18.0
 
+  # Charts
+  fl_chart: ^0.69.0
+
   # File handling / CSV / sharing
   file_picker: ^8.1.0
   csv: ^6.0.0

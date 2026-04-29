@@ -27,4 +27,13 @@ class FirestoreMembershipHistoryRepository
         .snapshots()
         .map((snap) => snap.docs.map((d) => d.data()).toList());
   }
+
+  @override
+  Future<List<MembershipHistory>> getRecent(int limit) async {
+    final snap = await FirestoreCollections.membershipHistory()
+        .orderBy('changedAt', descending: true)
+        .limit(limit)
+        .get();
+    return snap.docs.map((d) => d.data()).toList();
+  }
 }

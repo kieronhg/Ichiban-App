@@ -116,3 +116,8 @@ final pendingPaytSessionCountProvider = Provider.family<int, String>((
   final pending = ref.watch(pendingPaytSessionsForProfileProvider(profileId));
   return pending.whenOrNull(data: (sessions) => sessions.length) ?? 0;
 });
+
+/// All pending PAYT sessions across every profile (dashboard alert).
+final allPendingPaytSessionsProvider = StreamProvider<List<PaytSession>>(
+  (ref) => ref.watch(paytSessionRepositoryProvider).watchAllPending(),
+);

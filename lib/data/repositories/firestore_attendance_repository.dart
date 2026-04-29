@@ -143,6 +143,43 @@ class FirestoreAttendanceRepository implements AttendanceRepository {
     return nonAttending;
   }
 
+  @override
+  Stream<List<AttendanceSession>> watchSessionsForDate(DateTime date) {
+    final midnight = _midnight(date);
+    return FirestoreCollections.attendanceSessions()
+        .where('sessionDate', isEqualTo: Timestamp.fromDate(midnight))
+        .orderBy('startTime')
+        .snapshots()
+        .map((snap) => snap.docs.map((d) => d.data()).toList());
+  }
+
+  @override
+  Future<List<AttendanceSession>> getRecentSessions(int limit) async {
+    final snap = await FirestoreCollections.attendanceSessions()
+        .orderBy('createdAt', descending: true)
+        .limit(limit)
+        .get();
+    return snap.docs.map((d) => d.data()).toList();
+  }
+
+  @override
+  Future<List<AttendanceRecord>> getRecordsForPeriod(
+    DateTime from,
+    DateTime to,
+  ) async {
+    final snap = await FirestoreCollections.attendanceRecords()
+        .where(
+          'sessionDate',
+          isGreaterThanOrEqualTo: Timestamp.fromDate(_midnight(from)),
+        )
+        .where(
+          'sessionDate',
+          isLessThan: Timestamp.fromDate(_midnight(to)),
+        )
+        .get();
+    return snap.docs.map((d) => d.data()).toList();
+  }
+
   // ── Helpers ────────────────────────────────────────────────────────────────
 
   DateTime _midnight(DateTime dt) => DateTime.utc(dt.year, dt.month, dt.day);
