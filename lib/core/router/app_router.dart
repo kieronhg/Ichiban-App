@@ -90,7 +90,9 @@ class _DashboardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isCoach = ref.watch(isCoachProvider);
-    return isCoach ? const CoachDashboardScreen() : const OwnerDashboardScreen();
+    return isCoach
+        ? const CoachDashboardScreen()
+        : const OwnerDashboardScreen();
   }
 }
 
@@ -110,26 +112,9 @@ class AppRouter {
       final isOnAdminLogin = location == RouteNames.adminLogin;
       final isOnAdminSetup = location == RouteNames.adminSetup;
 
-      // Setup status — treat loading/error as "not complete" (show wizard).
-      final setupAsync = ref.read(appSetupStatusProvider);
-      final setupComplete = setupAsync.asData?.value.setupComplete ?? false;
-
       final session = ref.read(studentSessionProvider);
       final isOnStudentSelect = location == RouteNames.studentSelect;
       final isOnStudentPin = location == RouteNames.studentPin;
-
-      // ── Setup wizard guard ─────────────────────────────────────────────
-      // If setup is not done, the only admin page allowed is /admin/setup.
-      if (!setupComplete && isAdminRoute && !isOnAdminSetup) {
-        return RouteNames.adminSetup;
-      }
-
-      // Once setup is complete, prevent going back to wizard.
-      if (setupComplete && isOnAdminSetup) {
-        return isAuthenticated
-            ? RouteNames.adminDashboard
-            : RouteNames.adminLogin;
-      }
 
       if (isAdminRoute) {
         if (isAuthLoading) return null;
@@ -164,11 +149,6 @@ class AppRouter {
       }
 
       if (isEntryPage) {
-        // If setup hasn't been completed yet, go to wizard.
-        if (!setupComplete) {
-          return RouteNames.adminSetup;
-        }
-
         if (!isAuthLoading && isAuthenticated) {
           return RouteNames.adminDashboard;
         }
