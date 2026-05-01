@@ -10,6 +10,7 @@ import '../../../core/providers/dashboard_providers.dart';
 import '../../../core/providers/discipline_providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../domain/entities/coach_profile.dart';
+import 'admin_drawer.dart';
 import '../../../domain/entities/enums.dart';
 import '../../../domain/entities/grading_event.dart';
 
@@ -25,8 +26,8 @@ class CoachDashboardScreen extends ConsumerWidget {
         : null;
 
     return Scaffold(
+      drawer: const AdminDrawer(),
       appBar: AppBar(
-        automaticallyImplyLeading: false,
         title: Text('Hi, ${adminUser?.firstName ?? 'Coach'}'),
         actions: [
           TextButton.icon(

@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 
 import '../../../core/providers/dashboard_providers.dart';
 import '../../../core/theme/app_colors.dart';
+import 'admin_drawer.dart';
 
 class OwnerDashboardScreen extends ConsumerWidget {
   const OwnerDashboardScreen({super.key});
@@ -17,8 +18,8 @@ class OwnerDashboardScreen extends ConsumerWidget {
     final alerts = ref.watch(ownerAlertFlagsProvider);
 
     return Scaffold(
+      drawer: const AdminDrawer(),
       appBar: AppBar(
-        automaticallyImplyLeading: false,
         title: const Text('Dashboard'),
         actions: [
           PopupMenuButton<String>(
