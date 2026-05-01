@@ -26,6 +26,13 @@ class AppColors {
   static const Color error = Color(0xFFE53935);
   static const Color info = Color(0xFF1E88E5);
 
+  // Login / brand panel tokens (--ink-1, --paper-0, --paper-1, --hairline, --crimson)
+  static const Color brandSurface = Color(0xFF1C1B18);
+  static const Color warmPaper = Color(0xFFFAF4E7);
+  static const Color warmField = Color(0xFFF3EBDD);
+  static const Color hairline = Color(0xFFBEB29B);
+  static const Color crimson = Color(0xFF8B2A1F);
+
   // Belt colours (for rank display)
   static const Color beltWhite = Color(0xFFFFFFFF);
   static const Color beltYellow = Color(0xFFFFEB3B);

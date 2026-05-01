@@ -63,54 +63,6 @@ Admin can export a full member record on request. The export includes:
 
 ---
 
-## 4. Discipline Inactivity Enforcement (Grading only)
-
-**Source:** Disciplines, Ranks & GDPR handover — Section 3
-**Depends on:** Grading feature
-
-**What is already built:**
-- `isActive` flag on `Discipline` entity ✅
-- `activeDisciplineListProvider` streams only active disciplines ✅
-- The deactivation toggle + warning banner in `DisciplineFormScreen` ✅
-- **Enrollment guard:** `EnrolStudentUseCase` throws if `discipline.isActive == false` ✅
-- **Enrollment UI:** `EnrolDisciplineScreen` only shows active disciplines ✅
-- **Attendance UI:** `CreateAttendanceSessionScreen` and `SelfCheckInScreen` filter to active disciplines via `activeDisciplineListProvider` ✅
-
-**What still needs enforcing:**
-- Grading: when triggering a grading event, only allow active disciplines (same pattern)
-
-**Update (Grading feature built):** `CreateGradingEventScreen` already uses `activeDisciplineListProvider` for the discipline dropdown, so inactive disciplines are excluded from new event creation ✅. The remaining gap is that `CreateGradingEventUseCase` does not yet throw if a caller bypasses the UI with an inactive `disciplineId`. This is the outstanding enforcement gap.
-
-Admin can still **view** inactive disciplines and their enrolled students for
-historical reference — already supported via `disciplineListProvider`.
-
----
-
-## 5. Minimum Attendance for Grading Enforcement
-
-**Source:** Disciplines, Ranks & GDPR handover — Section 3
-**Depends on:** Grading feature, Attendance feature
-
-**What it is:**
-Each rank has an optional `minAttendanceForGrading` integer field (already in the
-`Rank` entity and stored in Firestore). Before a student can be put forward for
-grading to a specific rank, their session attendance count for that discipline
-must be ≥ `minAttendanceForGrading`.
-
-**What is already built:**
-- `minAttendanceForGrading` field on `Rank` entity ✅
-- Field is editable in `RankFormScreen` ✅
-- Stored in Firestore ✅
-
-**What still needs building:**
-In the Grading feature, when an admin selects a student and a target rank:
-- Fetch the student's attendance count for the relevant discipline
-- Compare against `rank.minAttendanceForGrading`
-- If the student hasn't met the threshold, show a warning (not a hard block —
-  admin can override with confirmation)
-
----
-
 
 
 ## 16. Memberships — Stripe Payment Integration

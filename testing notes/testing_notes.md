@@ -1282,3 +1282,44 @@ confusion during testing.
 - [ ] ✅ Banner disappears immediately after recording re-consent (no manual refresh)
 - [ ] ⚠️ Verify that after a privacy version bump, ALL active non-anonymised profiles have `requiresReConsent: true` (check a sample in Firestore console)
 
+
+---
+
+## Session F — Grading Quality Improvements
+
+### Inactive discipline guard (`CreateGradingEventUseCase`)
+
+- [ ] ✅ Creating a grading event for an active discipline succeeds as normal
+- [ ] ⚠️ If a programmatic call passes an inactive disciplineId, use case throws `ArgumentError` with the discipline name — currently no UI path triggers this since `create_grading_event_screen.dart` already filters to active disciplines
+
+### Minimum attendance warning (`NominateStudentsScreen`)
+
+- [ ] ✅ Nominating students with no `minAttendanceForGrading` set on their next rank proceeds without any dialog
+- [ ] ✅ Nominating a student whose attendance count is ≥ the minimum proceeds silently
+- [ ] ✅ Nominating a student whose attendance count is below the minimum shows the warning dialog
+- [ ] ✅ Warning dialog lists student name, actual count, required count, and target rank name
+- [ ] ✅ Multiple students below threshold: all listed in a single dialog (not one dialog per student)
+- [ ] ✅ "Cancel" in warning dialog aborts the nomination — no records written
+- [ ] ✅ "Nominate Anyway" in warning dialog proceeds and writes all nominations
+- [ ] ✅ Students already at the top rank (no next rank) — no attendance check, nominated silently
+- [ ] ⚠️ Attendance count fetches run serially per student — may be slow for large selections
+- [ ] ⚠️ If rank data hasn't loaded yet when admin taps Nominate, check is skipped (fail open)
+
+
+---
+
+## Bug Fix — Setup Wizard Blank Content Area
+
+### Symptom
+PageView with NeverScrollableScrollPhysics rendered a blank white area under the step-indicator header on Android.
+
+### Fix
+Replaced PageView + PageController with IndexedStack.
+
+- [ ] ✅ Open the app on a fresh Firebase project (no setup doc) — wizard opens to Welcome page, content visible (navy icon box, welcome text, three info tiles)
+- [ ] ✅ "Continue" button visible and tappable in nav bar
+- [ ] ✅ Tapping Continue advances to Owner Account page (step 2 dot highlights)
+- [ ] ✅ Navigating Back from page 2 returns to Welcome — form fields on page 2 retain their values (IndexedStack preserves state)
+- [ ] ✅ Complete all 4 pages with valid data — "Finish Setup" creates Firebase Auth user, writes Firestore docs, redirects to login
+- [ ] ✅ After setup is complete, revisiting /admin/setup redirects to login (setup guard active)
+- [ ] ⚠️ On a device where the previous PageView was blank, confirm the same device now renders correctly
