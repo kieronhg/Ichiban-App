@@ -70,6 +70,43 @@ class _StudentHomeScreenState extends ConsumerState<StudentHomeScreen> {
             ),
           ],
         ),
+        bottomNavigationBar: BottomNavigationBar(
+          currentIndex: 0,
+          type: BottomNavigationBarType.fixed,
+          onTap: (index) {
+            _updateActivity();
+            switch (index) {
+              case 1:
+                context.pushNamed('studentAttendance');
+              case 2:
+                context.pushNamed('studentGrades');
+              case 3:
+                context.pushNamed('studentProfile');
+            }
+          },
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home_outlined),
+              activeIcon: Icon(Icons.home),
+              label: 'Home',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.fitness_center_outlined),
+              activeIcon: Icon(Icons.fitness_center),
+              label: 'Attendance',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.military_tech_outlined),
+              activeIcon: Icon(Icons.military_tech),
+              label: 'Grades',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person_outline),
+              activeIcon: Icon(Icons.person),
+              label: 'My Profile',
+            ),
+          ],
+        ),
         body: SafeArea(
           child: session.profileId == null || profile == null
               ? _buildStudentView(
