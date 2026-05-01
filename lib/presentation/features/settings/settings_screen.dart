@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/providers/admin_session_provider.dart';
+import '../../../core/providers/auth_providers.dart';
 import '../../../core/router/route_names.dart';
 import '../../../core/theme/app_colors.dart';
 
@@ -84,6 +85,17 @@ class SettingsScreen extends ConsumerWidget {
               onTap: () => context.pushNamed('adminSettingsDangerZone'),
             ),
           ],
+          const Divider(height: 32),
+          _SettingsTile(
+            icon: Icons.logout_outlined,
+            title: 'Sign Out',
+            subtitle: 'Sign out of your admin account',
+            iconColor: AppColors.error,
+            onTap: () async {
+              await ref.read(signOutProvider)();
+              if (context.mounted) context.go(RouteNames.entry);
+            },
+          ),
           const SizedBox(height: 24),
         ],
       ),
