@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../dashboard/admin_drawer.dart';
 import '../../../core/providers/admin_session_provider.dart';
 import '../../../core/providers/auth_providers.dart';
 import '../../../core/router/route_names.dart';
@@ -15,6 +16,7 @@ class SettingsScreen extends ConsumerWidget {
     final isOwner = ref.watch(isOwnerProvider);
 
     return Scaffold(
+      drawer: const AdminDrawer(),
       appBar: AppBar(title: const Text('Settings')),
       body: ListView(
         children: [

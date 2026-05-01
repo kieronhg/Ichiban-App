@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../dashboard/admin_drawer.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../domain/entities/enums.dart';
 import '../../../domain/entities/profile.dart';
@@ -30,6 +31,7 @@ class _ProfileListScreenState extends ConsumerState<ProfileListScreen> {
     final profilesAsync = ref.watch(profileListProvider);
 
     return Scaffold(
+      drawer: const AdminDrawer(),
       appBar: AppBar(
         title: const Text('Profiles'),
         bottom: PreferredSize(

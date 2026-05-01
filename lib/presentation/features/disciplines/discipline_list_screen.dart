@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../dashboard/admin_drawer.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/providers/discipline_providers.dart';
 import '../../../domain/entities/discipline.dart';
@@ -14,6 +15,7 @@ class DisciplineListScreen extends ConsumerWidget {
     final disciplinesAsync = ref.watch(disciplineListProvider);
 
     return Scaffold(
+      drawer: const AdminDrawer(),
       appBar: AppBar(title: const Text('Disciplines')),
       body: disciplinesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),

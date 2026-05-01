@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../dashboard/admin_drawer.dart';
 import '../../../core/providers/payments_providers.dart';
 import '../../../core/providers/profile_providers.dart';
 import '../../../core/theme/app_colors.dart';
@@ -35,6 +36,7 @@ class _PaymentsListScreenState extends ConsumerState<PaymentsListScreen> {
     };
 
     return Scaffold(
+      drawer: const AdminDrawer(),
       appBar: AppBar(
         title: const Text('Payments'),
         actions: [

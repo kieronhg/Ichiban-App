@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../dashboard/admin_drawer.dart';
 import '../../../core/providers/notification_providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../domain/entities/enums.dart';
@@ -16,6 +17,7 @@ class AdminNotificationListScreen extends ConsumerWidget {
     final logsAsync = ref.watch(adminNotificationLogsProvider);
 
     return Scaffold(
+      drawer: const AdminDrawer(),
       appBar: AppBar(
         title: const Text('Notification Log'),
         actions: [

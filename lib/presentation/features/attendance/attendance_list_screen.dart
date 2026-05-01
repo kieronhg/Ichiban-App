@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../dashboard/admin_drawer.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/providers/admin_session_provider.dart';
 import '../../../core/providers/attendance_providers.dart';
@@ -45,6 +46,7 @@ class _AttendanceListScreenState extends ConsumerState<AttendanceListScreen> {
     final pendingCount = pendingQueueAsync.asData?.value.length ?? 0;
 
     return Scaffold(
+      drawer: const AdminDrawer(),
       appBar: AppBar(
         title: const Text('Attendance'),
         actions: [

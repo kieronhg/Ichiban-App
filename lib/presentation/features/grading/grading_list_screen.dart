@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../dashboard/admin_drawer.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/providers/admin_session_provider.dart';
 import '../../../core/providers/grading_providers.dart';
@@ -62,6 +63,7 @@ class _GradingListScreenState extends ConsumerState<GradingListScreen> {
     };
 
     return Scaffold(
+      drawer: const AdminDrawer(),
       appBar: AppBar(title: const Text('Grading Events')),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.pushNamed(RouteNames.adminGradingCreate),

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../dashboard/admin_drawer.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/providers/membership_providers.dart';
 import '../../../core/providers/profile_providers.dart';
@@ -46,6 +47,7 @@ class _MembershipListScreenState extends ConsumerState<MembershipListScreen> {
     };
 
     return Scaffold(
+      drawer: const AdminDrawer(),
       appBar: AppBar(title: const Text('Memberships')),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.pushNamed(RouteNames.adminMembershipsCreate),
