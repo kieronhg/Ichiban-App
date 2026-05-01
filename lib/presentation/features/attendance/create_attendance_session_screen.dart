@@ -257,6 +257,7 @@ class _StepSelectDateState extends State<_StepSelectDate> {
     final now = DateTime.now();
     final result = await showDatePicker(
       context: context,
+      locale: const Locale('en', 'GB'),
       initialDate: _picked ?? now,
       firstDate: DateTime(now.year - 2),
       lastDate: now,

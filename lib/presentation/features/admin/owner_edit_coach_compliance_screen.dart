@@ -87,6 +87,7 @@ class _OwnerEditCoachComplianceScreenState
     final initial = (isExpiry ? _expiryDate : _issueDate) ?? DateTime.now();
     final picked = await showDatePicker(
       context: context,
+      locale: const Locale('en', 'GB'),
       initialDate: initial,
       firstDate: DateTime(2000),
       lastDate: DateTime(2050),

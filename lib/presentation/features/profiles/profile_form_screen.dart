@@ -629,6 +629,7 @@ class _DatePickerField extends StatelessWidget {
             onTap: () async {
               final picked = await showDatePicker(
                 context: context,
+                locale: const Locale('en', 'GB'),
                 initialDate:
                     value ??
                     DateTime.now().subtract(const Duration(days: 365 * 18)),

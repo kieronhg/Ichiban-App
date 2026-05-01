@@ -59,6 +59,7 @@ class _CreateGradingEventScreenState
     final now = DateTime.now();
     final picked = await showDatePicker(
       context: context,
+      locale: const Locale('en', 'GB'),
       initialDate: _selectedDate ?? now,
       firstDate: now,
       lastDate: DateTime(now.year + 2),
