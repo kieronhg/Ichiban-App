@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import 'student_nav_bar.dart';
 import '../../../core/providers/attendance_providers.dart';
 import '../../../core/providers/discipline_providers.dart';
 import '../../../core/providers/student_session_provider.dart';
@@ -18,6 +19,7 @@ class StudentAttendanceScreen extends ConsumerWidget {
     final recordsAsync = ref.watch(attendanceHistoryForStudentProvider(studentId));
 
     return Scaffold(
+      bottomNavigationBar: const StudentNavBar(currentIndex: 1),
       appBar: AppBar(title: const Text('My Attendance')),
       body: recordsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),

@@ -14,6 +14,7 @@ import '../../../core/providers/profile_providers.dart';
 import '../../../core/providers/student_session_provider.dart';
 import '../../../core/router/route_names.dart';
 import '../../../core/theme/app_colors.dart';
+import 'student_nav_bar.dart';
 import '../../../domain/entities/attendance_session.dart';
 import '../../../domain/entities/discipline.dart';
 import '../../../domain/entities/enrollment.dart';
@@ -70,43 +71,7 @@ class _StudentHomeScreenState extends ConsumerState<StudentHomeScreen> {
             ),
           ],
         ),
-        bottomNavigationBar: BottomNavigationBar(
-          currentIndex: 0,
-          type: BottomNavigationBarType.fixed,
-          onTap: (index) {
-            _updateActivity();
-            switch (index) {
-              case 1:
-                context.pushNamed('studentAttendance');
-              case 2:
-                context.pushNamed('studentGrades');
-              case 3:
-                context.pushNamed('studentProfile');
-            }
-          },
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home_outlined),
-              activeIcon: Icon(Icons.home),
-              label: 'Home',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.fitness_center_outlined),
-              activeIcon: Icon(Icons.fitness_center),
-              label: 'Attendance',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.military_tech_outlined),
-              activeIcon: Icon(Icons.military_tech),
-              label: 'Grades',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline),
-              activeIcon: Icon(Icons.person),
-              label: 'My Profile',
-            ),
-          ],
-        ),
+        bottomNavigationBar: const StudentNavBar(currentIndex: 0),
         body: SafeArea(
           child: session.profileId == null || profile == null
               ? _buildStudentView(

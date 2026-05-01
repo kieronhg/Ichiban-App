@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import 'student_nav_bar.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/providers/discipline_providers.dart';
 import '../../../core/providers/enrollment_providers.dart';
@@ -29,6 +30,7 @@ class StudentGradesScreen extends ConsumerWidget {
     );
 
     return Scaffold(
+      bottomNavigationBar: const StudentNavBar(currentIndex: 2),
       appBar: AppBar(title: const Text('My Grades')),
       body: enrollmentsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),

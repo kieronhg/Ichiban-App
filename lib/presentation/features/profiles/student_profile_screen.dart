@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../student/student_nav_bar.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/providers/profile_providers.dart';
 import '../../../domain/entities/enums.dart';
@@ -21,6 +22,7 @@ class StudentProfileScreen extends ConsumerWidget {
     final profileAsync = ref.watch(profileProvider(profileId));
 
     return Scaffold(
+      bottomNavigationBar: const StudentNavBar(currentIndex: 3),
       appBar: AppBar(title: const Text('My Profile')),
       body: profileAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
