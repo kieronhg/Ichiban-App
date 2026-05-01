@@ -27,17 +27,17 @@ class OwnerDashboardScreen extends ConsumerWidget {
             tooltip: 'Quick actions',
             onSelected: (route) => context.pushNamed(route),
             itemBuilder: (_) => const [
-              PopupMenuItem(value: 'createProfile', child: Text('Add member')),
+              PopupMenuItem(value: 'adminProfileCreate', child: Text('Add member')),
               PopupMenuItem(
-                value: 'recordPayment',
+                value: 'adminPaymentsRecord',
                 child: Text('Record payment'),
               ),
               PopupMenuItem(
-                value: 'createAttendanceSession',
+                value: 'adminAttendanceCreate',
                 child: Text('Create session'),
               ),
               PopupMenuItem(
-                value: 'sendAnnouncement',
+                value: 'adminSendAnnouncement',
                 child: Text('Send announcement'),
               ),
             ],

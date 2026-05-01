@@ -41,14 +41,14 @@ class CoachDashboardScreen extends ConsumerWidget {
             onSelected: (route) => context.pushNamed(route),
             itemBuilder: (_) => const [
               PopupMenuItem(
-                value: 'createAttendanceSession',
+                value: 'adminAttendanceCreate',
                 child: Text('Mark attendance'),
               ),
               PopupMenuItem(
-                value: 'createGradingEvent',
+                value: 'adminGradingCreate',
                 child: Text('Create grading'),
               ),
-              PopupMenuItem(value: 'recordPayment', child: Text('Record PAYT')),
+              PopupMenuItem(value: 'adminPaymentsRecord', child: Text('Record PAYT')),
             ],
           ),
         ],
