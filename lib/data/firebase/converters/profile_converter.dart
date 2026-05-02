@@ -25,8 +25,17 @@ class ProfileConverter {
           (rawPrefs['generalDojoAnnouncements'] as bool?) ?? false,
     );
 
+    final rawStatus = map['registrationStatus'] as String?;
+    final registrationStatus = rawStatus != null
+        ? RegistrationStatus.values.byName(rawStatus)
+        : RegistrationStatus.trial;
+
     return Profile(
       id: id,
+      uid: map['uid'] as String?,
+      emailVerified: (map['emailVerified'] as bool?) ?? false,
+      selfRegistered: (map['selfRegistered'] as bool?) ?? false,
+      registrationStatus: registrationStatus,
       firstName: map['firstName'] as String,
       lastName: map['lastName'] as String,
       dateOfBirth: (map['dateOfBirth'] as Timestamp).toDate(),
@@ -70,6 +79,10 @@ class ProfileConverter {
   static Map<String, dynamic> toMap(Profile profile) {
     final prefs = profile.communicationPreferences;
     return {
+      'uid': profile.uid,
+      'emailVerified': profile.emailVerified,
+      'selfRegistered': profile.selfRegistered,
+      'registrationStatus': profile.registrationStatus.name,
       'firstName': profile.firstName,
       'lastName': profile.lastName,
       'dateOfBirth': Timestamp.fromDate(profile.dateOfBirth),

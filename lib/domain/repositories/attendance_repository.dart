@@ -61,5 +61,8 @@ abstract class AttendanceRepository {
   Future<List<AttendanceSession>> getRecentSessions(int limit);
 
   /// All attendance records with a sessionDate in [from, to).
-  Future<List<AttendanceRecord>> getRecordsForPeriod(DateTime from, DateTime to);
+  Future<List<AttendanceRecord>> getRecordsForPeriod(
+    DateTime from,
+    DateTime to,
+  );
 }

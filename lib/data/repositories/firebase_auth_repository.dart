@@ -86,6 +86,23 @@ class FirebaseAuthRepository implements AuthRepository {
     }
   }
 
+  @override
+  bool get isEmailVerified => _auth.currentUser?.emailVerified ?? false;
+
+  @override
+  Future<void> reloadUser() async {
+    await _auth.currentUser?.reload();
+  }
+
+  @override
+  Future<void> sendEmailVerification() async {
+    try {
+      await _auth.currentUser?.sendEmailVerification();
+    } on FirebaseAuthException catch (e) {
+      throw AuthException(_friendlyMessage(e.code), code: e.code);
+    }
+  }
+
   // ── Helpers ──────────────────────────────────────────────────────────────
 
   String _friendlyMessage(String code) => switch (code) {

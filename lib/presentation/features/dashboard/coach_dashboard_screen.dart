@@ -48,7 +48,10 @@ class CoachDashboardScreen extends ConsumerWidget {
                 value: 'adminGradingCreate',
                 child: Text('Create grading'),
               ),
-              PopupMenuItem(value: 'adminPaymentsRecord', child: Text('Record PAYT')),
+              PopupMenuItem(
+                value: 'adminPaymentsRecord',
+                child: Text('Record PAYT'),
+              ),
             ],
           ),
         ],

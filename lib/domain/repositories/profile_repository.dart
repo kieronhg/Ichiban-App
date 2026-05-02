@@ -5,6 +5,12 @@ abstract class ProfileRepository {
   /// Returns a single profile by ID, or null if not found.
   Future<Profile?> getById(String id);
 
+  /// Returns the profile whose Firebase Auth UID matches [uid], or null.
+  Future<Profile?> findByUid(String uid);
+
+  /// Returns the profile whose email address matches [email], or null.
+  Future<Profile?> findByEmail(String email);
+
   /// Returns all profiles in the system.
   Future<List<Profile>> getAll();
 

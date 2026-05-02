@@ -12,6 +12,24 @@ class FirestoreProfileRepository implements ProfileRepository {
   }
 
   @override
+  Future<Profile?> findByUid(String uid) async {
+    final snap = await FirestoreCollections.profiles()
+        .where('uid', isEqualTo: uid)
+        .limit(1)
+        .get();
+    return snap.docs.isEmpty ? null : snap.docs.first.data();
+  }
+
+  @override
+  Future<Profile?> findByEmail(String email) async {
+    final snap = await FirestoreCollections.profiles()
+        .where('email', isEqualTo: email)
+        .limit(1)
+        .get();
+    return snap.docs.isEmpty ? null : snap.docs.first.data();
+  }
+
+  @override
   Future<List<Profile>> getAll() async {
     final snap = await FirestoreCollections.profiles().get();
     return snap.docs.map((d) => d.data()).toList();

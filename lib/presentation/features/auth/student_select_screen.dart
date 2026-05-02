@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/theme/app_colors.dart';
+import '../../../core/providers/kiosk_mode_provider.dart';
 import '../../../core/providers/profile_providers.dart';
 import '../../../core/providers/student_session_provider.dart';
 import '../../../core/router/route_names.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../domain/entities/profile.dart';
 
 class StudentSelectScreen extends ConsumerStatefulWidget {
@@ -26,18 +27,93 @@ class _StudentSelectScreenState extends ConsumerState<StudentSelectScreen> {
     super.dispose();
   }
 
+  Future<void> _showExitKioskDialog(BuildContext context) async {
+    final pinController = TextEditingController();
+    String? errorMessage;
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (dialogContext, setDialogState) {
+            return AlertDialog(
+              title: const Text('Exit Kiosk Mode'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Enter the admin exit PIN to leave kiosk mode.'),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: pinController,
+                    decoration: InputDecoration(
+                      labelText: 'Exit PIN',
+                      prefixIcon: const Icon(Icons.lock_open_outlined),
+                      errorText: errorMessage,
+                    ),
+                    keyboardType: TextInputType.number,
+                    obscureText: true,
+                    maxLength: 4,
+                    onChanged: (_) {
+                      if (errorMessage != null) {
+                        setDialogState(() => errorMessage = null);
+                      }
+                    },
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    final kiosk = ref.read(kioskModeProvider);
+                    if (kiosk.checkPin(pinController.text)) {
+                      ref.read(kioskModeProvider.notifier).deactivate();
+                      Navigator.of(dialogContext).pop();
+                      context.go(RouteNames.entry);
+                    } else {
+                      setDialogState(() => errorMessage = 'Incorrect PIN');
+                      pinController.clear();
+                    }
+                  },
+                  child: const Text('Exit'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    pinController.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final profilesAsync = ref.watch(profileListProvider);
+    final isKioskMode = ref.watch(kioskModeProvider).isActive;
 
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go(RouteNames.entry),
-        ),
+        leading: isKioskMode
+            ? null
+            : IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () => context.go(RouteNames.entry),
+              ),
+        automaticallyImplyLeading: false,
         title: const Text('Who are you?'),
+        actions: [
+          if (isKioskMode)
+            IconButton(
+              icon: const Icon(Icons.lock_outlined),
+              tooltip: 'Exit Kiosk Mode',
+              onPressed: () => _showExitKioskDialog(context),
+            ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(64),
           child: Padding(

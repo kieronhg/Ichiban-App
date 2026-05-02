@@ -78,7 +78,7 @@ class RouteNames {
   static const String adminTeamComplianceEdit =
       '/admin/team/:uid/compliance/edit';
 
-  // Student
+  // Student (kiosk routes — shared-device PIN check-in)
   static const String studentNotifications = '/student/notifications';
   static const String studentSelect = '/student/select';
   static const String studentPin = '/student/pin';
@@ -87,4 +87,18 @@ class RouteNames {
   static const String studentAttendance = '/student/attendance';
   static const String studentGrades = '/student/grades';
   static const String studentProfile = '/student/profile';
+
+  // Student Portal (phone app — Firebase Auth)
+  static const String studentPortalHome = '/student-portal/home';
+  static const String studentPortalVerifyEmail = '/student-portal/verify-email';
+  static const String studentPortalGrades = '/student-portal/grades';
+  static const String studentPortalMembership = '/student-portal/membership';
+  static const String studentPortalSchedule = '/student-portal/schedule';
+  static const String studentPortalNotifications =
+      '/student-portal/notifications';
+  static const String studentPortalFamily = '/student-portal/family';
+  static const String studentPortalAccount = '/student-portal/account';
+
+  // Sign-up wizard
+  static const String studentSignUp = '/sign-up';
 }

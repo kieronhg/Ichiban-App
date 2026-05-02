@@ -61,7 +61,15 @@ class MockAuthRepository implements AuthRepository {
     required String email,
     required String password,
   }) async {
-    // Mock: return a fake UID without touching current session.
     return 'mock-created-uid-${email.hashCode}';
   }
+
+  @override
+  bool get isEmailVerified => true;
+
+  @override
+  Future<void> reloadUser() async {}
+
+  @override
+  Future<void> sendEmailVerification() async {}
 }

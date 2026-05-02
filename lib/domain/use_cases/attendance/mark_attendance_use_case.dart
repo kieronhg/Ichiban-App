@@ -88,7 +88,9 @@ class MarkAttendanceUseCase {
         // If the student had self-checked in on a PAYT plan, their pending
         // paytSessions record is not auto-cancelled — flag for admin.
         if (record.checkInMethod == CheckInMethod.self) {
-          final membership = await _membershipRepo.getActiveForProfile(studentId);
+          final membership = await _membershipRepo.getActiveForProfile(
+            studentId,
+          );
           if (membership != null && membership.isPayAsYouTrain) {
             paytUnmarkedIds.add(studentId);
           }

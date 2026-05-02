@@ -91,6 +91,14 @@ class MockProfileRepository implements ProfileRepository {
       _profiles.where((p) => p.id == id).firstOrNull;
 
   @override
+  Future<Profile?> findByUid(String uid) async =>
+      _profiles.where((p) => p.uid == uid).firstOrNull;
+
+  @override
+  Future<Profile?> findByEmail(String email) async =>
+      _profiles.where((p) => p.email == email).firstOrNull;
+
+  @override
   Future<List<Profile>> getAll() async => List.of(_active);
 
   @override

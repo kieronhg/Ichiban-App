@@ -68,10 +68,9 @@ class AdminSessionNotifier extends Notifier<AdminSessionState> {
       final adminUser = await repo.getById(uid);
 
       if (adminUser == null) {
-        // No adminUsers document — account not set up yet (e.g. first launch).
-        state = const AdminSessionState(
-          errorMessage: 'Admin account not found. Please complete setup.',
-        );
+        // No adminUsers document — this UID belongs to a student or parent,
+        // not an admin. Stay empty so student auth provider can handle routing.
+        state = const AdminSessionState();
         return;
       }
 

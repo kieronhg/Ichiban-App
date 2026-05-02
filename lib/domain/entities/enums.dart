@@ -1,5 +1,7 @@
 enum AdminRole { owner, coach }
 
+enum RegistrationStatus { pendingVerification, trial, active, lapsed }
+
 enum RankType { kyu, dan, mon, ungraded }
 
 enum ProfileType { adultStudent, juniorStudent, coach, parentGuardian }
@@ -58,6 +60,7 @@ enum NotificationType {
   complianceVerified,
   coachComplianceExpiring,
   deliveryFailure,
+  selfRegistration,
 }
 
 enum NotificationDeliveryStatus { sent, failed, suppressed }

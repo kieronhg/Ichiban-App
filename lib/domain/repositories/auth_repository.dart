@@ -33,6 +33,17 @@ abstract class AuthRepository {
     required String email,
     required String password,
   });
+
+  /// Whether the current Firebase Auth user has verified their email address.
+  /// Returns false if no user is signed in.
+  bool get isEmailVerified;
+
+  /// Reloads the current user from Firebase Auth to pick up the latest
+  /// email verification status. Call after the user clicks a verification link.
+  Future<void> reloadUser();
+
+  /// Sends a verification email to the current user's address.
+  Future<void> sendEmailVerification();
 }
 
 /// Typed exception thrown by [AuthRepository] implementations.

@@ -41,6 +41,12 @@ class Profile extends Equatable {
   // Notification category opt-ins
   final CommunicationPreferences communicationPreferences;
 
+  // Firebase Auth
+  final String? uid;
+  final bool emailVerified;
+  final bool selfRegistered;
+  final RegistrationStatus registrationStatus;
+
   // System fields
   final DateTime registrationDate;
   final bool isActive;
@@ -102,6 +108,10 @@ class Profile extends Equatable {
     this.allergiesOrMedicalNotes,
     required this.photoVideoConsent,
     this.notes,
+    this.uid,
+    this.emailVerified = false,
+    this.selfRegistered = false,
+    this.registrationStatus = RegistrationStatus.trial,
     this.communicationPreferences = CommunicationPreferences.empty,
     this.dataProcessingConsent = false,
     this.dataProcessingConsentDate,
@@ -133,6 +143,10 @@ class Profile extends Equatable {
 
   Profile copyWith({
     String? id,
+    String? uid,
+    bool? emailVerified,
+    bool? selfRegistered,
+    RegistrationStatus? registrationStatus,
     String? firstName,
     String? lastName,
     DateTime? dateOfBirth,
@@ -175,6 +189,10 @@ class Profile extends Equatable {
   }) {
     return Profile(
       id: id ?? this.id,
+      uid: uid ?? this.uid,
+      emailVerified: emailVerified ?? this.emailVerified,
+      selfRegistered: selfRegistered ?? this.selfRegistered,
+      registrationStatus: registrationStatus ?? this.registrationStatus,
       firstName: firstName ?? this.firstName,
       lastName: lastName ?? this.lastName,
       dateOfBirth: dateOfBirth ?? this.dateOfBirth,
@@ -225,6 +243,10 @@ class Profile extends Equatable {
   @override
   List<Object?> get props => [
     id,
+    uid,
+    emailVerified,
+    selfRegistered,
+    registrationStatus,
     firstName,
     lastName,
     dateOfBirth,

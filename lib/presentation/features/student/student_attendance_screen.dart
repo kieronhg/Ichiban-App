@@ -16,7 +16,9 @@ class StudentAttendanceScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final studentId = ref.watch(studentSessionProvider).profileId ?? '';
-    final recordsAsync = ref.watch(attendanceHistoryForStudentProvider(studentId));
+    final recordsAsync = ref.watch(
+      attendanceHistoryForStudentProvider(studentId),
+    );
 
     return Scaffold(
       bottomNavigationBar: const StudentNavBar(currentIndex: 1),
@@ -53,18 +55,14 @@ class StudentAttendanceScreen extends ConsumerWidget {
             ..sort((a, b) => b.sessionDate.compareTo(a.sessionDate));
 
           final grouped = _groupByDate(sorted);
-          final dates = grouped.keys.toList()
-            ..sort((a, b) => b.compareTo(a));
+          final dates = grouped.keys.toList()..sort((a, b) => b.compareTo(a));
 
           return ListView.builder(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
             itemCount: dates.length,
             itemBuilder: (context, i) {
               final date = dates[i];
-              return _DayGroup(
-                date: date,
-                records: grouped[date]!,
-              );
+              return _DayGroup(date: date, records: grouped[date]!);
             },
           );
         },

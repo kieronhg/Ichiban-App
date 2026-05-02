@@ -140,6 +140,7 @@ class _NotificationTile extends StatelessWidget {
     NotificationType.complianceVerified => 'Compliance Verified',
     NotificationType.coachComplianceExpiring => 'Coach Compliance Expiring',
     NotificationType.deliveryFailure => 'Delivery Failure',
+    NotificationType.selfRegistration => 'New Student Registration',
   };
 
   String _channelLabel(NotificationChannel c) => switch (c) {

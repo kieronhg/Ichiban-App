@@ -106,8 +106,7 @@ class PaymentDetailScreen extends ConsumerWidget {
             paymentMethod: result.paymentMethod,
             paymentType: result.paymentType,
             notes: result.notes,
-            editedByAdminId:
-                ref.read(currentAdminIdProvider) ?? '',
+            editedByAdminId: ref.read(currentAdminIdProvider) ?? '',
           );
       if (context.mounted) {
         ScaffoldMessenger.of(

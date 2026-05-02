@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/providers/dashboard_providers.dart';
+import '../../../core/providers/kiosk_mode_provider.dart';
+import '../../../core/router/route_names.dart';
 import '../../../core/theme/app_colors.dart';
 import 'admin_drawer.dart';
 
@@ -22,12 +24,20 @@ class OwnerDashboardScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Dashboard'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.tablet_mac_outlined),
+            tooltip: 'Activate Kiosk Mode',
+            onPressed: () => _showActivateKioskDialog(context, ref),
+          ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.add_circle_outline),
             tooltip: 'Quick actions',
             onSelected: (route) => context.pushNamed(route),
             itemBuilder: (_) => const [
-              PopupMenuItem(value: 'adminProfileCreate', child: Text('Add member')),
+              PopupMenuItem(
+                value: 'adminProfileCreate',
+                child: Text('Add member'),
+              ),
               PopupMenuItem(
                 value: 'adminPaymentsRecord',
                 child: Text('Record payment'),
@@ -138,6 +148,85 @@ class OwnerDashboardScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _showActivateKioskDialog(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final pinController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    var isLoading = false;
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (dialogContext, setDialogState) {
+            return AlertDialog(
+              title: const Text('Activate Kiosk Mode'),
+              content: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Kiosk mode locks the app to the student check-in screen. '
+                      'Set a 4-digit exit PIN so staff can return to the admin dashboard.',
+                    ),
+                    const SizedBox(height: 20),
+                    TextFormField(
+                      controller: pinController,
+                      decoration: const InputDecoration(
+                        labelText: 'Exit PIN (4 digits)',
+                        prefixIcon: Icon(Icons.lock_outline),
+                      ),
+                      keyboardType: TextInputType.number,
+                      obscureText: true,
+                      maxLength: 4,
+                      validator: (v) {
+                        if (v == null || v.length != 4) {
+                          return 'PIN must be exactly 4 digits';
+                        }
+                        if (!RegExp(r'^\d{4}$').hasMatch(v)) {
+                          return 'PIN must contain only digits';
+                        }
+                        return null;
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isLoading
+                      ? null
+                      : () => Navigator.of(dialogContext).pop(),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: isLoading
+                      ? null
+                      : () {
+                          if (!formKey.currentState!.validate()) return;
+                          setDialogState(() => isLoading = true);
+                          ref
+                              .read(kioskModeProvider.notifier)
+                              .activate(pinController.text);
+                          Navigator.of(dialogContext).pop();
+                          context.go(RouteNames.studentSelect);
+                        },
+                  child: const Text('Activate'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    pinController.dispose();
   }
 }
 

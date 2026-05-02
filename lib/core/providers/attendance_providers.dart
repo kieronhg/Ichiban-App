@@ -112,7 +112,5 @@ final todaySessionsForDisciplineProvider =
 final todayAllSessionsProvider = StreamProvider<List<AttendanceSession>>((ref) {
   final now = DateTime.now();
   final today = DateTime.utc(now.year, now.month, now.day);
-  return ref
-      .watch(getAttendanceSessionsUseCaseProvider)
-      .watchForDate(today);
+  return ref.watch(getAttendanceSessionsUseCaseProvider).watchForDate(today);
 });

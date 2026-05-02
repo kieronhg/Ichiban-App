@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/providers/auth_providers.dart';
+import '../../../core/providers/repository_providers.dart';
+import '../../../core/providers/student_auth_provider.dart';
+import '../../../core/router/route_names.dart';
 import '../../../core/theme/app_colors.dart';
 
 // ── Screen ────────────────────────────────────────────────────────────────────
@@ -17,6 +21,7 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  String? _unrecognisedError;
 
   @override
   void dispose() {
@@ -25,8 +30,29 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
     super.dispose();
   }
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.listenManual(isAccountUnrecognisedProvider, (prev, next) async {
+        if (next) {
+          await ref.read(authRepositoryProvider).signOut();
+          if (mounted) {
+            setState(() {
+              _unrecognisedError =
+                  'Account not recognised. Please contact your dojo.';
+            });
+          }
+        }
+      });
+    });
+  }
+
   Future<void> _submit() async {
-    setState(() => _obscurePassword = true);
+    setState(() {
+      _obscurePassword = true;
+      _unrecognisedError = null;
+    });
     await ref
         .read(signInNotifierProvider.notifier)
         .signIn(
@@ -62,6 +88,7 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
             onForgotPassword: _showForgotPassword,
             onChanged: _clearErrors,
             state: state,
+            unrecognisedError: _unrecognisedError,
           );
         }
         return _NarrowLogin(
@@ -74,6 +101,7 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
           onForgotPassword: _showForgotPassword,
           onChanged: _clearErrors,
           state: state,
+          unrecognisedError: _unrecognisedError,
         );
       },
     );
@@ -92,6 +120,7 @@ class _WideLogin extends StatelessWidget {
     required this.onForgotPassword,
     required this.onChanged,
     required this.state,
+    this.unrecognisedError,
   });
 
   final TextEditingController emailController;
@@ -102,6 +131,7 @@ class _WideLogin extends StatelessWidget {
   final VoidCallback onForgotPassword;
   final VoidCallback onChanged;
   final SignInState state;
+  final String? unrecognisedError;
 
   @override
   Widget build(BuildContext context) {
@@ -124,6 +154,7 @@ class _WideLogin extends StatelessWidget {
                   onForgotPassword: onForgotPassword,
                   onChanged: onChanged,
                   state: state,
+                  unrecognisedError: unrecognisedError,
                 ),
               ),
             ],
@@ -243,6 +274,7 @@ class _FormPanel extends StatelessWidget {
     required this.onForgotPassword,
     required this.onChanged,
     required this.state,
+    this.unrecognisedError,
   });
 
   final TextEditingController emailController;
@@ -253,6 +285,7 @@ class _FormPanel extends StatelessWidget {
   final VoidCallback onForgotPassword;
   final VoidCallback onChanged;
   final SignInState state;
+  final String? unrecognisedError;
 
   @override
   Widget build(BuildContext context) {
@@ -279,7 +312,7 @@ class _FormPanel extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Use your registered admin email. Coaches and owners share the same login.',
+            'Sign in with your registered email address.',
             style: TextStyle(
               fontSize: 14,
               color: AppColors.textSecondary,
@@ -287,6 +320,15 @@ class _FormPanel extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 32),
+
+          // Unrecognised account banner
+          if (unrecognisedError != null) ...[
+            _ErrorBanner(
+              title: 'Account not recognised',
+              body: unrecognisedError!,
+            ),
+            const SizedBox(height: 20),
+          ],
 
           // Error banner
           if (state.errorMessage != null) ...[
@@ -344,9 +386,21 @@ class _FormPanel extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'No account? Ask the dojo owner.',
-                style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+              Builder(
+                builder: (context) => GestureDetector(
+                  onTap: state.isLoading
+                      ? null
+                      : () => context.push(RouteNames.studentSignUp),
+                  child: const Text(
+                    'Create an account',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: AppColors.crimson,
+                      decoration: TextDecoration.underline,
+                      decorationColor: AppColors.crimson,
+                    ),
+                  ),
+                ),
               ),
               GestureDetector(
                 onTap: state.isLoading ? null : onForgotPassword,
@@ -402,6 +456,7 @@ class _NarrowLogin extends StatelessWidget {
     required this.onForgotPassword,
     required this.onChanged,
     required this.state,
+    this.unrecognisedError,
   });
 
   final TextEditingController emailController;
@@ -412,6 +467,7 @@ class _NarrowLogin extends StatelessWidget {
   final VoidCallback onForgotPassword;
   final VoidCallback onChanged;
   final SignInState state;
+  final String? unrecognisedError;
 
   @override
   Widget build(BuildContext context) {
@@ -454,6 +510,13 @@ class _NarrowLogin extends StatelessWidget {
                   ),
                   const SizedBox(height: 28),
 
+                  if (unrecognisedError != null) ...[
+                    _ErrorBanner(
+                      title: 'Account not recognised',
+                      body: unrecognisedError!,
+                    ),
+                    const SizedBox(height: 20),
+                  ],
                   if (state.errorMessage != null) ...[
                     _ErrorBanner(
                       title: 'We couldn\'t sign you in',
@@ -512,19 +575,39 @@ class _NarrowLogin extends StatelessWidget {
                     isLoading: state.isLoading,
                   ),
                   const SizedBox(height: 16),
-                  Center(
-                    child: GestureDetector(
-                      onTap: state.isLoading ? null : onForgotPassword,
-                      child: const Text(
-                        'Forgot password',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.crimson,
-                          decoration: TextDecoration.underline,
-                          decorationColor: AppColors.crimson,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Builder(
+                        builder: (context) => GestureDetector(
+                          onTap: state.isLoading
+                              ? null
+                              : () => context.push(RouteNames.studentSignUp),
+                          child: const Text(
+                            'Create an account',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.crimson,
+                              decoration: TextDecoration.underline,
+                              decorationColor: AppColors.crimson,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
+                      const SizedBox(width: 20),
+                      GestureDetector(
+                        onTap: state.isLoading ? null : onForgotPassword,
+                        child: const Text(
+                          'Forgot password',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.crimson,
+                            decoration: TextDecoration.underline,
+                            decorationColor: AppColors.crimson,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
 
                   const Spacer(),

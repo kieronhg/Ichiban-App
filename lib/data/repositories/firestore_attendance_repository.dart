@@ -172,10 +172,7 @@ class FirestoreAttendanceRepository implements AttendanceRepository {
           'sessionDate',
           isGreaterThanOrEqualTo: Timestamp.fromDate(_midnight(from)),
         )
-        .where(
-          'sessionDate',
-          isLessThan: Timestamp.fromDate(_midnight(to)),
-        )
+        .where('sessionDate', isLessThan: Timestamp.fromDate(_midnight(to)))
         .get();
     return snap.docs.map((d) => d.data()).toList();
   }

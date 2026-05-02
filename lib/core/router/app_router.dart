@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../core/providers/admin_providers.dart';
 import '../../core/providers/admin_session_provider.dart';
 import '../../core/providers/auth_providers.dart';
+import '../../core/providers/kiosk_mode_provider.dart';
+import '../../core/providers/student_auth_provider.dart';
 import '../../core/providers/student_session_provider.dart';
 import '../../domain/entities/enums.dart';
 import '../../domain/entities/admin_user.dart';
@@ -38,6 +40,15 @@ import '../../presentation/features/auth/entry_gateway_screen.dart';
 import '../../presentation/features/auth/setup_wizard_screen.dart';
 import '../../presentation/features/auth/pin_entry_screen.dart';
 import '../../presentation/features/auth/student_select_screen.dart';
+import '../../presentation/features/auth/student_email_verification_screen.dart';
+import '../../presentation/features/auth/sign_up/student_sign_up_screen.dart';
+import '../../presentation/features/student_portal/student_portal_account_screen.dart';
+import '../../presentation/features/student_portal/student_portal_family_screen.dart';
+import '../../presentation/features/student_portal/student_portal_grades_screen.dart';
+import '../../presentation/features/student_portal/student_portal_home_screen.dart';
+import '../../presentation/features/student_portal/student_portal_membership_screen.dart';
+import '../../presentation/features/student_portal/student_portal_notifications_screen.dart';
+import '../../presentation/features/student_portal/student_portal_schedule_screen.dart';
 import '../../presentation/features/disciplines/discipline_detail_screen.dart';
 import '../../presentation/features/disciplines/discipline_form_screen.dart';
 import '../../presentation/features/disciplines/discipline_list_screen.dart';
@@ -103,60 +114,109 @@ class AppRouter {
     initialLocation: RouteNames.entry,
     redirect: (context, state) {
       final location = state.matchedLocation;
-      final isEntryPage = location == RouteNames.entry;
-      final isAdminRoute = location.startsWith('/admin');
-      final isStudentRoute = location.startsWith('/student');
 
-      final isAuthenticated = ref.read(isAdminAuthenticatedProvider);
-      final isAuthLoading = ref.read(authStateProvider).isLoading;
+      // ── Kiosk mode overrides all routing ──────────────────────────────────
+      final isKioskMode = ref.read(kioskModeProvider).isActive;
+      // Kiosk routes live under /student — if kiosk is active and the user is
+      // not already there, redirect them. Phase 5 will add a dedicated route.
+      final isOnKioskRoute =
+          location == RouteNames.studentSelect ||
+          location == RouteNames.studentPin ||
+          location == RouteNames.studentHome ||
+          location == RouteNames.studentCheckin;
+      if (isKioskMode && !isOnKioskRoute) {
+        return RouteNames.studentSelect;
+      }
+
+      // ── Shared loading check ���─────────────────────────────────────────────
+      final authState = ref.read(authStateProvider);
+      final adminSession = ref.read(adminSessionProvider);
+      final studentAuth = ref.read(studentAuthProvider);
+      final isAnyLoading =
+          authState.isLoading ||
+          adminSession.isLoading ||
+          studentAuth.isLoading;
+
+      final isAdminAuthenticated = adminSession.isLoaded;
+      final isStudentAuthenticated = studentAuth.isAuthenticated;
+
+      final isEntryPage = location == RouteNames.entry;
       final isOnAdminLogin = location == RouteNames.adminLogin;
       final isOnAdminSetup = location == RouteNames.adminSetup;
+      final isAdminRoute = location.startsWith('/admin');
+      final isStudentPortalRoute = location.startsWith('/student-portal');
+      // Kiosk routes start with /student but not /student-portal
+      final isKioskRoute =
+          location.startsWith('/student') && !isStudentPortalRoute;
+      final isSignUpRoute = location == RouteNames.studentSignUp;
 
-      final session = ref.read(studentSessionProvider);
-      final isOnStudentSelect = location == RouteNames.studentSelect;
-      final isOnStudentPin = location == RouteNames.studentPin;
-
+      // ── Admin routes ──────────────────────────────────────────────────────
       if (isAdminRoute) {
-        if (isAuthLoading) return null;
+        if (isAnyLoading) return null;
 
-        if (!isAuthenticated && !isOnAdminLogin && !isOnAdminSetup) {
+        if (!isAdminAuthenticated && !isOnAdminLogin && !isOnAdminSetup) {
           return RouteNames.adminLogin;
         }
 
-        if (isAuthenticated && isOnAdminLogin) {
+        if (isAdminAuthenticated && isOnAdminLogin) {
           return RouteNames.adminDashboard;
         }
 
-        // My Profile is coach-only — owners do not have this page.
-        if (isAuthenticated && location.startsWith(RouteNames.adminMyProfile)) {
+        // My Profile is coach-only
+        if (isAdminAuthenticated &&
+            location.startsWith(RouteNames.adminMyProfile)) {
           final role = ref.read(currentAdminUserProvider)?.role;
           if (role == AdminRole.owner) return RouteNames.adminDashboard;
         }
       }
 
-      if (isStudentRoute) {
+      // ── Student portal routes ───��─────────────────────────────────────────
+      if (isStudentPortalRoute) {
+        if (isAnyLoading) return null;
+        if (!isStudentAuthenticated) return RouteNames.adminLogin;
+
+        final isEmailVerified = studentAuth.isEmailVerified;
+        final isOnVerifyEmail = location == RouteNames.studentPortalVerifyEmail;
+
+        if (!isEmailVerified && !isOnVerifyEmail) {
+          return RouteNames.studentPortalVerifyEmail;
+        }
+        if (isEmailVerified && isOnVerifyEmail) {
+          return RouteNames.studentPortalHome;
+        }
+      }
+
+      // ── Kiosk / legacy student routes (PIN-based check-in) ────────────────
+      if (isKioskRoute) {
+        final session = ref.read(studentSessionProvider);
+        final isOnStudentSelect = location == RouteNames.studentSelect;
+        final isOnStudentPin = location == RouteNames.studentPin;
+
         if (!session.isProfileSelected) {
           return isOnStudentSelect ? null : RouteNames.studentSelect;
         }
-
         if (!session.isAuthenticated) {
           return isOnStudentPin ? null : RouteNames.studentPin;
         }
-
         if (isOnStudentSelect || isOnStudentPin) {
           return RouteNames.studentHome;
         }
       }
 
+      // ── Entry page ──────���─────────────────────────────────────────────────
       if (isEntryPage) {
-        if (!isAuthLoading && isAuthenticated) {
-          return RouteNames.adminDashboard;
+        if (isAnyLoading) return null;
+        if (isAdminAuthenticated) return RouteNames.adminDashboard;
+        if (isStudentAuthenticated) {
+          return studentAuth.isEmailVerified
+              ? RouteNames.studentPortalHome
+              : RouteNames.studentPortalVerifyEmail;
         }
-
-        if (session.isAuthenticated) {
-          return RouteNames.studentHome;
-        }
+        return RouteNames.adminLogin;
       }
+
+      // ── Sign-up — accessible to unauthenticated users ─────────────────────
+      if (isSignUpRoute) return null;
 
       return null;
     },
@@ -587,6 +647,55 @@ class AppRouter {
           profileId: ref.read(studentSessionProvider).profileId ?? '',
         ),
       ),
+
+      // ── Student Portal (phone app) ────────────────────────────────────────
+      GoRoute(
+        path: RouteNames.studentPortalHome,
+        name: 'studentPortalHome',
+        builder: (_, state) => const StudentPortalHomeScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.studentPortalVerifyEmail,
+        name: 'studentPortalVerifyEmail',
+        builder: (_, state) => const StudentEmailVerificationScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.studentPortalGrades,
+        name: 'studentPortalGrades',
+        builder: (_, state) => const StudentPortalGradesScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.studentPortalMembership,
+        name: 'studentPortalMembership',
+        builder: (_, state) => const StudentPortalMembershipScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.studentPortalSchedule,
+        name: 'studentPortalSchedule',
+        builder: (_, state) => const StudentPortalScheduleScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.studentPortalNotifications,
+        name: 'studentPortalNotifications',
+        builder: (_, state) => const StudentPortalNotificationsScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.studentPortalFamily,
+        name: 'studentPortalFamily',
+        builder: (_, state) => const StudentPortalFamilyScreen(),
+      ),
+      GoRoute(
+        path: RouteNames.studentPortalAccount,
+        name: 'studentPortalAccount',
+        builder: (_, state) => const StudentPortalAccountScreen(),
+      ),
+
+      // ── Sign-up wizard ────────────────────────────────────────────────────
+      GoRoute(
+        path: RouteNames.studentSignUp,
+        name: 'studentSignUp',
+        builder: (_, state) => const StudentSignUpScreen(),
+      ),
     ],
   );
 }
@@ -594,9 +703,12 @@ class AppRouter {
 class _RouterRefreshNotifier extends ChangeNotifier {
   _RouterRefreshNotifier(WidgetRef ref) {
     _subs = [
-      ref.listenManual(authStateProvider, (_, __) => notifyListeners()),
-      ref.listenManual(studentSessionProvider, (_, __) => notifyListeners()),
-      ref.listenManual(appSetupStatusProvider, (_, __) => notifyListeners()),
+      ref.listenManual(authStateProvider, (_, _) => notifyListeners()),
+      ref.listenManual(adminSessionProvider, (_, _) => notifyListeners()),
+      ref.listenManual(studentAuthProvider, (_, _) => notifyListeners()),
+      ref.listenManual(studentSessionProvider, (_, _) => notifyListeners()),
+      ref.listenManual(kioskModeProvider, (_, _) => notifyListeners()),
+      ref.listenManual(appSetupStatusProvider, (_, _) => notifyListeners()),
     ];
   }
 
@@ -604,7 +716,9 @@ class _RouterRefreshNotifier extends ChangeNotifier {
 
   @override
   void dispose() {
-    for (final sub in _subs) sub.close();
+    for (final sub in _subs) {
+      sub.close();
+    }
     super.dispose();
   }
 }

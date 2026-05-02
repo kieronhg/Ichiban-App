@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/repositories/firebase_auth_repository.dart';
+import '../../data/repositories/firestore_kiosk_settings_repository.dart';
 import '../../data/repositories/firestore_admin_user_repository.dart';
 import '../../data/repositories/firestore_coach_profile_repository.dart';
 import '../../data/repositories/firestore_app_setup_repository.dart';
@@ -47,6 +48,7 @@ import '../../domain/repositories/notification_repository.dart';
 import '../../domain/repositories/payt_session_repository.dart';
 import '../../domain/repositories/profile_repository.dart';
 import '../../domain/repositories/rank_repository.dart';
+import '../../domain/repositories/kiosk_settings_repository.dart';
 
 // ── Auth ───────────────────────────────────────────────────────────────────
 
@@ -165,4 +167,10 @@ final appSettingsRepositoryProvider = Provider<AppSettingsRepository>(
 
 final emailTemplateRepositoryProvider = Provider<EmailTemplateRepository>(
   (ref) => FirestoreEmailTemplateRepository(),
+);
+
+// ── Kiosk Settings ─────────────────────────────────────────────────────────
+
+final kioskSettingsRepositoryProvider = Provider<KioskSettingsRepository>(
+  (ref) => FirestoreKioskSettingsRepository(),
 );
