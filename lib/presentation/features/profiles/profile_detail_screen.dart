@@ -1439,9 +1439,9 @@ class _InviteSection extends StatelessWidget {
     }
 
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Invite sent.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Invite sent.')));
     }
   }
 
@@ -1482,9 +1482,8 @@ class _InviteSection extends StatelessWidget {
                       children: [
                         Text(
                           'Status: ',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: AppColors.textSecondary),
                         ),
                         Container(
                           padding: const EdgeInsets.symmetric(

@@ -93,10 +93,8 @@ class _ProfileListScreenState extends ConsumerState<ProfileListScreen> {
                     ),
                     _PendingInvitesChip(
                       selected: _pendingInvitesOnly,
-                      pendingCount: ref
-                          .watch(pendingInvitesProvider)
-                          .value
-                          ?.length ?? 0,
+                      pendingCount:
+                          ref.watch(pendingInvitesProvider).value?.length ?? 0,
                       onTap: () => setState(() {
                         _pendingInvitesOnly = !_pendingInvitesOnly;
                         if (_pendingInvitesOnly) _typeFilter = null;
@@ -224,7 +222,9 @@ class _PendingInvitesChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final label = pendingCount > 0 ? 'Pending Invites ($pendingCount)' : 'Pending Invites';
+    final label = pendingCount > 0
+        ? 'Pending Invites ($pendingCount)'
+        : 'Pending Invites';
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: FilterChip(

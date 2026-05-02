@@ -12,11 +12,13 @@ import '../../../domain/entities/discipline.dart';
 /// Multi-step wizard for creating a new attendance session.
 ///
 /// Steps:
-///   1 — Select discipline (active only)
-///   2 — Pick date (max = today)
-///   3 — Set start & end times
-///   4 — Add optional notes
-///   5 — Confirm & save
+///   1 — Enter class title
+///   2 — Select discipline (active only)
+///   3 — Pick date (first occurrence)
+///   4 — Set start & end times
+///   5 — Recurring toggle
+///   6 — Add optional notes
+///   7 — Confirm & save
 class CreateAttendanceSessionScreen extends ConsumerStatefulWidget {
   const CreateAttendanceSessionScreen({super.key});
 
@@ -29,54 +31,42 @@ class _CreateAttendanceSessionScreenState
     extends ConsumerState<CreateAttendanceSessionScreen> {
   int _step = 1;
 
+  String _title = '';
   Discipline? _selectedDiscipline;
   DateTime? _selectedDate;
   String _startTime = '';
   String _endTime = '';
+  bool _isRecurring = false;
   String _notes = '';
 
   bool _isSaving = false;
   String? _errorMessage;
 
+  // ── Step titles ────────────────────────────────────────────────────────
+
+  static const _titles = [
+    'Class Title',
+    'Select Discipline',
+    'Select Date',
+    'Set Times',
+    'Recurring',
+    'Add Notes',
+    'Confirm',
+  ];
+
   // ── Navigation helpers ─────────────────────────────────────────────────
-
-  void _onDisciplineSelected(Discipline d) {
-    setState(() {
-      _selectedDiscipline = d;
-      _errorMessage = null;
-      _step = 2;
-    });
-  }
-
-  void _onDateSelected(DateTime date) {
-    setState(() {
-      _selectedDate = date;
-      _errorMessage = null;
-      _step = 3;
-    });
-  }
-
-  void _onTimesConfirmed(String start, String end) {
-    setState(() {
-      _startTime = start;
-      _endTime = end;
-      _errorMessage = null;
-      _step = 4;
-    });
-  }
-
-  void _onNotesConfirmed(String notes) {
-    setState(() {
-      _notes = notes;
-      _errorMessage = null;
-      _step = 5;
-    });
-  }
 
   void _goBack() {
     setState(() {
       _errorMessage = null;
       if (_step > 1) _step--;
+    });
+  }
+
+  void _advance() {
+    setState(() {
+      _errorMessage = null;
+      _step++;
     });
   }
 
@@ -99,15 +89,24 @@ class _CreateAttendanceSessionScreenState
             sessionDate: _selectedDate!,
             startTime: _startTime,
             endTime: _endTime,
+            title: _title.trim().isEmpty ? null : _title.trim(),
             notes: _notes.trim().isEmpty ? null : _notes.trim(),
             createdByAdminId: adminId,
+            isRecurring: _isRecurring,
           );
 
       if (!mounted) return;
 
-      final msg = result.resolvedQueueCount > 0
-          ? 'Session created. ${result.resolvedQueueCount} queued check-in${result.resolvedQueueCount == 1 ? '' : 's'} resolved.'
-          : 'Session created.';
+      String msg;
+      if (_isRecurring) {
+        msg = result.resolvedQueueCount > 0
+            ? '52 weekly sessions created. ${result.resolvedQueueCount} queued check-in${result.resolvedQueueCount == 1 ? '' : 's'} resolved.'
+            : '52 weekly sessions created.';
+      } else {
+        msg = result.resolvedQueueCount > 0
+            ? 'Session created. ${result.resolvedQueueCount} queued check-in${result.resolvedQueueCount == 1 ? '' : 's'} resolved.'
+            : 'Session created.';
+      }
 
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
       context.pop();
@@ -128,48 +127,75 @@ class _CreateAttendanceSessionScreenState
 
   @override
   Widget build(BuildContext context) {
-    final titles = [
-      'Select Discipline',
-      'Select Date',
-      'Set Times',
-      'Add Notes',
-      'Confirm',
-    ];
-
     return Scaffold(
       appBar: AppBar(
-        title: Text(titles[_step - 1]),
+        title: Text(_titles[_step - 1]),
         leading: _step == 1 ? null : BackButton(onPressed: _goBack),
       ),
       body: AnimatedSwitcher(
         duration: const Duration(milliseconds: 200),
         child: switch (_step) {
-          1 => _StepSelectDiscipline(
+          1 => _StepTitle(
             key: const ValueKey(1),
-            onSelected: _onDisciplineSelected,
+            initialTitle: _title,
+            onConfirmed: (t) {
+              setState(() => _title = t);
+              _advance();
+            },
           ),
-          2 => _StepSelectDate(
+          2 => _StepSelectDiscipline(
             key: const ValueKey(2),
-            onSelected: _onDateSelected,
+            onSelected: (d) {
+              setState(() => _selectedDiscipline = d);
+              _advance();
+            },
           ),
-          3 => _StepSetTimes(
+          3 => _StepSelectDate(
             key: const ValueKey(3),
+            onSelected: (date) {
+              setState(() => _selectedDate = date);
+              _advance();
+            },
+          ),
+          4 => _StepSetTimes(
+            key: const ValueKey(4),
             initialStart: _startTime,
             initialEnd: _endTime,
             errorMessage: _errorMessage,
-            onConfirmed: _onTimesConfirmed,
+            onConfirmed: (start, end) {
+              setState(() {
+                _startTime = start;
+                _endTime = end;
+                _errorMessage = null;
+              });
+              _advance();
+            },
           ),
-          4 => _StepAddNotes(
-            key: const ValueKey(4),
+          5 => _StepRecurring(
+            key: const ValueKey(5),
+            selectedDate: _selectedDate!,
+            initialValue: _isRecurring,
+            onConfirmed: (recurring) {
+              setState(() => _isRecurring = recurring);
+              _advance();
+            },
+          ),
+          6 => _StepAddNotes(
+            key: const ValueKey(6),
             initialNotes: _notes,
-            onConfirmed: _onNotesConfirmed,
+            onConfirmed: (notes) {
+              setState(() => _notes = notes);
+              _advance();
+            },
           ),
           _ => _StepConfirm(
-            key: const ValueKey(5),
+            key: const ValueKey(7),
+            title: _title,
             discipline: _selectedDiscipline!,
             date: _selectedDate!,
             startTime: _startTime,
             endTime: _endTime,
+            isRecurring: _isRecurring,
             notes: _notes,
             isSaving: _isSaving,
             errorMessage: _errorMessage,
@@ -181,7 +207,79 @@ class _CreateAttendanceSessionScreenState
   }
 }
 
-// ── Step 1 — Select Discipline ───────────────────────────────────────────────
+// ── Step 1 — Class Title ─────────────────────────────────────────────────────
+
+class _StepTitle extends StatefulWidget {
+  const _StepTitle({
+    super.key,
+    required this.initialTitle,
+    required this.onConfirmed,
+  });
+
+  final String initialTitle;
+  final void Function(String) onConfirmed;
+
+  @override
+  State<_StepTitle> createState() => _StepTitleState();
+}
+
+class _StepTitleState extends State<_StepTitle> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialTitle);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Give this class a name that students will see',
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _controller,
+            autofocus: true,
+            textCapitalization: TextCapitalization.words,
+            decoration: const InputDecoration(
+              hintText: 'e.g. Kids Karate Class, Adults BJJ…',
+              border: OutlineInputBorder(),
+            ),
+            onSubmitted: (_) {
+              if (_controller.text.trim().isNotEmpty) {
+                widget.onConfirmed(_controller.text);
+              }
+            },
+          ),
+          const Spacer(),
+          FilledButton(
+            onPressed: _controller.text.trim().isEmpty
+                ? null
+                : () => widget.onConfirmed(_controller.text),
+            child: const Text('Next'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Step 2 — Select Discipline ───────────────────────────────────────────────
 
 class _StepSelectDiscipline extends ConsumerWidget {
   const _StepSelectDiscipline({super.key, required this.onSelected});
@@ -190,7 +288,6 @@ class _StepSelectDiscipline extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Coaches see only their assigned disciplines; owners see all active ones.
     final disciplinesAsync = ref.watch(accessibleActiveDisciplineListProvider);
 
     return disciplinesAsync.when(
@@ -239,7 +336,7 @@ class _StepSelectDiscipline extends ConsumerWidget {
   }
 }
 
-// ── Step 2 — Select Date ─────────────────────────────────────────────────────
+// ── Step 3 — Select Date ─────────────────────────────────────────────────────
 
 class _StepSelectDate extends StatefulWidget {
   const _StepSelectDate({super.key, required this.onSelected});
@@ -260,7 +357,7 @@ class _StepSelectDateState extends State<_StepSelectDate> {
       locale: const Locale('en', 'GB'),
       initialDate: _picked ?? now,
       firstDate: DateTime(now.year - 2),
-      lastDate: now,
+      lastDate: DateTime(now.year + 2),
     );
     if (result != null) setState(() => _picked = result);
   }
@@ -297,7 +394,7 @@ class _StepSelectDateState extends State<_StepSelectDate> {
   }
 }
 
-// ── Step 3 — Set Times ───────────────────────────────────────────────────────
+// ── Step 4 — Set Times ───────────────────────────────────────────────────────
 
 class _StepSetTimes extends StatefulWidget {
   const _StepSetTimes({
@@ -387,14 +484,12 @@ class _StepSetTimesState extends State<_StepSetTimes> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Start time
           _TimePickerTile(
             label: 'Start Time',
             value: _start,
             onTap: () => _pickTime(isStart: true),
           ),
           const SizedBox(height: 12),
-          // End time
           _TimePickerTile(
             label: 'End Time',
             value: _end,
@@ -457,7 +552,101 @@ class _TimePickerTile extends StatelessWidget {
   }
 }
 
-// ── Step 4 — Add Notes ───────────────────────────────────────────────────────
+// ── Step 5 — Recurring ───────────────────────────────────────────────────────
+
+class _StepRecurring extends StatefulWidget {
+  const _StepRecurring({
+    super.key,
+    required this.selectedDate,
+    required this.initialValue,
+    required this.onConfirmed,
+  });
+
+  final DateTime selectedDate;
+  final bool initialValue;
+  final void Function(bool) onConfirmed;
+
+  @override
+  State<_StepRecurring> createState() => _StepRecurringState();
+}
+
+class _StepRecurringState extends State<_StepRecurring> {
+  late bool _isRecurring;
+
+  @override
+  void initState() {
+    super.initState();
+    _isRecurring = widget.initialValue;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final dayName = DateFormat('EEEE').format(widget.selectedDate);
+
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Card(
+            elevation: 0,
+            color: AppColors.surface,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: AppColors.surfaceVariant),
+            ),
+            child: SwitchListTile(
+              title: const Text(
+                'Recurring class',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+              subtitle: Text(
+                _isRecurring
+                    ? 'Repeats every $dayName — 52 sessions will be created'
+                    : 'One-off session',
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+              ),
+              value: _isRecurring,
+              onChanged: (v) => setState(() => _isRecurring = v),
+            ),
+          ),
+          if (_isRecurring) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.06),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: AppColors.primary.withValues(alpha: 0.2),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, size: 16, color: AppColors.primary),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Sessions will be created every $dayName for 1 year. You can cancel individual sessions at any time.',
+                      style: TextStyle(fontSize: 13, color: AppColors.primary),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          const Spacer(),
+          FilledButton(
+            onPressed: () => widget.onConfirmed(_isRecurring),
+            child: const Text('Next'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Step 6 — Add Notes ───────────────────────────────────────────────────────
 
 class _StepAddNotes extends StatefulWidget {
   const _StepAddNotes({
@@ -523,25 +712,29 @@ class _StepAddNotesState extends State<_StepAddNotes> {
   }
 }
 
-// ── Step 5 — Confirm ─────────────────────────────────────────────────────────
+// ── Step 7 — Confirm ─────────────────────────────────────────────────────────
 
 class _StepConfirm extends StatelessWidget {
   const _StepConfirm({
     super.key,
+    required this.title,
     required this.discipline,
     required this.date,
     required this.startTime,
     required this.endTime,
+    required this.isRecurring,
     required this.notes,
     required this.isSaving,
     required this.errorMessage,
     required this.onConfirm,
   });
 
+  final String title;
   final Discipline discipline;
   final DateTime date;
   final String startTime;
   final String endTime;
+  final bool isRecurring;
   final String notes;
   final bool isSaving;
   final String? errorMessage;
@@ -553,6 +746,7 @@ class _StepConfirm extends StatelessWidget {
     final timeLabel = startTime.isNotEmpty
         ? '$startTime – $endTime'
         : 'No time set';
+    final dayName = DateFormat('EEEE').format(date);
 
     return Padding(
       padding: const EdgeInsets.all(24),
@@ -571,11 +765,22 @@ class _StepConfirm extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  if (title.trim().isNotEmpty) ...[
+                    _SummaryRow(label: 'Title', value: title.trim()),
+                    const Divider(height: 24),
+                  ],
                   _SummaryRow(label: 'Discipline', value: discipline.name),
                   const Divider(height: 24),
                   _SummaryRow(label: 'Date', value: dateLabel),
                   const Divider(height: 24),
                   _SummaryRow(label: 'Time', value: timeLabel),
+                  const Divider(height: 24),
+                  _SummaryRow(
+                    label: 'Schedule',
+                    value: isRecurring
+                        ? 'Weekly every $dayName (52 sessions)'
+                        : 'One-off',
+                  ),
                   if (notes.trim().isNotEmpty) ...[
                     const Divider(height: 24),
                     _SummaryRow(label: 'Notes', value: notes.trim()),
@@ -604,7 +809,7 @@ class _StepConfirm extends StatelessWidget {
                     width: 20,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Text('Create Session'),
+                : Text(isRecurring ? 'Create 52 Sessions' : 'Create Session'),
           ),
         ],
       ),

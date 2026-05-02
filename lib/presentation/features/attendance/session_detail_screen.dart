@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/providers/attendance_providers.dart';
 import '../../../core/providers/auth_providers.dart';
+import '../../../core/providers/repository_providers.dart';
 import '../../../core/providers/discipline_providers.dart';
 import '../../../core/providers/enrollment_providers.dart';
 import '../../../core/providers/profile_providers.dart';
@@ -134,9 +135,13 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
             ?.name ??
         session.disciplineId;
 
+    final appBarTitle = session.title?.isNotEmpty == true
+        ? session.title!
+        : disciplineName;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(disciplineName),
+        title: Text(appBarTitle),
         actions: [
           if (_isDirty)
             TextButton(
@@ -154,7 +159,7 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
       body: Column(
         children: [
           // ── Session header card ──────────────────────────────────────
-          _SessionHeader(session: session),
+          _SessionHeader(session: session, disciplineName: disciplineName),
 
           // ── Student list ─────────────────────────────────────────────
           Expanded(
@@ -334,13 +339,14 @@ class _SessionDetailScreenState extends ConsumerState<SessionDetailScreen> {
 
 // ── Session header ────────────────────────────────────────────────────────────
 
-class _SessionHeader extends StatelessWidget {
-  const _SessionHeader({required this.session});
+class _SessionHeader extends ConsumerWidget {
+  const _SessionHeader({required this.session, required this.disciplineName});
 
   final AttendanceSession session;
+  final String disciplineName;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final dateLabel = DateFormat(
       'EEEE, d MMM yyyy',
     ).format(session.sessionDate);
@@ -356,40 +362,400 @@ class _SessionHeader extends StatelessWidget {
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: AppColors.surfaceVariant),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  dateLabel,
-                  style: const TextStyle(fontWeight: FontWeight.w700),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (session.title?.isNotEmpty == true) ...[
+                      Text(
+                        session.title!,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        disciplineName,
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 13,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                    ],
+                    Text(
+                      dateLabel,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      timeLabel,
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  timeLabel,
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 13,
-                  ),
-                ),
-                if (session.notes != null && session.notes!.isNotEmpty) ...[
-                  const SizedBox(height: 4),
+              ),
+              if (session.isRecurring) _EditRecurringButton(session: session),
+            ],
+          ),
+          if (session.isRecurring) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.repeat, size: 12, color: AppColors.primary),
+                  const SizedBox(width: 4),
                   Text(
-                    session.notes!,
+                    'Recurring · Weekly',
                     style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 12,
-                      fontStyle: FontStyle.italic,
+                      fontSize: 11,
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],
-              ],
+              ),
             ),
-          ),
+          ],
+          if (session.notes != null && session.notes!.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(
+              session.notes!,
+              style: TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 12,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
         ],
       ),
+    );
+  }
+}
+
+// ── Edit recurring session button ─────────────────────────────────────────────
+
+class _EditRecurringButton extends ConsumerStatefulWidget {
+  const _EditRecurringButton({required this.session});
+
+  final AttendanceSession session;
+
+  @override
+  ConsumerState<_EditRecurringButton> createState() =>
+      _EditRecurringButtonState();
+}
+
+class _EditRecurringButtonState extends ConsumerState<_EditRecurringButton> {
+  bool _saving = false;
+
+  Future<void> _onEdit() async {
+    final scope = await showModalBottomSheet<_EditScope>(
+      context: context,
+      builder: (ctx) => const _EditScopeSheet(),
+    );
+    if (scope == null || !mounted) return;
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => _EditSessionDialog(
+        session: widget.session,
+        scope: scope,
+        onSave: (title, start, end, notes) async {
+          setState(() => _saving = true);
+          try {
+            final repo = ref.read(attendanceRepositoryProvider);
+            if (scope == _EditScope.single) {
+              await repo.updateSingleSession(
+                sessionId: widget.session.id,
+                title: title,
+                startTime: start,
+                endTime: end,
+                notes: notes,
+              );
+            } else {
+              await repo.updateFutureSessionsInGroup(
+                groupId: widget.session.recurringGroupId!,
+                fromDate: widget.session.sessionDate,
+                title: title,
+                startTime: start,
+                endTime: end,
+                notes: notes,
+              );
+            }
+          } finally {
+            if (mounted) setState(() => _saving = false);
+          }
+        },
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      onPressed: _saving ? null : _onEdit,
+      icon: _saving
+          ? const SizedBox(
+              height: 16,
+              width: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : const Icon(Icons.edit_outlined),
+      tooltip: 'Edit session',
+    );
+  }
+}
+
+// ── Edit scope sheet ──────────────────────────────────────────────────────────
+
+enum _EditScope { single, allFuture }
+
+class _EditScopeSheet extends StatelessWidget {
+  const _EditScopeSheet();
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+              child: Text(
+                'Edit recurring session',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.event_outlined),
+              title: const Text('This session only'),
+              subtitle: const Text('Only changes this single occurrence'),
+              onTap: () => Navigator.of(context).pop(_EditScope.single),
+            ),
+            ListTile(
+              leading: const Icon(Icons.repeat),
+              title: const Text('This and all future sessions'),
+              subtitle: const Text('Updates this and all upcoming occurrences'),
+              onTap: () => Navigator.of(context).pop(_EditScope.allFuture),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Edit session dialog ───────────────────────────────────────────────────────
+
+class _EditSessionDialog extends StatefulWidget {
+  const _EditSessionDialog({
+    required this.session,
+    required this.scope,
+    required this.onSave,
+  });
+
+  final AttendanceSession session;
+  final _EditScope scope;
+  final Future<void> Function(
+    String? title,
+    String start,
+    String end,
+    String? notes,
+  )
+  onSave;
+
+  @override
+  State<_EditSessionDialog> createState() => _EditSessionDialogState();
+}
+
+class _EditSessionDialogState extends State<_EditSessionDialog> {
+  late final TextEditingController _titleCtrl;
+  late final TextEditingController _notesCtrl;
+  late String _start;
+  late String _end;
+  bool _saving = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _titleCtrl = TextEditingController(text: widget.session.title ?? '');
+    _notesCtrl = TextEditingController(text: widget.session.notes ?? '');
+    _start = widget.session.startTime;
+    _end = widget.session.endTime;
+  }
+
+  @override
+  void dispose() {
+    _titleCtrl.dispose();
+    _notesCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickTime({required bool isStart}) async {
+    final current = isStart ? _start : _end;
+    TimeOfDay initial = TimeOfDay.now();
+    if (current.isNotEmpty) {
+      final parts = current.split(':');
+      initial = TimeOfDay(
+        hour: int.parse(parts[0]),
+        minute: int.parse(parts[1]),
+      );
+    }
+    final result = await showTimePicker(context: context, initialTime: initial);
+    if (result == null) return;
+    final formatted =
+        '${result.hour.toString().padLeft(2, '0')}:${result.minute.toString().padLeft(2, '0')}';
+    setState(() {
+      if (isStart) {
+        _start = formatted;
+      } else {
+        _end = formatted;
+      }
+    });
+  }
+
+  int _toMinutes(String t) {
+    if (t.isEmpty) return -1;
+    final parts = t.split(':');
+    return int.parse(parts[0]) * 60 + int.parse(parts[1]);
+  }
+
+  Future<void> _save() async {
+    if (_toMinutes(_end) <= _toMinutes(_start)) {
+      setState(() => _error = 'End time must be after start time.');
+      return;
+    }
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    try {
+      final title = _titleCtrl.text.trim().isEmpty
+          ? null
+          : _titleCtrl.text.trim();
+      final notes = _notesCtrl.text.trim().isEmpty
+          ? null
+          : _notesCtrl.text.trim();
+      await widget.onSave(title, _start, _end, notes);
+      if (mounted) Navigator.of(context).pop();
+    } catch (e) {
+      setState(() {
+        _saving = false;
+        _error = e.toString();
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scopeLabel = widget.scope == _EditScope.single
+        ? 'Edit this session'
+        : 'Edit this & future sessions';
+
+    return AlertDialog(
+      title: Text(scopeLabel),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TextField(
+              controller: _titleCtrl,
+              textCapitalization: TextCapitalization.words,
+              decoration: const InputDecoration(
+                labelText: 'Title',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: () => _pickTime(isStart: true),
+              icon: const Icon(Icons.access_time_outlined),
+              label: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Start Time'),
+                  Text(
+                    _start.isEmpty ? 'Not set' : _start,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: () => _pickTime(isStart: false),
+              icon: const Icon(Icons.access_time_outlined),
+              label: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('End Time'),
+                  Text(
+                    _end.isEmpty ? 'Not set' : _end,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _notesCtrl,
+              minLines: 2,
+              maxLines: 4,
+              decoration: const InputDecoration(
+                labelText: 'Notes (optional)',
+                border: OutlineInputBorder(),
+              ),
+              textCapitalization: TextCapitalization.sentences,
+            ),
+            if (_error != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                _error!,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.error,
+                  fontSize: 13,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _saving ? null : () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: _saving ? null : _save,
+          child: _saving
+              ? const SizedBox(
+                  height: 16,
+                  width: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('Save'),
+        ),
+      ],
     );
   }
 }

@@ -704,8 +704,7 @@ class AppRouter {
         path: RouteNames.inviteAccept,
         name: 'inviteAccept',
         builder: (_, state) {
-          final profileId =
-              state.uri.queryParameters['profileId'] ?? '';
+          final profileId = state.uri.queryParameters['profileId'] ?? '';
           return AcceptInviteScreen(profileId: profileId);
         },
       ),
