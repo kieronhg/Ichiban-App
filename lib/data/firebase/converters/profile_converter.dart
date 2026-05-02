@@ -23,6 +23,8 @@ class ProfileConverter {
           (rawPrefs['trialExpiryReminders'] as bool?) ?? false,
       generalDojoAnnouncements:
           (rawPrefs['generalDojoAnnouncements'] as bool?) ?? false,
+      membershipStatusChanges:
+          (rawPrefs['membershipStatusChanges'] as bool?) ?? true,
     );
 
     final rawStatus = map['registrationStatus'] as String?;
@@ -70,6 +72,12 @@ class ProfileConverter {
       fcmToken: map['fcmToken'] as String?,
       fcmTokenUpdatedAt: (map['fcmTokenUpdatedAt'] as Timestamp?)?.toDate(),
       pinHash: map['pinHash'] as String?,
+      inviteStatus: InviteStatus.values.byName(
+        (map['inviteStatus'] as String?) ?? InviteStatus.notSent.name,
+      ),
+      inviteSentAt: (map['inviteSentAt'] as Timestamp?)?.toDate(),
+      inviteExpiresAt: (map['inviteExpiresAt'] as Timestamp?)?.toDate(),
+      inviteResendCount: (map['inviteResendCount'] as int?) ?? 0,
       parentProfileId: map['parentProfileId'] as String?,
       secondParentProfileId: map['secondParentProfileId'] as String?,
       payingParentId: map['payingParentId'] as String?,
@@ -107,6 +115,7 @@ class ProfileConverter {
         'gradingNotifications': prefs.gradingNotifications,
         'trialExpiryReminders': prefs.trialExpiryReminders,
         'generalDojoAnnouncements': prefs.generalDojoAnnouncements,
+        'membershipStatusChanges': prefs.membershipStatusChanges,
       },
       'dataProcessingConsent': profile.dataProcessingConsent,
       'dataProcessingConsentDate': profile.dataProcessingConsentDate != null
@@ -125,6 +134,14 @@ class ProfileConverter {
           ? Timestamp.fromDate(profile.fcmTokenUpdatedAt!)
           : null,
       'pinHash': profile.pinHash,
+      'inviteStatus': profile.inviteStatus.name,
+      'inviteSentAt': profile.inviteSentAt != null
+          ? Timestamp.fromDate(profile.inviteSentAt!)
+          : null,
+      'inviteExpiresAt': profile.inviteExpiresAt != null
+          ? Timestamp.fromDate(profile.inviteExpiresAt!)
+          : null,
+      'inviteResendCount': profile.inviteResendCount,
       'parentProfileId': profile.parentProfileId,
       'secondParentProfileId': profile.secondParentProfileId,
       'payingParentId': profile.payingParentId,

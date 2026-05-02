@@ -1,8 +1,10 @@
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/providers/repository_providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/providers/attendance_providers.dart';
 import '../../../core/providers/grading_providers.dart';
@@ -274,7 +276,13 @@ class _PersonalTab extends StatelessWidget {
 
         // ── Membership summary ────────────────────────────────────────
         _MembershipSummarySection(profileId: profile.id),
-        const SizedBox(height: 24),
+        const SizedBox(height: 12),
+
+        // ── Invite status ─────────────────────────────────────────────
+        if (!profile.isCoach && !profile.isParentGuardian) ...[
+          _InviteSection(profile: profile, ref: ref),
+          const SizedBox(height: 12),
+        ],
 
         // ── Reset PIN ─────────────────────────────────────────────────
         if (profile.pinHash != null && !profile.isAnonymised) ...[
@@ -1399,6 +1407,143 @@ class _BeltSwatch extends StatelessWidget {
   }
 }
 
+// ── Invite section ─────────────────────────────────────────────────────────
+
+class _InviteSection extends StatelessWidget {
+  const _InviteSection({required this.profile, required this.ref});
+
+  final Profile profile;
+  final WidgetRef ref;
+
+  static const _inviteDuration = Duration(hours: 24);
+
+  Future<void> _sendInvite(BuildContext context) async {
+    final profileRepo = ref.read(profileRepositoryProvider);
+    final now = DateTime.now();
+    await profileRepo.updateInviteStatus(
+      id: profile.id,
+      status: InviteStatus.pending,
+      sentAt: now,
+      expiresAt: now.add(_inviteDuration),
+      resendCount: profile.inviteStatus == InviteStatus.notSent
+          ? 0
+          : profile.inviteResendCount + 1,
+    );
+
+    try {
+      await FirebaseFunctions.instance
+          .httpsCallable('sendStudentInviteEmail')
+          .call({'profileId': profile.id});
+    } catch (_) {
+      // Email delivery is deferred until Cloud Functions are deployed.
+    }
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Invite sent.')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final dateFormat = DateFormat('d MMM yyyy, HH:mm');
+    final status = profile.inviteStatus;
+
+    String statusLabel;
+    Color statusColor;
+    switch (status) {
+      case InviteStatus.notSent:
+        statusLabel = 'Not sent';
+        statusColor = AppColors.textSecondary;
+      case InviteStatus.pending:
+        statusLabel = 'Pending';
+        statusColor = AppColors.warning;
+      case InviteStatus.accepted:
+        statusLabel = 'Accepted';
+        statusColor = AppColors.success;
+      case InviteStatus.expired:
+        statusLabel = 'Expired';
+        statusColor = AppColors.error;
+    }
+
+    return _SectionCard(
+      title: 'Invite',
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          'Status: ',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: statusColor.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            statusLabel,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: statusColor,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (profile.inviteSentAt != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        'Sent: ${dateFormat.format(profile.inviteSentAt!)}',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                    if (profile.inviteResendCount > 0) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        'Resent ${profile.inviteResendCount} time${profile.inviteResendCount == 1 ? '' : 's'}',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              if (status != InviteStatus.accepted)
+                TextButton(
+                  onPressed: () => _sendInvite(context),
+                  child: Text(
+                    status == InviteStatus.notSent
+                        ? 'Send Invite'
+                        : 'Resend Invite',
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 // ── Shared detail widgets ──────────────────────────────────────────────────
 
 class _SectionCard extends StatelessWidget {
@@ -1730,6 +1875,7 @@ class _MembershipSummaryContent extends StatelessWidget {
     final (statusLabel, statusColor) = switch (membership.status) {
       MembershipStatus.trial => ('Trial', AppColors.info),
       MembershipStatus.active => ('Active', AppColors.success),
+      MembershipStatus.gracePeriod => ('Grace Period', AppColors.warning),
       MembershipStatus.lapsed => ('Lapsed', AppColors.warning),
       MembershipStatus.cancelled => ('Cancelled', AppColors.textSecondary),
       MembershipStatus.expired => ('Expired', AppColors.error),

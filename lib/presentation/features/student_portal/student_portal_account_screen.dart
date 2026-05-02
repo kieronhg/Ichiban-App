@@ -7,6 +7,8 @@ import '../../../core/providers/repository_providers.dart';
 import '../../../core/providers/student_auth_provider.dart';
 import '../../../core/router/route_names.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../domain/entities/communication_preferences.dart';
+import '../../../domain/entities/profile.dart';
 import 'student_portal_drawer.dart';
 
 final _dateFormat = DateFormat('d MMMM yyyy');
@@ -110,6 +112,8 @@ class StudentPortalAccountScreen extends ConsumerWidget {
                 rows: [_Row('Notes', profile.allergiesOrMedicalNotes!)],
               ),
             ],
+            const SizedBox(height: 12),
+            _NotificationPreferencesCard(profile: profile),
             const SizedBox(height: 24),
             Container(
               padding: const EdgeInsets.all(16),
@@ -161,6 +165,105 @@ class _Row {
   const _Row(this.label, this.value);
   final String label;
   final String value;
+}
+
+class _NotificationPreferencesCard extends ConsumerWidget {
+  const _NotificationPreferencesCard({required this.profile});
+
+  final Profile profile;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final prefs = profile.communicationPreferences;
+
+    Future<void> toggle(CommunicationPreferences updated) async {
+      final repo = ref.read(profileRepositoryProvider);
+      await repo.update(profile.copyWith(communicationPreferences: updated));
+    }
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Notification preferences',
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 4),
+            _PrefToggle(
+              label: 'Billing & payment reminders',
+              subtitle: 'Always sent — cannot be disabled',
+              value: true,
+              readOnly: true,
+              onChanged: null,
+            ),
+            _PrefToggle(
+              label: 'Membership status changes',
+              value: prefs.membershipStatusChanges,
+              onChanged: (v) =>
+                  toggle(prefs.copyWith(membershipStatusChanges: v)),
+            ),
+            _PrefToggle(
+              label: 'Grading notifications',
+              value: prefs.gradingNotifications,
+              onChanged: (v) => toggle(prefs.copyWith(gradingNotifications: v)),
+            ),
+            _PrefToggle(
+              label: 'Trial expiry reminders',
+              value: prefs.trialExpiryReminders,
+              onChanged: (v) => toggle(prefs.copyWith(trialExpiryReminders: v)),
+            ),
+            _PrefToggle(
+              label: 'General dojo announcements',
+              value: prefs.generalDojoAnnouncements,
+              onChanged: (v) =>
+                  toggle(prefs.copyWith(generalDojoAnnouncements: v)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PrefToggle extends StatelessWidget {
+  const _PrefToggle({
+    required this.label,
+    required this.value,
+    required this.onChanged,
+    this.subtitle,
+    this.readOnly = false,
+  });
+
+  final String label;
+  final String? subtitle;
+  final bool value;
+  final bool readOnly;
+  final ValueChanged<bool>? onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return SwitchListTile(
+      contentPadding: EdgeInsets.zero,
+      title: Text(label, style: Theme.of(context).textTheme.bodyMedium),
+      subtitle: subtitle != null
+          ? Text(
+              subtitle!,
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+            )
+          : null,
+      value: value,
+      onChanged: readOnly ? null : onChanged,
+    );
+  }
 }
 
 class _SectionCard extends StatelessWidget {

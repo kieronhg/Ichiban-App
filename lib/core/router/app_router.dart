@@ -35,8 +35,10 @@ import '../../presentation/features/coach/edit_personal_details_screen.dart';
 import '../../presentation/features/coach/my_profile_screen.dart';
 import '../../presentation/features/dashboard/coach_dashboard_screen.dart';
 import '../../presentation/features/dashboard/owner_dashboard_screen.dart';
+import '../../presentation/features/auth/accept_invite_screen.dart';
 import '../../presentation/features/auth/admin_login_screen.dart';
 import '../../presentation/features/auth/entry_gateway_screen.dart';
+import '../../presentation/features/auth/invite_expired_screen.dart';
 import '../../presentation/features/auth/setup_wizard_screen.dart';
 import '../../presentation/features/auth/pin_entry_screen.dart';
 import '../../presentation/features/auth/student_select_screen.dart';
@@ -695,6 +697,25 @@ class AppRouter {
         path: RouteNames.studentSignUp,
         name: 'studentSignUp',
         builder: (_, state) => const StudentSignUpScreen(),
+      ),
+
+      // ── Invite acceptance ──────────────────────────────────────────────────
+      GoRoute(
+        path: RouteNames.inviteAccept,
+        name: 'inviteAccept',
+        builder: (_, state) {
+          final profileId =
+              state.uri.queryParameters['profileId'] ?? '';
+          return AcceptInviteScreen(profileId: profileId);
+        },
+      ),
+      GoRoute(
+        path: RouteNames.inviteExpired,
+        name: 'inviteExpired',
+        builder: (_, state) {
+          final profileId = state.uri.queryParameters['profileId'];
+          return InviteExpiredScreen(profileId: profileId);
+        },
       ),
     ],
   );

@@ -212,6 +212,7 @@ class _FilterBar extends StatelessWidget {
   String _statusLabel(MembershipStatus s) => switch (s) {
     MembershipStatus.trial => 'Trial',
     MembershipStatus.active => 'Active',
+    MembershipStatus.gracePeriod => 'Grace Period',
     MembershipStatus.lapsed => 'Lapsed',
     MembershipStatus.cancelled => 'Cancelled',
     MembershipStatus.expired => 'Expired',
@@ -412,6 +413,7 @@ class _StatusBadge extends StatelessWidget {
     final (label, color) = switch (status) {
       MembershipStatus.trial => ('Trial', AppColors.info),
       MembershipStatus.active => ('Active', AppColors.success),
+      MembershipStatus.gracePeriod => ('Grace Period', AppColors.warning),
       MembershipStatus.lapsed => ('Lapsed', AppColors.warning),
       MembershipStatus.cancelled => ('Cancelled', AppColors.textSecondary),
       MembershipStatus.expired => ('Expired', AppColors.error),

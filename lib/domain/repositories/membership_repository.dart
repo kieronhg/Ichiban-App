@@ -59,6 +59,30 @@ abstract class MembershipRepository {
   /// Does NOT recalculate familyPricingTier — tier changes at next renewal only.
   Future<void> removeFamilyMember(String membershipId, String profileId);
 
+  /// Cancels a membership at period end (student-initiated).
+  /// Sets cancelledAt and a pending-cancel flag but keeps isActive=true
+  /// until the renewal date passes.
+  Future<void> cancelAtPeriodEnd({
+    required String id,
+    required DateTime cancelledAt,
+  });
+
+  /// Sets the membership into grace period after a failed payment.
+  Future<void> startGracePeriod({
+    required String id,
+    required DateTime gracePeriodEnd,
+  });
+
+  /// Records a student downgrade request pending admin approval.
+  Future<void> requestDowngrade({
+    required String id,
+    required String pendingPlanId,
+    required DateTime requestedAt,
+  });
+
+  /// Clears the pending downgrade (approval or rejection).
+  Future<void> clearPendingDowngrade(String id);
+
   /// Watches all memberships in real time.
   Stream<List<Membership>> watchAll();
 

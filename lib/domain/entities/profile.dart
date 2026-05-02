@@ -77,6 +77,12 @@ class Profile extends Equatable {
   /// Timestamp when the profile was anonymised. Null if not yet anonymised.
   final DateTime? anonymisedAt;
 
+  // Invite flow — admin-created profiles only
+  final InviteStatus inviteStatus;
+  final DateTime? inviteSentAt;
+  final DateTime? inviteExpiresAt;
+  final int inviteResendCount;
+
   // Family links (juniors only)
   /// Primary parent/guardian profile ID.
   final String? parentProfileId;
@@ -124,6 +130,10 @@ class Profile extends Equatable {
     this.fcmToken,
     this.fcmTokenUpdatedAt,
     this.pinHash,
+    this.inviteStatus = InviteStatus.notSent,
+    this.inviteSentAt,
+    this.inviteExpiresAt,
+    this.inviteResendCount = 0,
     this.parentProfileId,
     this.secondParentProfileId,
     this.payingParentId,
@@ -183,6 +193,10 @@ class Profile extends Equatable {
     /// Necessary because the standard [pinHash] parameter cannot distinguish
     /// "clear to null" from "leave unchanged" when using `??` semantics.
     bool clearPinHash = false,
+    InviteStatus? inviteStatus,
+    DateTime? inviteSentAt,
+    DateTime? inviteExpiresAt,
+    int? inviteResendCount,
     String? parentProfileId,
     String? secondParentProfileId,
     String? payingParentId,
@@ -231,6 +245,10 @@ class Profile extends Equatable {
       fcmToken: fcmToken ?? this.fcmToken,
       fcmTokenUpdatedAt: fcmTokenUpdatedAt ?? this.fcmTokenUpdatedAt,
       pinHash: clearPinHash ? null : (pinHash ?? this.pinHash),
+      inviteStatus: inviteStatus ?? this.inviteStatus,
+      inviteSentAt: inviteSentAt ?? this.inviteSentAt,
+      inviteExpiresAt: inviteExpiresAt ?? this.inviteExpiresAt,
+      inviteResendCount: inviteResendCount ?? this.inviteResendCount,
       parentProfileId: parentProfileId ?? this.parentProfileId,
       secondParentProfileId:
           secondParentProfileId ?? this.secondParentProfileId,
@@ -278,6 +296,10 @@ class Profile extends Equatable {
     fcmToken,
     fcmTokenUpdatedAt,
     pinHash,
+    inviteStatus,
+    inviteSentAt,
+    inviteExpiresAt,
+    inviteResendCount,
     parentProfileId,
     secondParentProfileId,
     payingParentId,

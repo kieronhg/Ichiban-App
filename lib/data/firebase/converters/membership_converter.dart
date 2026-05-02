@@ -26,6 +26,10 @@ class MembershipConverter {
       ),
       stripeCustomerId: map['stripeCustomerId'] as String?,
       stripeSubscriptionId: map['stripeSubscriptionId'] as String?,
+      gracePeriodEnd: (map['gracePeriodEnd'] as Timestamp?)?.toDate(),
+      pendingDowngradePlanId: map['pendingDowngradePlanId'] as String?,
+      downgradeRequestedAt: (map['downgradeRequestedAt'] as Timestamp?)
+          ?.toDate(),
       createdByAdminId: map['createdByAdminId'] as String,
       createdAt: (map['createdAt'] as Timestamp).toDate(),
       cancelledAt: (map['cancelledAt'] as Timestamp?)?.toDate(),
@@ -58,6 +62,13 @@ class MembershipConverter {
       'paymentMethod': membership.paymentMethod.name,
       'stripeCustomerId': membership.stripeCustomerId,
       'stripeSubscriptionId': membership.stripeSubscriptionId,
+      'gracePeriodEnd': membership.gracePeriodEnd != null
+          ? Timestamp.fromDate(membership.gracePeriodEnd!)
+          : null,
+      'pendingDowngradePlanId': membership.pendingDowngradePlanId,
+      'downgradeRequestedAt': membership.downgradeRequestedAt != null
+          ? Timestamp.fromDate(membership.downgradeRequestedAt!)
+          : null,
       'createdByAdminId': membership.createdByAdminId,
       'createdAt': Timestamp.fromDate(membership.createdAt),
       'cancelledAt': membership.cancelledAt != null

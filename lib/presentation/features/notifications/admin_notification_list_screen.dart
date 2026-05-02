@@ -141,6 +141,13 @@ class _NotificationTile extends StatelessWidget {
     NotificationType.coachComplianceExpiring => 'Coach Compliance Expiring',
     NotificationType.deliveryFailure => 'Delivery Failure',
     NotificationType.selfRegistration => 'New Student Registration',
+    NotificationType.paymentConfirmed => 'Payment Confirmed',
+    NotificationType.paymentFailed => 'Payment Failed',
+    NotificationType.gracePeriodStarted => 'Grace Period Started',
+    NotificationType.membershipLapsed => 'Membership Lapsed',
+    NotificationType.inviteExpired => 'Invite Expired',
+    NotificationType.newSelfRegistration => 'New Self-Registration',
+    NotificationType.downgradeRequested => 'Downgrade Requested',
   };
 
   String _channelLabel(NotificationChannel c) => switch (c) {

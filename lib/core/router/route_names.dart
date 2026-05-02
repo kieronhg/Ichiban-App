@@ -101,4 +101,8 @@ class RouteNames {
 
   // Sign-up wizard
   static const String studentSignUp = '/sign-up';
+
+  // Invite acceptance (deep link)
+  static const String inviteAccept = '/invite/accept';
+  static const String inviteExpired = '/invite/expired';
 }

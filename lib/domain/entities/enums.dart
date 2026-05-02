@@ -19,7 +19,15 @@ enum MembershipPlanType {
 
 enum FamilyPricingTier { upToThree, fourOrMore }
 
-enum MembershipStatus { trial, active, lapsed, cancelled, expired, payt }
+enum MembershipStatus {
+  trial,
+  active,
+  gracePeriod,
+  lapsed,
+  cancelled,
+  expired,
+  payt,
+}
 
 enum PaymentMethod { card, cash, bankTransfer, stripe, writtenOff, none }
 
@@ -61,7 +69,16 @@ enum NotificationType {
   coachComplianceExpiring,
   deliveryFailure,
   selfRegistration,
+  paymentConfirmed,
+  paymentFailed,
+  gracePeriodStarted,
+  membershipLapsed,
+  inviteExpired,
+  newSelfRegistration,
+  downgradeRequested,
 }
+
+enum InviteStatus { notSent, pending, accepted, expired }
 
 enum NotificationDeliveryStatus { sent, failed, suppressed }
 

@@ -69,6 +69,11 @@ final profileProvider = StreamProvider.family<Profile?, String>(
   (ref, id) => ref.watch(getProfileUseCaseProvider).watchById(id),
 );
 
+/// Profiles with a pending invite, live.
+final pendingInvitesProvider = StreamProvider<List<Profile>>(
+  (ref) => ref.watch(profileRepositoryProvider).watchPendingInvites(),
+);
+
 // ── Form notifier ──────────────────────────────────────────────────────────
 
 /// Holds the mutable state for the create/edit profile form.

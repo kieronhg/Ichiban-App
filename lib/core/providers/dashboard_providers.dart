@@ -111,6 +111,7 @@ final memberMetricsProvider = Provider<MemberMetrics>((ref) {
         activeCount++;
       case MembershipStatus.trial:
         trialCount++;
+      case MembershipStatus.gracePeriod:
       case MembershipStatus.lapsed:
       case MembershipStatus.expired:
         lapsedCount++;
