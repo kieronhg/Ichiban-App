@@ -1,0 +1,21 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "membershipHistory",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "membershipId", "order": "ASCENDING" },
+        { "fieldPath": "changedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "cashPayments",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "membershipId", "order": "ASCENDING" },
+        { "fieldPath": "recordedAt", "order": "DESCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}
