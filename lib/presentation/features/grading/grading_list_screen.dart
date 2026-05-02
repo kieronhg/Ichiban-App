@@ -66,7 +66,7 @@ class _GradingListScreenState extends ConsumerState<GradingListScreen> {
       drawer: const AdminDrawer(),
       appBar: AppBar(title: const Text('Grading Events')),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.pushNamed(RouteNames.adminGradingCreate),
+        onPressed: () => context.push(RouteNames.adminGradingCreate),
         backgroundColor: AppColors.accent,
         foregroundColor: AppColors.textOnAccent,
         icon: const Icon(Icons.add),

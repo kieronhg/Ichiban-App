@@ -1654,7 +1654,7 @@ class _MembershipSummarySection extends ConsumerWidget {
       title: 'Membership',
       headerAction: membershipAsync.asData?.value == null
           ? TextButton(
-              onPressed: () => context.pushNamed(
+              onPressed: () => context.push(
                 RouteNames.adminMembershipsCreate,
                 extra: profileId,
               ),

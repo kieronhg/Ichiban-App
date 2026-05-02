@@ -50,7 +50,7 @@ class _MembershipListScreenState extends ConsumerState<MembershipListScreen> {
       drawer: const AdminDrawer(),
       appBar: AppBar(title: const Text('Memberships')),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.pushNamed(RouteNames.adminMembershipsCreate),
+        onPressed: () => context.push(RouteNames.adminMembershipsCreate),
         backgroundColor: AppColors.accent,
         foregroundColor: AppColors.textOnAccent,
         icon: const Icon(Icons.add),

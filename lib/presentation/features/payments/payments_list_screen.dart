@@ -44,13 +44,12 @@ class _PaymentsListScreenState extends ConsumerState<PaymentsListScreen> {
             IconButton(
               icon: const Icon(Icons.bar_chart_outlined),
               tooltip: 'Financial Report',
-              onPressed: () =>
-                  context.pushNamed(RouteNames.adminPaymentsReport),
+              onPressed: () => context.push(RouteNames.adminPaymentsReport),
             ),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.pushNamed(RouteNames.adminPaymentsRecord),
+        onPressed: () => context.push(RouteNames.adminPaymentsRecord),
         icon: const Icon(Icons.add),
         label: const Text('Record Payment'),
       ),
