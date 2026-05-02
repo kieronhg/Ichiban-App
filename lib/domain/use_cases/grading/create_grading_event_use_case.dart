@@ -15,6 +15,7 @@ class CreateGradingEventUseCase {
     required String adminId,
     String? title,
     String? notes,
+    String? startTime,
   }) async {
     // Guard: reject inactive disciplines even if the caller bypasses the UI.
     final discipline = await _disciplineRepo.getById(disciplineId);
@@ -37,6 +38,7 @@ class CreateGradingEventUseCase {
       createdByAdminId: adminId,
       createdAt: now,
       notes: notes,
+      startTime: startTime,
     );
     return _repo.create(event);
   }

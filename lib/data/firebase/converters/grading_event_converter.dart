@@ -15,6 +15,7 @@ class GradingEventConverter {
       createdByAdminId: map['createdByAdminId'] as String,
       createdAt: (map['createdAt'] as Timestamp).toDate(),
       notes: map['notes'] as String?,
+      startTime: map['startTime'] as String?,
       cancelledByAdminId: map['cancelledByAdminId'] as String?,
       cancelledAt: (map['cancelledAt'] as Timestamp?)?.toDate(),
     );
@@ -29,6 +30,7 @@ class GradingEventConverter {
       'createdByAdminId': event.createdByAdminId,
       'createdAt': Timestamp.fromDate(event.createdAt),
       'notes': event.notes,
+      'startTime': event.startTime,
       'cancelledByAdminId': event.cancelledByAdminId,
       'cancelledAt': event.cancelledAt != null
           ? Timestamp.fromDate(event.cancelledAt!)

@@ -28,6 +28,7 @@ class _CreateGradingEventScreenState
 
   Discipline? _selectedDiscipline;
   DateTime? _selectedDate;
+  TimeOfDay? _selectedTime;
   bool _isSaving = false;
   bool _didPreselect = false;
 
@@ -53,6 +54,18 @@ class _CreateGradingEventScreenState
     _titleCtrl.dispose();
     _notesCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickTime() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: _selectedTime ?? const TimeOfDay(hour: 9, minute: 0),
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+        child: child!,
+      ),
+    );
+    if (picked != null) setState(() => _selectedTime = picked);
   }
 
   Future<void> _pickDate() async {
@@ -93,6 +106,9 @@ class _CreateGradingEventScreenState
             notes: _notesCtrl.text.trim().isEmpty
                 ? null
                 : _notesCtrl.text.trim(),
+            startTime: _selectedTime == null
+                ? null
+                : '${_selectedTime!.hour.toString().padLeft(2, '0')}:${_selectedTime!.minute.toString().padLeft(2, '0')}',
           );
       if (mounted) context.pop();
     } catch (e) {
@@ -163,6 +179,35 @@ class _CreateGradingEventScreenState
                         : DateFormat('EEE d MMM yyyy').format(_selectedDate!),
                     style: TextStyle(
                       color: _selectedDate == null
+                          ? AppColors.textSecondary
+                          : AppColors.textPrimary,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // ── Start Time ──────────────────────────────────────────────
+            _Section(
+              title: 'Start Time (optional)',
+              child: InkWell(
+                onTap: _pickTime,
+                borderRadius: BorderRadius.circular(8),
+                child: InputDecorator(
+                  decoration: const InputDecoration(
+                    labelText: 'Start time',
+                    border: OutlineInputBorder(),
+                    filled: true,
+                    fillColor: AppColors.background,
+                    suffixIcon: Icon(Icons.access_time_outlined),
+                  ),
+                  child: Text(
+                    _selectedTime == null
+                        ? 'Tap to select'
+                        : '${_selectedTime!.hour.toString().padLeft(2, '0')}:${_selectedTime!.minute.toString().padLeft(2, '0')}',
+                    style: TextStyle(
+                      color: _selectedTime == null
                           ? AppColors.textSecondary
                           : AppColors.textPrimary,
                     ),

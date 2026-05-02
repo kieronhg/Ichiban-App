@@ -15,6 +15,9 @@ class GradingEvent extends Equatable {
   final DateTime createdAt;
   final String? notes;
 
+  /// Optional start time stored as "HH:mm", e.g. "09:30".
+  final String? startTime;
+
   /// Set when [status] = [GradingEventStatus.cancelled].
   final String? cancelledByAdminId;
   final DateTime? cancelledAt;
@@ -28,6 +31,7 @@ class GradingEvent extends Equatable {
     required this.createdByAdminId,
     required this.createdAt,
     this.notes,
+    this.startTime,
     this.cancelledByAdminId,
     this.cancelledAt,
   });
@@ -41,6 +45,7 @@ class GradingEvent extends Equatable {
     String? createdByAdminId,
     DateTime? createdAt,
     String? notes,
+    String? startTime,
     String? cancelledByAdminId,
     DateTime? cancelledAt,
   }) {
@@ -53,6 +58,7 @@ class GradingEvent extends Equatable {
       createdByAdminId: createdByAdminId ?? this.createdByAdminId,
       createdAt: createdAt ?? this.createdAt,
       notes: notes ?? this.notes,
+      startTime: startTime ?? this.startTime,
       cancelledByAdminId: cancelledByAdminId ?? this.cancelledByAdminId,
       cancelledAt: cancelledAt ?? this.cancelledAt,
     );
@@ -68,6 +74,7 @@ class GradingEvent extends Equatable {
     createdByAdminId,
     createdAt,
     notes,
+    startTime,
     cancelledByAdminId,
     cancelledAt,
   ];
