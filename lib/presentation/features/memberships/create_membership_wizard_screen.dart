@@ -916,14 +916,14 @@ class _Step4Review extends ConsumerWidget {
               pricingAsync.when(
                 data: (prices) {
                   final key = _pricingKey(planType, familyTier);
-                  final amount = prices[key] ?? 0.0;
+                  final amount = prices[key] ?? _defaultAmounts[key] ?? 0.0;
                   return _ReviewRow(
                     'Amount',
                     '£${amount.toStringAsFixed(2)}${_isAnnual ? '/year' : '/month'}',
                   );
                 },
                 loading: () => const SizedBox.shrink(),
-                error: (_, _) => const SizedBox.shrink(),
+                error: (_, e) => const SizedBox.shrink(),
               ),
             if (_isTrial) ...[
               _ReviewRow('Start date', dateFormat.format(now)),
@@ -983,6 +983,18 @@ class _Step4Review extends ConsumerWidget {
     PaymentMethod.stripe => 'Stripe',
     PaymentMethod.writtenOff => 'Written off',
     PaymentMethod.none => 'None',
+  };
+
+  static const Map<String, double> _defaultAmounts = {
+    'monthlyAdult': 33.00,
+    'monthlyJunior': 25.00,
+    'annualAdult': 330.00,
+    'annualJunior': 242.00,
+    'familyMonthlyUpToThree': 55.00,
+    'familyMonthlyFourOrMore': 66.00,
+    'payAsYouTrainAdult': 10.00,
+    'payAsYouTrainJunior': 7.00,
+    'trial': 0.00,
   };
 
   String _pricingKey(MembershipPlanType? planType, FamilyPricingTier? tier) {
