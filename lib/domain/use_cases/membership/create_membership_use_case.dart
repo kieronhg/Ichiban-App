@@ -76,7 +76,7 @@ class CreateMembershipUseCase {
     // Fetch price snapshot from membershipPricing collection.
     final pricingKey = _pricingKeyFor(planType, familyPricingTier);
     final pricing = await _pricingRepo.getByKey(pricingKey);
-    final amount = pricing?.amount ?? 0.0;
+    final amount = pricing?.amount ?? _defaultAmounts[pricingKey] ?? 0.0;
 
     final membership = Membership(
       id: '',
@@ -132,6 +132,18 @@ class CreateMembershipUseCase {
 
     return membershipId;
   }
+
+  static const Map<String, double> _defaultAmounts = {
+    'monthlyAdult': 33.00,
+    'monthlyJunior': 25.00,
+    'annualAdult': 330.00,
+    'annualJunior': 242.00,
+    'familyMonthlyUpToThree': 55.00,
+    'familyMonthlyFourOrMore': 66.00,
+    'payAsYouTrainAdult': 10.00,
+    'payAsYouTrainJunior': 7.00,
+    'trial': 0.00,
+  };
 
   /// Maps a plan type (and optional family tier) to its membershipPricing key.
   String _pricingKeyFor(
