@@ -48,6 +48,76 @@ class FirestoreAttendanceRepository implements AttendanceRepository {
     return ref.id;
   }
 
+  @override
+  Future<List<String>> createSessionBatch(
+    List<AttendanceSession> sessions,
+  ) async {
+    // Firestore batch writes are limited to 500 operations; 52 sessions is safe.
+    final db = FirebaseFirestore.instance;
+    final batch = db.batch();
+    final col = FirestoreCollections.attendanceSessions();
+    final refs = [for (final _ in sessions) col.doc()];
+
+    for (var i = 0; i < sessions.length; i++) {
+      batch.set(refs[i], sessions[i]);
+    }
+    await batch.commit();
+    return refs.map((r) => r.id).toList();
+  }
+
+  @override
+  Future<void> updateFutureSessionsInGroup({
+    required String groupId,
+    required DateTime fromDate,
+    String? title,
+    required String startTime,
+    required String endTime,
+    String? notes,
+  }) async {
+    final snap = await FirestoreCollections.attendanceSessions()
+        .where('recurringGroupId', isEqualTo: groupId)
+        .where(
+          'sessionDate',
+          isGreaterThanOrEqualTo: Timestamp.fromDate(_midnight(fromDate)),
+        )
+        .get();
+
+    if (snap.docs.isEmpty) return;
+
+    final db = FirebaseFirestore.instance;
+    // Split into chunks of 500 to respect Firestore batch limits.
+    const chunkSize = 500;
+    for (var i = 0; i < snap.docs.length; i += chunkSize) {
+      final chunk = snap.docs.skip(i).take(chunkSize).toList();
+      final batch = db.batch();
+      for (final doc in chunk) {
+        batch.update(doc.reference, {
+          'title': title,
+          'startTime': startTime,
+          'endTime': endTime,
+          'notes': notes,
+        });
+      }
+      await batch.commit();
+    }
+  }
+
+  @override
+  Future<void> updateSingleSession({
+    required String sessionId,
+    String? title,
+    required String startTime,
+    required String endTime,
+    String? notes,
+  }) async {
+    await FirestoreCollections.attendanceSessions().doc(sessionId).update({
+      'title': title,
+      'startTime': startTime,
+      'endTime': endTime,
+      'notes': notes,
+    });
+  }
+
   // ── Records ───────────────────────────────────────────────────────────────
 
   @override

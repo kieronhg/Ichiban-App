@@ -1,3 +1,5 @@
+import 'package:uuid/uuid.dart';
+
 import '../../entities/attendance_record.dart';
 import '../../entities/attendance_session.dart';
 import '../../entities/enums.dart';
@@ -39,8 +41,10 @@ class CreateAttendanceSessionUseCase {
     required DateTime sessionDate,
     required String startTime,
     required String endTime,
+    String? title,
     String? notes,
     required String createdByAdminId,
+    bool isRecurring = false,
   }) async {
     // ── Validation ─────────────────────────────────────────────────────────
     if (_parseTime(endTime) <= _parseTime(startTime)) {
@@ -49,83 +53,131 @@ class CreateAttendanceSessionUseCase {
 
     final today = _midnight(DateTime.now());
     final date = _midnight(sessionDate);
-    if (date.isAfter(today)) {
-      throw ArgumentError('Session date cannot be in the future.');
+    final cleanNotes = notes?.trim().isEmpty == true ? null : notes?.trim();
+    final cleanTitle = title?.trim().isEmpty == true ? null : title?.trim();
+    final now = DateTime.now();
+
+    // ── Recurring: batch-create 52 weekly sessions ──────────────────────────
+    if (isRecurring) {
+      final groupId = const Uuid().v4();
+      final sessions = List.generate(52, (i) {
+        return AttendanceSession(
+          id: '',
+          title: cleanTitle,
+          disciplineId: disciplineId,
+          sessionDate: date.add(Duration(days: 7 * i)),
+          startTime: startTime,
+          endTime: endTime,
+          notes: cleanNotes,
+          createdByAdminId: createdByAdminId,
+          createdAt: now,
+          isRecurring: true,
+          recurringGroupId: groupId,
+        );
+      });
+
+      final ids = await _attendanceRepo.createSessionBatch(sessions);
+
+      // Auto-resolve queued check-ins for today's session if it falls today.
+      int resolvedCount = 0;
+      if (date == today) {
+        resolvedCount = await _resolveQueuedCheckIns(
+          sessionId: ids.first,
+          disciplineId: disciplineId,
+          date: date,
+          now: now,
+        );
+      }
+
+      return CreateSessionResult(
+        sessionId: ids.first,
+        resolvedQueueCount: resolvedCount,
+      );
     }
 
-    // ── Write session ───────────────────────────────────────────────────────
+    // ── Single session ──────────────────────────────────────────────────────
     final session = AttendanceSession(
       id: '',
+      title: cleanTitle,
       disciplineId: disciplineId,
       sessionDate: date,
       startTime: startTime,
       endTime: endTime,
-      notes: notes?.trim().isEmpty == true ? null : notes?.trim(),
+      notes: cleanNotes,
       createdByAdminId: createdByAdminId,
-      createdAt: DateTime.now(),
+      createdAt: now,
     );
 
     final sessionId = await _attendanceRepo.createSession(session);
 
-    // ── Auto-resolve queued check-ins (today only) ──────────────────────────
-    // Edge-case per spec: past-date sessions do NOT trigger queue resolution.
+    // Auto-resolve queued check-ins (today only).
     int resolvedCount = 0;
     if (date == today) {
-      final pending = await _queueRepo
-          .watchPendingForDisciplineAndDate(disciplineId, date)
-          .first;
-
-      final now = DateTime.now();
-      for (final q in pending) {
-        // Write the attendance record
-        final recordId = await _attendanceRepo.createRecord(
-          AttendanceRecord(
-            id: '',
-            sessionId: sessionId,
-            studentId: q.studentId,
-            disciplineId: disciplineId,
-            sessionDate: date,
-            checkInMethod: CheckInMethod.self,
-            checkedInByProfileId: q.studentId,
-            timestamp: now,
-          ),
-        );
-
-        // Create a pending PAYT session if the student is on a PAYT plan
-        final membership = await _membershipRepo.getActiveForProfile(
-          q.studentId,
-        );
-        if (membership != null && membership.isPayAsYouTrain) {
-          await _paytRepo.create(
-            PaytSession(
-              id: '',
-              profileId: q.studentId,
-              disciplineId: disciplineId,
-              sessionDate: date,
-              attendanceRecordId: recordId,
-              paymentMethod: PaymentMethod.none,
-              paymentStatus: PaytPaymentStatus.pending,
-              amount: membership.monthlyAmount,
-              createdAt: now,
-            ),
-          );
-        }
-
-        // Mark queued check-in resolved
-        await _queueRepo.resolve(
-          q.id,
-          resolvedSessionId: sessionId,
-          resolvedAt: now,
-        );
-
-        resolvedCount++;
-      }
+      resolvedCount = await _resolveQueuedCheckIns(
+        sessionId: sessionId,
+        disciplineId: disciplineId,
+        date: date,
+        now: now,
+      );
     }
 
     return CreateSessionResult(
       sessionId: sessionId,
       resolvedQueueCount: resolvedCount,
     );
+  }
+
+  Future<int> _resolveQueuedCheckIns({
+    required String sessionId,
+    required String disciplineId,
+    required DateTime date,
+    required DateTime now,
+  }) async {
+    final pending = await _queueRepo
+        .watchPendingForDisciplineAndDate(disciplineId, date)
+        .first;
+
+    int count = 0;
+    for (final q in pending) {
+      final recordId = await _attendanceRepo.createRecord(
+        AttendanceRecord(
+          id: '',
+          sessionId: sessionId,
+          studentId: q.studentId,
+          disciplineId: disciplineId,
+          sessionDate: date,
+          checkInMethod: CheckInMethod.self,
+          checkedInByProfileId: q.studentId,
+          timestamp: now,
+        ),
+      );
+
+      final membership = await _membershipRepo.getActiveForProfile(q.studentId);
+      if (membership != null && membership.isPayAsYouTrain) {
+        await _paytRepo.create(
+          PaytSession(
+            id: '',
+            profileId: q.studentId,
+            disciplineId: disciplineId,
+            sessionDate: date,
+            attendanceRecordId: recordId,
+            paymentMethod: PaymentMethod.none,
+            paymentStatus: PaytPaymentStatus.pending,
+            amount: membership.monthlyAmount,
+            createdAt: now,
+          ),
+        );
+      }
+
+      await _queueRepo.resolve(
+        q.id,
+        resolvedSessionId: sessionId,
+        resolvedAt: now,
+      );
+
+      count++;
+    }
+    return count;
   }
 
   // ── Helpers ─────────────────────────────────────────────────────────────

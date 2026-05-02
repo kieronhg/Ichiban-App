@@ -67,9 +67,9 @@ class InviteExpiredScreen extends ConsumerWidget {
     final messenger = ScaffoldMessenger.of(context);
     try {
       if (profileId != null) {
-        await FirebaseFunctions.instanceFor(region: 'europe-west2')
-            .httpsCallable('requestInviteResend')
-            .call({'profileId': profileId});
+        await FirebaseFunctions.instanceFor(
+          region: 'europe-west2',
+        ).httpsCallable('requestInviteResend').call({'profileId': profileId});
       }
       messenger.showSnackBar(
         const SnackBar(
@@ -82,9 +82,7 @@ class InviteExpiredScreen extends ConsumerWidget {
     } on FirebaseFunctionsException {
       messenger.showSnackBar(
         const SnackBar(
-          content: Text(
-            'Request sent — the dojo team has been notified.',
-          ),
+          content: Text('Request sent — the dojo team has been notified.'),
         ),
       );
     }

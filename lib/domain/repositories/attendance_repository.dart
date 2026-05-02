@@ -19,6 +19,30 @@ abstract class AttendanceRepository {
   /// Creates an attendance session and returns the generated document ID.
   Future<String> createSession(AttendanceSession session);
 
+  /// Batch-creates multiple sessions (used for recurring series) and returns
+  /// the list of generated document IDs in the same order.
+  Future<List<String>> createSessionBatch(List<AttendanceSession> sessions);
+
+  /// Updates mutable fields (title, startTime, endTime, notes) on all sessions
+  /// that share [groupId] and whose sessionDate is on or after [fromDate].
+  Future<void> updateFutureSessionsInGroup({
+    required String groupId,
+    required DateTime fromDate,
+    String? title,
+    required String startTime,
+    required String endTime,
+    String? notes,
+  });
+
+  /// Updates mutable fields on a single session document by ID.
+  Future<void> updateSingleSession({
+    required String sessionId,
+    String? title,
+    required String startTime,
+    required String endTime,
+    String? notes,
+  });
+
   // ── Records ───────────────────────────────────────────────
 
   /// Watches attendance records for a session in real time.
