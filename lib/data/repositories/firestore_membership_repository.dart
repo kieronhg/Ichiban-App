@@ -149,6 +149,48 @@ class FirestoreMembershipRepository implements MembershipRepository {
   }
 
   @override
+  Future<void> cancelAtPeriodEnd({
+    required String id,
+    required DateTime cancelledAt,
+  }) async {
+    await FirestoreCollections.memberships().doc(id).update({
+      'cancelledAt': Timestamp.fromDate(cancelledAt),
+      // isActive remains true until period end — Cloud Function sets it false
+    });
+  }
+
+  @override
+  Future<void> startGracePeriod({
+    required String id,
+    required DateTime gracePeriodEnd,
+  }) async {
+    await FirestoreCollections.memberships().doc(id).update({
+      'status': MembershipStatus.gracePeriod.name,
+      'gracePeriodEnd': Timestamp.fromDate(gracePeriodEnd),
+    });
+  }
+
+  @override
+  Future<void> requestDowngrade({
+    required String id,
+    required String pendingPlanId,
+    required DateTime requestedAt,
+  }) async {
+    await FirestoreCollections.memberships().doc(id).update({
+      'pendingDowngradePlanId': pendingPlanId,
+      'downgradeRequestedAt': Timestamp.fromDate(requestedAt),
+    });
+  }
+
+  @override
+  Future<void> clearPendingDowngrade(String id) async {
+    await FirestoreCollections.memberships().doc(id).update({
+      'pendingDowngradePlanId': null,
+      'downgradeRequestedAt': null,
+    });
+  }
+
+  @override
   Stream<List<Membership>> watchAll() {
     return FirestoreCollections.memberships().snapshots().map(
       (snap) => snap.docs.map((d) => d.data()).toList(),

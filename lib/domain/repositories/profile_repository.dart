@@ -43,9 +43,24 @@ abstract class ProfileRepository {
   /// [isAnonymised] to true and [anonymisedAt] to now.
   Future<void> anonymise(String id);
 
+  /// Updates only the invite fields on a profile.
+  Future<void> updateInviteStatus({
+    required String id,
+    required InviteStatus status,
+    DateTime? sentAt,
+    DateTime? expiresAt,
+    int? resendCount,
+  });
+
+  /// Returns all profiles where inviteStatus is pending.
+  Future<List<Profile>> getPendingInvites();
+
   /// Watches all profiles in real time.
   Stream<List<Profile>> watchAll();
 
   /// Watches a single profile in real time.
   Stream<Profile?> watchById(String id);
+
+  /// Watches profiles where inviteStatus is pending in real time.
+  Stream<List<Profile>> watchPendingInvites();
 }

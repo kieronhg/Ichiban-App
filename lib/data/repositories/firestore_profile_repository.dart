@@ -68,10 +68,43 @@ class FirestoreProfileRepository implements ProfileRepository {
   }
 
   @override
+  Future<void> updateInviteStatus({
+    required String id,
+    required InviteStatus status,
+    DateTime? sentAt,
+    DateTime? expiresAt,
+    int? resendCount,
+  }) async {
+    final data = <String, dynamic>{'inviteStatus': status.name};
+    if (sentAt != null) data['inviteSentAt'] = Timestamp.fromDate(sentAt);
+    if (expiresAt != null) {
+      data['inviteExpiresAt'] = Timestamp.fromDate(expiresAt);
+    }
+    if (resendCount != null) data['inviteResendCount'] = resendCount;
+    await FirestoreCollections.profiles().doc(id).update(data);
+  }
+
+  @override
+  Future<List<Profile>> getPendingInvites() async {
+    final snap = await FirestoreCollections.profiles()
+        .where('inviteStatus', isEqualTo: InviteStatus.pending.name)
+        .get();
+    return snap.docs.map((d) => d.data()).toList();
+  }
+
+  @override
   Stream<List<Profile>> watchAll() {
     return FirestoreCollections.profiles().snapshots().map(
       (snap) => snap.docs.map((d) => d.data()).toList(),
     );
+  }
+
+  @override
+  Stream<List<Profile>> watchPendingInvites() {
+    return FirestoreCollections.profiles()
+        .where('inviteStatus', isEqualTo: InviteStatus.pending.name)
+        .snapshots()
+        .map((snap) => snap.docs.map((d) => d.data()).toList());
   }
 
   @override

@@ -19,6 +19,7 @@ class _ProfileListScreenState extends ConsumerState<ProfileListScreen> {
   final _searchController = TextEditingController();
   String _searchQuery = '';
   ProfileType? _typeFilter; // null = show all
+  bool _pendingInvitesOnly = false;
 
   @override
   void dispose() {
@@ -74,15 +75,32 @@ class _ProfileListScreenState extends ConsumerState<ProfileListScreen> {
                   children: [
                     _TypeChip(
                       label: 'All',
-                      selected: _typeFilter == null,
-                      onTap: () => setState(() => _typeFilter = null),
+                      selected: _typeFilter == null && !_pendingInvitesOnly,
+                      onTap: () => setState(() {
+                        _typeFilter = null;
+                        _pendingInvitesOnly = false;
+                      }),
                     ),
                     ...ProfileType.values.map(
                       (t) => _TypeChip(
                         label: _typelabel(t),
-                        selected: _typeFilter == t,
-                        onTap: () => setState(() => _typeFilter = t),
+                        selected: _typeFilter == t && !_pendingInvitesOnly,
+                        onTap: () => setState(() {
+                          _typeFilter = t;
+                          _pendingInvitesOnly = false;
+                        }),
                       ),
+                    ),
+                    _PendingInvitesChip(
+                      selected: _pendingInvitesOnly,
+                      pendingCount: ref
+                          .watch(pendingInvitesProvider)
+                          .value
+                          ?.length ?? 0,
+                      onTap: () => setState(() {
+                        _pendingInvitesOnly = !_pendingInvitesOnly;
+                        if (_pendingInvitesOnly) _typeFilter = null;
+                      }),
                     ),
                   ],
                 ),
@@ -150,7 +168,9 @@ class _ProfileListScreenState extends ConsumerState<ProfileListScreen> {
           p.fullName.toLowerCase().contains(_searchQuery);
       final matchesType =
           _typeFilter == null || p.profileTypes.contains(_typeFilter);
-      return matchesSearch && matchesType;
+      final matchesInvite =
+          !_pendingInvitesOnly || p.inviteStatus == InviteStatus.pending;
+      return matchesSearch && matchesType && matchesInvite;
     }).toList()..sort((a, b) => a.lastName.compareTo(b.lastName));
   }
 
@@ -184,6 +204,36 @@ class _TypeChip extends StatelessWidget {
         selectedColor: AppColors.accent,
         labelStyle: TextStyle(
           color: selected ? AppColors.textOnAccent : AppColors.textPrimary,
+          fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+        ),
+      ),
+    );
+  }
+}
+
+class _PendingInvitesChip extends StatelessWidget {
+  const _PendingInvitesChip({
+    required this.selected,
+    required this.pendingCount,
+    required this.onTap,
+  });
+
+  final bool selected;
+  final int pendingCount;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = pendingCount > 0 ? 'Pending Invites ($pendingCount)' : 'Pending Invites';
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: FilterChip(
+        label: Text(label),
+        selected: selected,
+        onSelected: (_) => onTap(),
+        selectedColor: AppColors.warning,
+        labelStyle: TextStyle(
+          color: selected ? Colors.black87 : AppColors.textPrimary,
           fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
         ),
       ),

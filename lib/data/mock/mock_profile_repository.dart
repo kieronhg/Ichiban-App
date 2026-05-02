@@ -169,6 +169,30 @@ class MockProfileRepository implements ProfileRepository {
   }
 
   @override
+  Future<void> updateInviteStatus({
+    required String id,
+    required InviteStatus status,
+    DateTime? sentAt,
+    DateTime? expiresAt,
+    int? resendCount,
+  }) async {
+    final i = _profiles.indexWhere((p) => p.id == id);
+    if (i != -1) {
+      _profiles[i] = _profiles[i].copyWith(
+        inviteStatus: status,
+        inviteSentAt: sentAt ?? _profiles[i].inviteSentAt,
+        inviteExpiresAt: expiresAt ?? _profiles[i].inviteExpiresAt,
+        inviteResendCount: resendCount ?? _profiles[i].inviteResendCount,
+      );
+      _notify();
+    }
+  }
+
+  @override
+  Future<List<Profile>> getPendingInvites() async =>
+      _profiles.where((p) => p.inviteStatus == InviteStatus.pending).toList();
+
+  @override
   Stream<List<Profile>> watchAll() async* {
     yield List.of(_active);
     yield* _controller.stream;
@@ -177,4 +201,10 @@ class MockProfileRepository implements ProfileRepository {
   @override
   Stream<Profile?> watchById(String id) =>
       watchAll().map((list) => list.where((p) => p.id == id).firstOrNull);
+
+  @override
+  Stream<List<Profile>> watchPendingInvites() => watchAll().map(
+    (list) =>
+        list.where((p) => p.inviteStatus == InviteStatus.pending).toList(),
+  );
 }

@@ -31,6 +31,13 @@ class Membership extends Equatable {
   final String? stripeCustomerId;
   final String? stripeSubscriptionId;
 
+  // Grace period — set when payment fails, cleared on successful payment
+  final DateTime? gracePeriodEnd;
+
+  // Pending downgrade — set when student requests a lower plan, cleared on approval/rejection
+  final String? pendingDowngradePlanId;
+  final DateTime? downgradeRequestedAt;
+
   final String createdByAdminId;
   final DateTime createdAt;
   final DateTime? cancelledAt;
@@ -53,6 +60,9 @@ class Membership extends Equatable {
     required this.paymentMethod,
     this.stripeCustomerId,
     this.stripeSubscriptionId,
+    this.gracePeriodEnd,
+    this.pendingDowngradePlanId,
+    this.downgradeRequestedAt,
     required this.createdByAdminId,
     required this.createdAt,
     this.cancelledAt,
@@ -89,6 +99,11 @@ class Membership extends Equatable {
     PaymentMethod? paymentMethod,
     String? stripeCustomerId,
     String? stripeSubscriptionId,
+    DateTime? gracePeriodEnd,
+    bool clearGracePeriodEnd = false,
+    String? pendingDowngradePlanId,
+    bool clearPendingDowngrade = false,
+    DateTime? downgradeRequestedAt,
     String? createdByAdminId,
     DateTime? createdAt,
     DateTime? cancelledAt,
@@ -112,6 +127,15 @@ class Membership extends Equatable {
       paymentMethod: paymentMethod ?? this.paymentMethod,
       stripeCustomerId: stripeCustomerId ?? this.stripeCustomerId,
       stripeSubscriptionId: stripeSubscriptionId ?? this.stripeSubscriptionId,
+      gracePeriodEnd: clearGracePeriodEnd
+          ? null
+          : (gracePeriodEnd ?? this.gracePeriodEnd),
+      pendingDowngradePlanId: clearPendingDowngrade
+          ? null
+          : (pendingDowngradePlanId ?? this.pendingDowngradePlanId),
+      downgradeRequestedAt: clearPendingDowngrade
+          ? null
+          : (downgradeRequestedAt ?? this.downgradeRequestedAt),
       createdByAdminId: createdByAdminId ?? this.createdByAdminId,
       createdAt: createdAt ?? this.createdAt,
       cancelledAt: cancelledAt ?? this.cancelledAt,
@@ -137,6 +161,9 @@ class Membership extends Equatable {
     paymentMethod,
     stripeCustomerId,
     stripeSubscriptionId,
+    gracePeriodEnd,
+    pendingDowngradePlanId,
+    downgradeRequestedAt,
     createdByAdminId,
     createdAt,
     cancelledAt,

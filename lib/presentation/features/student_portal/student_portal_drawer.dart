@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/providers/repository_providers.dart';
 import '../../../core/providers/student_auth_provider.dart';
+import '../../../core/providers/student_portal_providers.dart';
 import '../../../core/router/route_names.dart';
 import '../../../core/theme/app_colors.dart';
 
@@ -105,6 +106,7 @@ class StudentPortalDrawer extends ConsumerWidget {
                     route: RouteNames.studentPortalNotifications,
                     currentLocation: currentLocation,
                     onTap: () => go(RouteNames.studentPortalNotifications),
+                    badgeCount: ref.watch(unreadNotificationsCountProvider),
                   ),
                   if (isParent)
                     _NavItem(
@@ -169,6 +171,7 @@ class _NavItem extends StatelessWidget {
     required this.route,
     required this.currentLocation,
     required this.onTap,
+    this.badgeCount = 0,
   });
 
   final IconData icon;
@@ -176,15 +179,24 @@ class _NavItem extends StatelessWidget {
   final String route;
   final String currentLocation;
   final VoidCallback onTap;
+  final int badgeCount;
 
   @override
   Widget build(BuildContext context) {
     final isActive = currentLocation == route;
     return ListTile(
-      leading: Icon(
-        icon,
-        color: isActive ? AppColors.accent : AppColors.textSecondary,
-      ),
+      leading: badgeCount > 0
+          ? Badge(
+              label: Text('$badgeCount'),
+              child: Icon(
+                icon,
+                color: isActive ? AppColors.accent : AppColors.textSecondary,
+              ),
+            )
+          : Icon(
+              icon,
+              color: isActive ? AppColors.accent : AppColors.textSecondary,
+            ),
       title: Text(
         label,
         style: TextStyle(

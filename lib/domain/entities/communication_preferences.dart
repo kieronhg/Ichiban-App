@@ -6,6 +6,7 @@ class CommunicationPreferences extends Equatable {
     this.gradingNotifications = false,
     this.trialExpiryReminders = false,
     this.generalDojoAnnouncements = false,
+    this.membershipStatusChanges = true,
   });
 
   // Billing reminders are always sent regardless of this toggle — it exists
@@ -14,6 +15,7 @@ class CommunicationPreferences extends Equatable {
   final bool gradingNotifications;
   final bool trialExpiryReminders;
   final bool generalDojoAnnouncements;
+  final bool membershipStatusChanges;
 
   static const empty = CommunicationPreferences();
 
@@ -22,6 +24,7 @@ class CommunicationPreferences extends Equatable {
     bool? gradingNotifications,
     bool? trialExpiryReminders,
     bool? generalDojoAnnouncements,
+    bool? membershipStatusChanges,
   }) {
     return CommunicationPreferences(
       billingAndPaymentReminders:
@@ -30,6 +33,8 @@ class CommunicationPreferences extends Equatable {
       trialExpiryReminders: trialExpiryReminders ?? this.trialExpiryReminders,
       generalDojoAnnouncements:
           generalDojoAnnouncements ?? this.generalDojoAnnouncements,
+      membershipStatusChanges:
+          membershipStatusChanges ?? this.membershipStatusChanges,
     );
   }
 
@@ -39,5 +44,6 @@ class CommunicationPreferences extends Equatable {
     gradingNotifications,
     trialExpiryReminders,
     generalDojoAnnouncements,
+    membershipStatusChanges,
   ];
 }

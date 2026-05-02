@@ -269,6 +269,7 @@ class _MembershipSummaryCard extends StatelessWidget {
       switch (s) {
         MembershipStatus.trial => ('Trial', AppColors.warning),
         MembershipStatus.active => ('Active', AppColors.success),
+        MembershipStatus.gracePeriod => ('Grace Period', AppColors.warning),
         MembershipStatus.lapsed => ('Lapsed', AppColors.error),
         MembershipStatus.cancelled => ('Cancelled', AppColors.textSecondary),
         MembershipStatus.expired => ('Expired', AppColors.textSecondary),

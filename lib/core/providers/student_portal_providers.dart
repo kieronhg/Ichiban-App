@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/entities/enrollment.dart';
 import '../../domain/entities/membership.dart';
+import '../../domain/entities/membership_pricing.dart';
 import '../../domain/entities/notification_log.dart';
 import '../../domain/entities/profile.dart';
 import 'repository_providers.dart';
@@ -44,3 +45,17 @@ final studentPortalChildrenProvider = FutureProvider.autoDispose<List<Profile>>(
     return ref.read(profileRepositoryProvider).getJuniorsForParent(profileId);
   },
 );
+
+final membershipPricingAllProvider =
+    FutureProvider.autoDispose<List<MembershipPricing>>((ref) async {
+      return ref.read(membershipPricingRepositoryProvider).getAll();
+    });
+
+final unreadNotificationsCountProvider = Provider.autoDispose<int>((ref) {
+  return ref
+          .watch(studentPortalNotificationsProvider)
+          .value
+          ?.where((n) => n.isRead != true)
+          .length ??
+      0;
+});
