@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../../domain/entities/membership_pricing.dart';
 import '../../domain/repositories/membership_pricing_repository.dart';
 import '../firebase/firestore_collections.dart';
@@ -18,9 +20,12 @@ class FirestoreMembershipPricingRepository
 
   @override
   Future<void> updatePrice(String key, double amount) async {
-    await FirestoreCollections.membershipPricing().doc(key).update({
-      'amount': amount,
-    });
+    await FirestoreCollections.membershipPricing()
+        .doc(key)
+        .set(
+          MembershipPricing(key: key, amount: amount),
+          SetOptions(merge: true),
+        );
   }
 
   @override
