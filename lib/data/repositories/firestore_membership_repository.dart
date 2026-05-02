@@ -192,9 +192,10 @@ class FirestoreMembershipRepository implements MembershipRepository {
 
   @override
   Stream<List<Membership>> watchAll() {
-    return FirestoreCollections.memberships().snapshots().map(
-      (snap) => snap.docs.map((d) => d.data()).toList(),
-    );
+    return FirestoreCollections.memberships()
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snap) => snap.docs.map((d) => d.data()).toList());
   }
 
   @override
