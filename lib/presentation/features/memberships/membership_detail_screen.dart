@@ -8,7 +8,6 @@ import '../../../core/providers/auth_providers.dart';
 import '../../../core/providers/membership_providers.dart';
 import '../../../core/providers/profile_providers.dart';
 import '../../../core/providers/repository_providers.dart';
-import '../../../core/router/route_names.dart';
 import '../../../domain/entities/enums.dart';
 import '../../../domain/entities/membership.dart';
 import '../../../domain/entities/membership_history.dart';
@@ -124,7 +123,7 @@ class MembershipDetailScreen extends ConsumerWidget {
       case _Action.renew:
         if (!context.mounted) return;
         context.pushNamed(
-          RouteNames.adminMembershipsRenew,
+          'adminMembershipsRenew',
           pathParameters: {'membershipId': live.id},
           extra: live,
         );
@@ -132,7 +131,7 @@ class MembershipDetailScreen extends ConsumerWidget {
       case _Action.convert:
         if (!context.mounted) return;
         context.pushNamed(
-          RouteNames.adminMembershipsConvert,
+          'adminMembershipsConvert',
           pathParameters: {'membershipId': live.id},
           extra: live,
         );

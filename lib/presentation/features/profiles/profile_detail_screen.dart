@@ -1214,7 +1214,7 @@ class _ActiveEnrolmentRow extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(horizontal: 8),
             ),
             onPressed: () => context.pushNamed(
-              RouteNames.adminGrading,
+              'adminGrading',
               extra: enrollment.disciplineId,
             ),
             child: const Text('Grading', style: TextStyle(fontSize: 12)),
@@ -1809,7 +1809,7 @@ class _MembershipSummarySection extends ConsumerWidget {
               onPressed: () {
                 final m = membershipAsync.asData!.value!;
                 context.pushNamed(
-                  RouteNames.adminMembershipsDetail,
+                  'adminMembershipsDetail',
                   pathParameters: {'membershipId': m.id},
                   extra: m,
                 );

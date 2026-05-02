@@ -162,7 +162,7 @@ class _GradingListScreenState extends ConsumerState<GradingListScreen> {
                       event: event,
                       disciplineName: disciplineMap[event.disciplineId] ?? '—',
                       onTap: () => context.pushNamed(
-                        RouteNames.adminGradingDetail,
+                        'adminGradingDetail',
                         pathParameters: {'eventId': event.id},
                         extra: event,
                       ),

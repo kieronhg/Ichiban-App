@@ -8,7 +8,6 @@ import '../../../core/providers/discipline_providers.dart';
 import '../../../core/providers/enrollment_providers.dart';
 import '../../../core/providers/grading_providers.dart';
 import '../../../core/providers/profile_providers.dart';
-import '../../../core/router/route_names.dart';
 import '../../../domain/entities/discipline.dart';
 import '../../../domain/entities/enrollment.dart';
 import '../../../domain/entities/enums.dart';
@@ -503,7 +502,7 @@ class _GradingEventsSection extends ConsumerWidget {
               ),
               TextButton.icon(
                 onPressed: () => context.pushNamed(
-                  RouteNames.adminGradingCreate,
+                  'adminGradingCreate',
                   extra: discipline.id,
                 ),
                 icon: const Icon(Icons.add, size: 16),
@@ -605,7 +604,7 @@ class _GradingEventRow extends StatelessWidget {
         ),
       ),
       onTap: () => context.pushNamed(
-        RouteNames.adminGradingDetail,
+        'adminGradingDetail',
         pathParameters: {'eventId': event.id},
         extra: event,
       ),

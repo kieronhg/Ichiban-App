@@ -7,7 +7,6 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/providers/auth_providers.dart';
 import '../../../core/providers/grading_providers.dart';
 import '../../../core/providers/profile_providers.dart';
-import '../../../core/router/route_names.dart';
 import '../../../domain/entities/enums.dart';
 import '../../../domain/entities/grading_event.dart';
 import '../../../domain/entities/grading_event_student.dart';
@@ -61,7 +60,7 @@ class GradingEventDetailScreen extends ConsumerWidget {
       floatingActionButton: event.status == GradingEventStatus.upcoming
           ? FloatingActionButton.extended(
               onPressed: () => context.pushNamed(
-                RouteNames.adminGradingNominate,
+                'adminGradingNominate',
                 pathParameters: {'eventId': event.id},
                 extra: event,
               ),
@@ -303,7 +302,7 @@ class _StudentTile extends ConsumerWidget {
         borderRadius: BorderRadius.circular(12),
         onTap: canRecord
             ? () => context.pushNamed(
-                RouteNames.adminGradingRecordResults,
+                'adminGradingRecordResults',
                 pathParameters: {'eventId': event.id},
                 extra: (event, eventStudent),
               )

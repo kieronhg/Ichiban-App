@@ -145,7 +145,7 @@ class _MembershipListScreenState extends ConsumerState<MembershipListScreen> {
                       membership: m,
                       profileMap: profileMap,
                       onTap: () => context.pushNamed(
-                        RouteNames.adminMembershipsDetail,
+                        'adminMembershipsDetail',
                         pathParameters: {'membershipId': m.id},
                         extra: m,
                       ),

@@ -124,7 +124,7 @@ class _PaymentsListScreenState extends ConsumerState<PaymentsListScreen> {
                       payment: payment,
                       profileName: profile?.fullName,
                       onTap: () => context.pushNamed(
-                        RouteNames.adminPaymentsDetail,
+                        'adminPaymentsDetail',
                         pathParameters: {'paymentId': payment.id},
                         extra: payment,
                       ),
