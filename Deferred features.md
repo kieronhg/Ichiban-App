@@ -12,6 +12,30 @@ needing to refer back to the original handover conversation.
 
 ---
 
+## 0. TESTING CLEANUP — Delete temporary admin Firestore document
+
+**Source:** Testing session 2026-05-01
+**Priority:** Must do before any real data or production use
+
+**What it is:**
+A temporary `adminUsers` document was manually created in Firestore to bypass the setup
+wizard during testing. It must be deleted before running the setup wizard properly.
+
+**Document to delete:**
+- Collection: `adminUsers`
+- Document ID: `E88rIjsab7h5ixUtjcQUSj45hB53`
+- Email: `kieronhg@yahoo.com`
+
+**How to delete:**
+Option A — Firebase Console: Firestore → `adminUsers` collection → select the document → Delete.
+Option B — Firebase CLI: `npx firebase-tools firestore:delete --project ichiban-app adminUsers/E88rIjsab7h5ixUtjcQUSj45hB53 --yes`
+
+**Also delete the corresponding Firebase Auth user** (`E88rIjsab7h5ixUtjcQUSj45hB53`) from
+Firebase Console → Authentication, then re-run the setup wizard from Settings to create the
+owner account properly with the full wizard flow (dojo name, disciplines, etc.).
+
+---
+
 ## 1. GDPR — Automatic Anonymisation (Cloud Function)
 
 **Source:** Disciplines, Ranks & GDPR handover — Section 5.3
@@ -65,29 +89,61 @@ Admin can export a full member record on request. The export includes:
 
 
 
-## 16. Memberships — Stripe Payment Integration
+## 16. Memberships — Stripe Cloud Functions (Backend Only)
 
-**Source:** Memberships handover
-**Depends on:** Memberships feature ✅ (now built), Stripe account setup
-**Scope:** Backend Cloud Functions + Flutter (partial)
+**Source:** Memberships handover + Payments/Invites/Notifications handover (2026-05-02)
+**Depends on:** Memberships feature ✅, Stripe account setup, Firebase Blaze plan
+**Scope:** Backend Cloud Functions ONLY — Flutter UI is complete
 
-**What it is:**
-The `Membership` entity has `stripeCustomerId` and `stripeSubscriptionId` placeholder fields
-already stored on the Firestore document. When Stripe integration is built:
+**Flutter UI already built (session 2026-05-02):**
+- `StripeService` in `lib/core/services/stripe_service.dart` — wraps all callable function calls
+- `StudentPortalMembershipScreen` — plan selection sheet, upgrade/downgrade/cancel flows,
+  grace period warning banner, pending downgrade notice
+- `MembershipStatus.gracePeriod` — enum value + all switch expressions updated
+- `Membership` entity — `gracePeriodEnd`, `pendingDowngradePlanId`, `downgradeRequestedAt` fields
+- Repository methods: `cancelAtPeriodEnd`, `startGracePeriod`, `requestDowngrade`, `clearPendingDowngrade`
 
-1. **Backend:** Cloud Functions handle Stripe webhooks (`invoice.paid`, `invoice.payment_failed`,
-   `customer.subscription.deleted`) and update Firestore membership status accordingly.
+**Cloud Functions still needed (`functions/` TypeScript directory):**
 
-2. **Flutter:** `PaymentMethod.stripe` is already a valid enum value. The Create wizard's
-   payment step should show a Stripe option that launches the Stripe payment sheet (using
-   `flutter_stripe` package — not yet in `pubspec.yaml`).
+### `createStripeCustomer` (HTTP Callable)
+- Input: `{ profileId: string }`
+- Creates a Stripe customer with the profile's email
+- Saves `stripeCustomerId` to the Firestore membership document
+- Returns: `{ customerId: string }`
 
-3. **Renewal:** Stripe subscriptions auto-renew; the Cloud Function webhook updates
-   `subscriptionRenewalDate` and writes a `membershipHistory` record after each successful charge.
+### `createStripeSubscription` (HTTP Callable)
+- Input: `{ profileId: string, planKey: string }`
+- Calls `ensureCustomer` internally, then creates a Stripe subscription for the plan price ID
+- Returns a `paymentIntent.client_secret` for the Flutter payment sheet
+- On success: writes membership with `status: active`, `stripeSubscriptionId`, `subscriptionRenewalDate`
+- Returns: `{ clientSecret: string }`
 
-**Note:** `CashPayment` records are NOT written for Stripe payments — the Stripe webhook
-handles the payment record side. The `paymentMethod: stripe` guard in `CreateMembershipUseCase`
-already skips the cash payment write.
+### `upgradeStripeSubscription` (HTTP Callable)
+- Input: `{ profileId: string, newPlanKey: string }`
+- If upgrading: immediately swaps to new price ID via `subscription.update()`
+- If downgrading: stores `pendingDowngradePlanId` on Firestore (applied at period end by webhook)
+- Returns: `{ clientSecret: string? }` — null for downgrades (no immediate charge)
+
+### `cancelStripeSubscription` (HTTP Callable)
+- Input: `{ profileId: string }`
+- Calls `stripe.subscriptions.update(id, { cancel_at_period_end: true })`
+- Updates Firestore: `cancelledAt: now` (leaves `isActive: true` until period ends)
+
+### `onStripeWebhook` (HTTP trigger, not callable)
+- Verifies Stripe webhook signature
+- Handles:
+  - `invoice.paid` → set `status: active`, update `subscriptionRenewalDate`, apply pending downgrade if any, write payment history record
+  - `invoice.payment_failed` → call `startGracePeriod` (7-day window), send `paymentFailed` notification
+  - `customer.subscription.deleted` → set `status: lapsed`, `isActive: false`, send `membershipLapsed` notification
+
+### `onGracePeriodExpired` (scheduled — runs daily)
+- Find all memberships where `status == gracePeriod` AND `gracePeriodEnd < now`
+- Set `status: lapsed`, `isActive: false`
+- Send `membershipLapsed` notification to member
+
+**Stripe plan key → price ID mapping:**
+Plan keys: `basicMonthly`, `basicAnnual`, `familyMonthly`, `familyAnnual` (plus `studentTrial` — no Stripe price, trial only).
+Store the mapping in Firebase Remote Config or a Firestore `config/stripePrices` document.
 
 ---
 
@@ -209,3 +265,121 @@ in CSV and/or PDF format, then delivers the file(s) to the owner.
 **Flutter side:** The GDPR settings screen (`lib/presentation/features/settings/gdpr_settings_screen.dart`)
 already shows the export UI. Currently shows a "not yet available" snackbar when tapped.
 When the function is deployed, replace the snackbar with the actual callable.
+
+---
+
+## 27. Invites — Cloud Functions (Backend Only)
+
+**Source:** Payments/Invites/Notifications handover (2026-05-02)
+**Depends on:** Admin invite Flutter UI ✅ (now built)
+**Scope:** Backend Cloud Functions ONLY — Flutter UI is complete
+
+**Flutter already built:**
+- `AcceptInviteScreen` — deep-link landing, password + PIN setup, creates Firebase Auth user
+- `InviteExpiredScreen` — expired link handling, request resend button
+- `_InviteSection` on `ProfileDetailScreen` — send/resend invite button, status badge
+- `profile.inviteStatus`, `inviteSentAt`, `inviteExpiresAt`, `inviteResendCount` fields on Profile
+
+**Cloud Functions needed:**
+
+### `sendStudentInviteEmail` (HTTP Callable)
+- Input: `{ profileId: string }`
+- Reads the profile to get email and first name
+- Generates the deep link: `https://app.ichibanapp.com/invite/accept?profileId=<id>`
+  (or the Firebase Dynamic Links equivalent if using dynamic links)
+- Sends an email from the email template (`emailTemplates/studentInvite` document)
+- **Requires Blaze plan** for outbound email
+
+### `requestInviteResend` (HTTP Callable)
+- Input: `{ profileId: string }`
+- Increments `inviteResendCount` on the profile
+- Resets `inviteExpiresAt` to 24 hours from now
+- Sets `inviteStatus: pending`
+- Notifies admin (writes a notification log of type `newSelfRegistration` or a new admin-targeted type)
+- Returns `{ success: true }`
+
+### `onInviteExpired` (scheduled — runs hourly or daily)
+- Finds all profiles where `inviteStatus == pending` AND `inviteExpiresAt < now`
+- Sets `inviteStatus: expired` on each
+- Sends `inviteExpired` notification to the admin (if notification type is wired up)
+
+---
+
+## 28. Notifications — Cloud Functions (Backend Only)
+
+**Source:** Payments/Invites/Notifications handover (2026-05-02)
+**Depends on:** Notifications Flutter layer ✅ (built in prior session)
+**Scope:** Backend Cloud Functions ONLY
+
+**Cloud Functions needed:**
+
+### `sendAnnouncement` (HTTP Callable)
+- Input: `{ title: string, body: string, targetType?: string }`
+- Looks up all profiles with a stored `fcmToken` (optionally filtered by `profileType`)
+- Sends an FCM multicast message
+- Writes a `notificationLog` document for each recipient
+- Type: `generalDojoAnnouncement`
+
+### `onTrialExpirySoon` (scheduled — runs daily)
+- Finds all memberships where `planType == studentTrial` AND `trialExpiryDate` is within
+  the alert window (default 7 days, from `appSettings.trialExpiryAlertDays`)
+- Sends a `trialExpiring` push notification to each member
+- Respects `communicationPreferences.trialExpiryReminders`
+
+### `cleanupExpiredNotifications` (scheduled — runs daily)
+- Deletes `notificationLogs` documents older than `appSettings.notificationRetentionDays`
+- This is the automatic counterpart to the manual `clearNotificationLogs` callable (item 25)
+
+**FCM token storage:**
+The `fcmToken` field on `Profile` is already defined. The Flutter app must call
+`FirebaseMessaging.instance.getToken()` on login and save it to the profile via
+`profileRepository.update(profile.copyWith(fcmToken: token))`. This is not yet wired up —
+add it to `student_auth_provider.dart` or the student portal init flow.
+
+---
+
+## 29. Members list — Discipline filter chip
+
+**Source:** admin-members.html design handoff
+**Depends on:** A bulk enrollment provider or denormalised discipline field on Profile
+
+**What it is:**
+The "Discipline · Any" chip in the Members list filter bar is shown but non-functional.
+It should filter the list to only show members enrolled in a specific discipline.
+
+**Why deferred:**
+Getting each member's enrolled discipline requires per-profile enrollment stream lookups
+(`allEnrollmentsForStudentProvider(profileId)`). Running one stream per member in a list
+of 140+ is expensive. The right fix is a new aggregated provider or a denormalised
+`primaryDisciplineId` field on the `Profile` entity.
+
+**Implementation options:**
+A) Add `primaryDisciplineId: String?` to the `Profile` entity and populate it on
+   enrolment — cheapest for the list screen.
+B) Create a new `allEnrollmentsProvider` (StreamProvider) that subscribes to the
+   `enrollments` collection group query in Firestore, builds a `Map<studentId, List<Enrollment>>`,
+   and exposes it. The list screen uses the map for filtering without per-row streams.
+
+**Flutter file:** `lib/presentation/features/profiles/profile_list_screen.dart`
+— Look for the `_IchibanChip('Discipline · Any', ...)` chip with empty `onTap: () {}`.
+
+---
+
+## 30. Members list — Export CSV
+
+**Source:** admin-members.html design handoff
+
+**What it is:**
+The "Export CSV" button in the Members list AppBar is present but does nothing (`onPressed: () {}`).
+It should export the current filtered list as a CSV file and share/download it.
+
+**Columns to include:** Name, Age, Join Date, Discipline, Rank, Role, Status, Email, Phone.
+
+**Implementation:**
+- Use the `csv` package (not yet in pubspec.yaml) to build the CSV string
+- Filter to the currently visible members (respecting active type/status/search filters)
+- Use `share_plus` or `path_provider` to save/share the file
+- Consider adding a loading state while generating
+
+**Flutter file:** `lib/presentation/features/profiles/profile_list_screen.dart`
+— Look for `OutlinedButton(onPressed: () {}, ...)` in the AppBar actions.

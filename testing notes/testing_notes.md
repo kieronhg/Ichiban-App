@@ -1323,3 +1323,420 @@ Replaced PageView + PageController with IndexedStack.
 - [ ] ✅ Complete all 4 pages with valid data — "Finish Setup" creates Firebase Auth user, writes Firestore docs, redirects to login
 - [ ] ✅ After setup is complete, revisiting /admin/setup redirects to login (setup guard active)
 - [ ] ⚠️ On a device where the previous PageView was blank, confirm the same device now renders correctly
+
+---
+
+## Phase 3 — Self Sign-Up Wizard
+
+### Wizard navigation
+- [ ] ✅ Tapping "Create account" on the login screen navigates to step 1 (Account details)
+- [ ] ✅ Progress bar shows "Step 1 of 10" and fills correctly as steps advance
+- [ ] ✅ AppBar title changes to the correct step title on each step
+- [ ] ✅ "Next" button validates the current step and refuses to advance if invalid (shows inline error messages)
+- [ ] ✅ Back button (step > 1) or Android back gesture returns to the previous step, preserving filled data
+- [ ] ✅ Close button (step 1) dismisses the wizard and returns to the login screen
+- [ ] ✅ Step 8 (Membership) shows the free-trial card with no user input required — "Next" advances without interaction
+
+### Step-by-step validation
+- [ ] ✅ Step 1: email format validated; password minimum 8 characters; confirm-password must match
+- [ ] ✅ Step 2: first name, last name, date of birth, address fields all required; phone minimum 7 digits
+- [ ] ✅ Step 2: enabling "I have children" shows a child form; disabling clears children from state
+- [ ] ✅ Step 2: adding and removing multiple children works; each child requires first name, last name, DOB
+- [ ] ✅ Step 2: date pickers open, enforce min/max date limits (adults: 1900–today; children: last 18 years–today)
+- [ ] ✅ Step 3: emergency contact name, relationship, and phone all required
+- [ ] ✅ Step 5: wizard refuses to advance with "Please select at least one discipline" if none selected; selecting disciplines works
+- [ ] ✅ Step 6: wizard refuses to advance unless the GDPR consent checkbox is ticked
+- [ ] ✅ Step 9: PIN must be exactly 4 digits; confirm PIN must match
+
+### Review step
+- [ ] ✅ Step 10 shows all entered data correctly (name, address, emergency contact, consents, disciplines count)
+- [ ] ✅ "Edit" links on each section navigate back to the correct step
+- [ ] ✅ After editing a section from review, returning to step 10 (via "Next" through remaining steps) shows updated values
+
+### Submission
+- [ ] ✅ Tapping "Create account" on step 10 shows a loading overlay and disables the button
+- [ ] ✅ On success: router redirects to the email verification screen (no manual navigation needed)
+- [ ] ✅ On success: Firebase Auth account exists for the new email
+- [ ] ✅ On success: a profile document appears in Firestore `profiles` collection with correct data, uid, selfRegistered=true, registrationStatus=pendingVerification
+- [ ] ✅ On success: owners receive a `selfRegistration` notification in their admin notification list
+- [ ] ⚠️ If registering a parent with children: parent profile has profileTypes=[parentGuardian]; child profiles exist with profileTypes=[juniorStudent], parentProfileId set to parent doc ID, and emergency contact auto-set to parent name/phone
+- [ ] ⚠️ Coaches assigned to a selected discipline also receive a `selfRegistration` notification; coaches NOT assigned to any selected discipline do NOT
+- [ ] ⚠️ Entering an email already registered with Firebase Auth produces a meaningful error message on step 10 (not a crash)
+- [ ] ⚠️ On submission failure the loading overlay clears, the error message banner appears on the review step, and the user can retry
+
+---
+
+## Phase 4 — Student Mobile Portal
+
+### Navigation & drawer
+- [ ] ✅ After email verification, app lands on student portal Home screen
+- [ ] ✅ Hamburger icon opens the side drawer from any portal screen
+- [ ] ✅ Drawer header shows correct initials, display name, and role label (Student / Junior Student / Parent / Guardian)
+- [ ] ✅ Active nav item is highlighted in accent colour
+- [ ] ✅ "Family" nav item only appears for parent/guardian profiles
+- [ ] ✅ All six nav items route to their correct screens without errors
+- [ ] ✅ Sign Out in the drawer (and on Account screen) signs out and returns to the entry/login screen
+
+### Home screen
+- [ ] ✅ Greeting uses correct time-of-day (Good morning / afternoon / evening) and student's first name
+- [ ] ✅ Membership summary card shows plan type, status badge, and renewal date (or "No active membership" if none)
+- [ ] ✅ "My Disciplines" section lists active enrolments with discipline name and current rank (or "Ungraded")
+- [ ] ✅ "Recent Notifications" shows up to 3 most recent push notifications; unread items have an accent dot
+- [ ] ✅ "See all" links on each section navigate to the corresponding detail screen
+- [ ] ✅ Pull-to-refresh reloads all three sections
+- [ ] ⚠️ If the student has no enrolments, the "My Disciplines" section shows the empty-state message
+
+### Grades screen
+- [ ] ✅ Lists all active enrolments with discipline name and current rank
+- [ ] ✅ Belt colour swatch matches the rank's colourHex (small coloured bar on the right)
+- [ ] ✅ Shows "Ungraded" for enrolments with no current rank ID
+- [ ] ⚠️ If the student has no active enrolments, the empty-state ("No disciplines yet") is shown
+
+### Membership screen
+- [ ] ✅ Active membership shows plan type, status badge, and all relevant dates (trial start/end, member since, next renewal, cancelled on)
+- [ ] ✅ Status badge colour: active=green, trial=amber, lapsed=red, cancelled/expired=grey, PAYT=blue
+- [ ] ✅ "speak to the dojo team" info box is shown below membership details
+- [ ] ⚠️ Account with pending registration status shows "Account pending" message with correct explanation text
+- [ ] ⚠️ Account with no membership at all shows "No active membership" card
+
+### Schedule screen
+- [ ] ✅ Shows "Schedule coming soon" placeholder with calendar icon (no errors)
+
+### Notifications screen
+- [ ] ✅ Lists all push notifications ordered most-recent first, with title, body excerpt, and timestamp
+- [ ] ✅ Unread notifications show an accent dot indicator
+- [ ] ✅ Tapping an unread notification calls markReadAt and the dot disappears on next stream update
+- [ ] ⚠️ Email-only notifications (no title or body) are filtered out and do not appear in the list
+- [ ] ⚠️ Empty state ("No notifications yet") shown if student has received no push notifications
+
+### Family screen
+- [ ] ✅ Parent/guardian profile: lists linked junior profiles with initials avatar, name, and date of birth
+- [ ] ✅ Empty state shown if no juniors are linked
+- [ ] ⚠️ Non-parent accessing /student-portal/family will see the empty state (no juniors linked to their ID)
+
+### Account screen
+- [ ] ✅ Shows avatar with initials, full name, and email at top
+- [ ] ✅ Personal details section: date of birth, gender (if set), phone
+- [ ] ✅ Address section: all address fields including optional line 2
+- [ ] ✅ Emergency contact section: name, relationship, phone
+- [ ] ✅ Medical notes section only shown if allergiesOrMedicalNotes is non-empty
+- [ ] ✅ "Sign Out" button signs out and returns to entry screen
+
+---
+
+## Phase 5 — Kiosk Mode
+
+### Activation
+- [ ] ✅ Owner dashboard AppBar shows the tablet icon button
+- [ ] ✅ Tapping the tablet icon opens the "Activate Kiosk Mode" dialog with a PIN field and explanatory text
+- [ ] ✅ Tapping "Cancel" dismisses the dialog without activating kiosk mode
+- [ ] ✅ Submitting with fewer than 4 digits shows validation error "PIN must be exactly 4 digits"
+- [ ] ✅ Submitting with a non-numeric value shows validation error
+- [ ] ✅ Submitting a valid 4-digit PIN activates kiosk mode and navigates to the student select screen
+- [ ] ✅ While kiosk mode is active, any attempt to navigate to an admin route is intercepted and redirected to the student select screen
+- [ ] ⚠️ Coach dashboard does NOT show the kiosk activation button (it is owner-only)
+
+### Student select screen in kiosk mode
+- [ ] ✅ Back arrow is hidden when kiosk mode is active
+- [ ] ✅ A lock icon button appears in the AppBar trailing position when kiosk mode is active
+- [ ] ✅ Back arrow is visible (and works) when kiosk mode is NOT active
+
+### Exit flow
+- [ ] ✅ Tapping the lock icon opens the "Exit Kiosk Mode" PIN dialog
+- [ ] ✅ Tapping "Cancel" dismisses the dialog and stays in kiosk mode
+- [ ] ✅ Entering an incorrect PIN shows "Incorrect PIN" error and clears the field; kiosk mode remains active
+- [ ] ✅ Entering the correct PIN deactivates kiosk mode and navigates to the entry screen (which redirects to admin dashboard if admin is still authenticated)
+- [ ] ⚠️ Kiosk mode state is session-only — restarting the app returns to normal mode
+
+---
+
+## Phase — Membership Payments (Student Portal)
+
+### Stripe plan selection sheet
+- [ ] ✅ Tapping "Choose a Plan" on trial/lapsed/expired membership opens the plan selection sheet
+- [ ] ✅ All 5 plans display with correct names and pricing
+- [ ] ✅ The current plan (if any) is highlighted / labelled
+- [ ] ✅ Selecting a cheaper plan shows a "downgrade" confirmation message
+- [ ] ✅ Selecting a more expensive plan shows an "upgrade" confirmation message
+- [ ] ✅ Tapping a plan calls StripeService and presents the payment sheet
+- [ ] ⚠️ Payment sheet requires valid Stripe publishable key in app config — test in Stripe test mode only
+- [ ] ⚠️ StripeService Cloud Functions (`createStripeCustomer`, `createStripeSubscription`, etc.) are not yet deployed — tapping any Stripe action will fail gracefully with an error snackbar
+
+### Grace period
+- [ ] ✅ A membership with `status: gracePeriod` shows a warning banner on the membership card
+- [ ] ✅ The banner displays the `gracePeriodEnd` date
+- [ ] ✅ "Update Payment Details" button appears (shows informational snackbar until Stripe webhook wires it up)
+- [ ] ✅ Grace period status appears as "Grace Period" (amber) in admin membership list, profile detail, and student portal
+
+### Cancel membership
+- [ ] ✅ "Cancel Membership" button appears for active Stripe-based memberships with no pending downgrade
+- [ ] ✅ Cancel confirmation dialog shows the renewal date ("active until…")
+- [ ] ✅ Confirming cancel calls `cancelAtPeriodEnd` — membership stays active until period end
+- [ ] ✅ After cancel, the button changes to show pending downgrade info (no second cancel option)
+
+### Pending downgrade notice
+- [ ] ✅ If `pendingDowngradePlanId` is set, the membership card shows a "Scheduled downgrade to X on [date]" notice
+- [ ] ✅ No "Upgrade Plan" or "Cancel" buttons appear when a downgrade is already pending
+
+---
+
+## Phase — Admin Invite Flow
+
+### Sending an invite (admin side)
+- [ ] ✅ Opening a student profile shows an "Invite" section (not shown for coaches or parent-only profiles)
+- [ ] ✅ Invite section shows status badge: "Not Sent" (grey), "Pending" (amber), "Accepted" (green), "Expired" (red)
+- [ ] ✅ "Send Invite" button appears for `notSent` or `expired` status
+- [ ] ✅ "Resend Invite" button appears for `pending` status
+- [ ] ✅ Tapping the button updates `inviteStatus: pending`, `inviteExpiresAt: now + 24h` in Firestore
+- [ ] ⚠️ The `sendStudentInviteEmail` Cloud Function is not yet deployed — the Firestore update still happens, but no email is sent
+- [ ] ✅ After tapping, the invite section refreshes to show "Pending" status and the sent date
+- [ ] ✅ Profile list shows a "Pending Invites (N)" chip with the count from `pendingInvitesProvider`
+- [ ] ✅ Tapping the pending invites chip filters the list to only pending-invite profiles
+- [ ] ✅ All type chips reset the pending-invites filter when tapped
+
+### Accepting an invite (student side)
+- [ ] ✅ Deep link `/invite/accept?profileId=<id>` opens `AcceptInviteScreen`
+- [ ] ✅ If the profile is not found, redirects to `InviteExpiredScreen`
+- [ ] ✅ If `inviteExpiresAt` is in the past or `inviteStatus == expired`, redirects to `InviteExpiredScreen?profileId=<id>`
+- [ ] ✅ Valid invite shows "Welcome, [FirstName]!" and the password step
+- [ ] ✅ Password validation: minimum 8 characters, confirm must match
+- [ ] ✅ Tapping Continue on the password step advances to the PIN step
+- [ ] ✅ PIN step: 4 individual digit boxes, auto-focus advances on each digit entered
+- [ ] ✅ Backspace in a PIN box returns focus to the previous box
+- [ ] ✅ Tapping "Activate account" with a 4-digit PIN triggers activation:
+  - Creates a Firebase Auth user with the profile's email + chosen password
+  - Updates profile: `uid`, `inviteStatus: accepted`, `emailVerified: true`
+  - Sets the PIN hash
+  - Navigates to the student portal home
+- [ ] ✅ If activation fails (e.g. email already in use), returns to the password step with an error message
+- [ ] ✅ Back button is hidden on the account setup screen (no way to accidentally navigate back mid-flow)
+
+### Expired invite screen
+- [ ] ✅ Shows "This invite has expired" message with a link-off icon
+- [ ] ✅ "Request a new invite" button shown if `profileId` is in the URL
+- [ ] ✅ Tapping "Request a new invite" calls the `requestInviteResend` Cloud Function (shows success snackbar)
+- [ ] ⚠️ `requestInviteResend` Cloud Function not yet deployed — snackbar will still show (error is caught silently)
+- [ ] ✅ "Contact the dojo directly" button opens a simple dialog
+
+---
+
+## Phase — Notification Preferences & Unread Badge
+
+### Notification preferences (student portal account screen)
+- [ ] ✅ "Notification preferences" card is visible on the Account screen
+- [ ] ✅ "Billing & payment reminders" toggle is locked on with a "Always sent" subtitle
+- [ ] ✅ Membership status changes, grading notifications, trial expiry reminders, and general announcements each have a working toggle
+- [ ] ✅ Toggling a preference immediately updates the profile in Firestore
+- [ ] ✅ Toggling off and back on persists correctly (no optimistic state — reads from live stream)
+
+### Unread badge on drawer
+- [ ] ✅ Notifications drawer item shows a red badge with the count of unread notifications
+- [ ] ✅ Badge disappears when all notifications are read (count = 0)
+
+---
+
+## Class titles and recurring sessions
+
+### Create wizard — title
+- [ ] ✅ Step 1 prompts for a class name with hint text "Kids Karate Class, Adults BJJ…"
+- [ ] ✅ Next button is disabled until at least one non-whitespace character is entered
+- [ ] ✅ Title carries through to the confirm summary screen
+- [ ] ✅ Creating a session with no title (blank) still works — discipline name is used as fallback in the AppBar and header
+
+### Create wizard — date (future dates)
+- [ ] ✅ Date picker allows selecting future dates (max restriction removed)
+- [ ] ✅ Past dates are still selectable for back-logging
+
+### Create wizard — recurring
+- [ ] ✅ Recurring step shows the day derived from the chosen date (e.g. "Repeats every Wednesday")
+- [ ] ✅ Toggle defaults to off; toggling on shows the info banner "Sessions will be created every [day] for 1 year"
+- [ ] ✅ Confirm screen shows "Weekly every [day] (52 sessions)" when recurring is on
+- [ ] ✅ Confirm button reads "Create 52 Sessions" when recurring is on
+- [ ] ✅ After saving a recurring class, Firestore contains exactly 52 sessions all sharing the same `recurringGroupId`
+- [ ] ✅ All 52 sessions have `isRecurring: true`, the same `disciplineId`, `title`, `startTime`, `endTime`
+- [ ] ✅ Sessions are 7 days apart; first is the chosen start date
+- [ ] ⚠️ Queue resolution only fires for the session whose date matches today; future sessions are silently skipped (expected behaviour)
+
+### Session detail — title and recurring badge
+- [ ] ✅ Title is shown as the primary heading in the header card; discipline name appears below it
+- [ ] ✅ AppBar title uses the class title (or discipline name if no title)
+- [ ] ✅ "Recurring · Weekly" badge is visible for recurring sessions; absent for one-off sessions
+
+### Edit recurring session
+- [ ] ✅ Edit icon is shown on the header of recurring sessions; absent on one-off sessions
+- [ ] ✅ Tapping edit shows a bottom sheet with "This session only" and "This and all future sessions"
+- [ ] ✅ "This session only" — updates only the tapped session's title/times/notes in Firestore; all other sessions in the series are unchanged
+- [ ] ✅ "This and all future sessions" — updates all sessions in the group whose `sessionDate` ≥ this session's date; past sessions in the same series are unchanged
+- [ ] ✅ Editing with an end time before start time shows a validation error; does not save
+- [ ] ✅ Cancelling the dialog makes no changes
+- [ ] ⚠️ Marking notifications as read is not yet built — the `isRead` field exists on `NotificationLog` but no UI or function marks them read yet
+
+### Design system — tokens (tokens.html)
+- [ ] ✅ App background renders as washi paper #F3EBDD (paper-1), not white
+- [ ] ✅ Primary action colour is crimson #8B2A1F; no navy or generic red
+- [ ] ✅ Belt colours use exact design values (e.g. black = #15120E, purple = #6E3B8C, not generic Flutter colours)
+- [ ] ✅ Headings use Noto Serif JP; body/labels use IBM Plex Sans / IBM Plex Mono via Google Fonts
+- [ ] ✅ Dark theme: scaffold background is dark umber #1A1815; text is #F0E8D8; crimson brightens to #C74A3B
+
+### Component library — widgets (components.html)
+- [ ] ✅ AppButton primary: crimson bg, paper-0 text, darkens on press, 40px height
+- [ ] ✅ AppButton secondary: transparent bg, ink-1 border; press inverts to ink-1 bg + paper-0 text
+- [ ] ✅ AppButton destructive: transparent bg, error border; press fills error red
+- [ ] ✅ AppButton text: no border, crimson text
+- [ ] ✅ AppButton loading: spinner + label shown; button is inert while loading
+- [ ] ✅ AppButton sm/lg sizes render at 32px / 52px heights
+- [ ] ✅ AppIconButton: 40×40, hairline border, darkens on press
+- [ ] ✅ AppFab: 56×56 circle, crimson, sh-3 shadow
+- [ ] ✅ AppTextField: mono eyebrow label above field; crimson border on focus; error text below in error state
+- [ ] ✅ AppSearchField: leading magnifier icon; 40px height
+- [ ] ✅ AppToggle: 44×24 pill; thumb slides; crimson when on
+- [ ] ✅ AppCheckbox: 20×20, 3px radius; ink-1 fill with tick when checked
+- [ ] ✅ PinDots: dots fill/empty animatedly; turn error-red on failed attempt
+- [ ] ✅ PinKeypad: 64×64 circle keys with hairline border; CLEAR and backspace keys transparent
+- [ ] ✅ MembershipBadge: shows correct colour/wash per status (active=green, lapsed=red, trial=indigo, expiringSoon=ochre, expired/cancelled=grey)
+- [ ] ✅ RoleBadge: adult=indigo, junior=tea, coach=crimson, parent=ochre — no leading dot
+- [ ] ✅ DisciplineChip: pill shape, coloured dot matches discipline colour
+- [ ] ✅ BeltStrip: correct colour, sheen overlay; white belt has hairline border not sheen; stripe tab renders on right for striped belts
+- [ ] ✅ MemberAvatar: shows initials in Noto Serif JP; sm/md/lg/xl sizes correct
+- [ ] ✅ AppCard: paper-0 bg, hairline border, sh-1 shadow; press animates down 1px when onTap provided
+- [ ] ✅ DotDivider: dotted hairline line renders inside cards
+- [ ] ✅ MemberListTile: avatar | name+belt | role badge | status badge; hairline divider between rows
+- [ ] ✅ StepIndicator: done steps show tick + ink-1 bg; current = crimson; pending = hairline; lines connect steps
+- [ ] ✅ EmptyState: seal glyph in crimson stamp at –3°; title in display font; optional CTA button
+- [ ] ✅ SkeletonBox: shimmer animation paper-3→paper-2→paper-3 cycles at 1.4s
+- [ ] ✅ SkeletonListTile: avatar circle + two text lines shown as skeleton rows
+
+---
+
+## Owner Dashboard — Redesign (admin-dashboard.html)
+
+### Stat cards
+- [ ] ✅ Four stat cards render in a 4-column row on wide screens (≥500px) and 2×2 grid on narrow screens
+- [ ] ✅ "Active members" card shows total count with "X adults · Y juniors" subtitle when data is present
+- [ ] ✅ "Trials expiring" card shows ochre left border when trialCount > 0; no border when 0
+- [ ] ✅ "Memberships lapsed" card shows error-red left border when lapsedCount > 0; shows "All clear" subtitle when 0
+- [ ] ✅ "Sessions this week" card shows session count and check-in count subtitle; shows "—" while loading
+- [ ] ✅ Stat card numbers use large display text (36px Noto Serif JP)
+
+### Greeting & date label
+- [ ] ✅ AppBar title shows "Good morning/afternoon/evening, [name]" based on local time
+- [ ] ✅ "At a glance · [day] [date] [month]" label renders above stat cards
+
+### Layout
+- [ ] ✅ On wide screens (≥600px): activity feed (2/3) and sidebar (1/3) render side by side
+- [ ] ✅ On narrow screens (<600px): sidebar stacks above activity feed
+
+### Activity feed
+- [ ] ✅ Timestamp shows HH:mm for today's entries, Xm/Xd/d MMM for older entries
+- [ ] ✅ Coloured dots: payments=tea, grading=crimson, announcements=indigo, membership changes=ochre, default=ink-3
+- [ ] ✅ "View all →" button visible (placeholder for now)
+- [ ] ✅ Empty state and error state render gracefully
+
+### Attention panel
+- [ ] ✅ Attention panel hides entirely when there are no alerts
+- [ ] ✅ Error-severity alerts show crimson badge, warning-severity show ochre badge
+- [ ] ✅ Multiple alerts separated by dividers
+
+### Quick actions
+- [ ] ✅ "Add" tile navigates to Add Member screen
+- [ ] ✅ "Record" tile navigates to Record Payment screen
+- [ ] ✅ "Mark" tile navigates to Create Attendance Session screen
+
+### Upcoming grading
+- [ ] ✅ Upcoming grading panel hides when there are no upcoming events
+- [ ] ✅ Shows next upcoming grading date and title
+- [ ] ✅ "Review shortlist →" navigates to the correct grading detail screen
+- [ ] ⚠️ Panel hides while loading and on error (silent failure — acceptable for a dashboard widget)
+
+### Kiosk mode
+- [ ] ✅ Kiosk Mode button in AppBar still opens PIN dialog and activates correctly
+
+---
+
+## Coach Dashboard — Redesign (admin-dashboard-coach.html)
+
+### Greeting header
+- [ ] ✅ AppBar shows time-aware greeting ("Good morning/afternoon/evening, [firstName]")
+- [ ] ✅ Greeting sub-header shows date/time + "X sessions left this week" summary text
+- [ ] ✅ "One session left" uses singular form; "No more sessions this week" shows when count is 0
+- [ ] ✅ Discipline scope tags render for each assigned discipline with coloured dot + name
+- [ ] ✅ Scope tags use correct discipline colours (karate=crimson, judo=indigo, kendo=ink-2, etc.)
+
+### Layout
+- [ ] ✅ Wide (≥600px): left column (sessions + gradings) and right column (compliance + summary + actions) side by side
+- [ ] ✅ Narrow (<600px): panels stack — sessions → gradings → right column
+
+### Today's sessions panel
+- [ ] ✅ Live pulsing green dot animates continuously in panel header
+- [ ] ✅ Sessions sorted by start time ascending
+- [ ] ✅ Each row shows: start/end time (monospace) | discipline dot + title | check-in fraction + progress bar
+- [ ] ✅ "Up next" tag (amber) appears for sessions starting within 60 minutes
+- [ ] ✅ "In progress" tag appears once session start time has passed (until end time)
+- [ ] ✅ Progress bar turns amber (ochre) when ≥90% capacity
+- [ ] ✅ Enrolled count denominator uses discipline active member count
+- [ ] ✅ Empty state: "空" glyph + "No classes today." + "Create session" button
+- [ ] ✅ Loading skeleton: two shimmer rows animate paper-2→paper-3→paper-2
+
+### Upcoming gradings panel
+- [ ] ✅ Gradings from all assigned disciplines combined and sorted by date, capped at 3
+- [ ] ✅ Calendar date block shows day abbreviation, numeric day, month abbreviation
+- [ ] ✅ "+ Create event" button navigates to grading create screen
+- [ ] ✅ Row tap navigates to grading detail screen
+
+### Compliance panel
+- [ ] ✅ DBS and First Aid rows render for coach's own profile
+- [ ] ✅ "Clear" state: no coloured left border, green badge
+- [ ] ✅ "Warn" state (expiring <60 days): ochre left border, "Renew soon" badge
+- [ ] ✅ "Danger" state (expired): error-red left border, "Action required" badge
+- [ ] ✅ "Pending verification" row appears when dbs.pendingVerification is true (indigo treatment)
+- [ ] ✅ Panel shows "Compliance profile not found" gracefully if CoachProfile not loaded
+- [ ] ⚠️ "Update" button navigates to My Profile — test DBS update flow end-to-end
+
+### Discipline summary panel
+- [ ] ✅ One row per assigned discipline: coloured swatch | name | enrolled | lapsed | PAYT
+- [ ] ✅ Lapsed and PAYT counts show in ochre when >0
+- [ ] ✅ Panel hides when coach has no assigned disciplines
+
+### Quick actions panel
+- [ ] ✅ Dark ink-1 background with paper-0 text
+- [ ] ✅ First action is contextual: "Mark attendance — [first discipline name]"
+- [ ] ✅ All three actions navigate to correct screens
+- [ ] ✅ Row hover/tap ripple visible on mobile and desktop
+
+---
+
+## Members list redesign (design handoff — admin-members.html)
+
+### Filter bar
+- [ ] ✅ Search field: paper-0 background, hairline border, r-sm radius, IBM Plex Sans 14px
+- [ ] ✅ Search filters member list in real time as you type
+- [ ] ✅ Role chips show live counts (All, Adults, Juniors, Coaches, Parents)
+- [ ] ✅ Role chips use Ichiban mono style: uppercase, pill shape, ink-1 bg when active
+- [ ] ✅ Tapping a role chip filters the list to that type only; tapping again deselects (back to All)
+- [ ] ✅ Status chip cycles: Any → Active → Trial → Lapsed → Any on each tap
+- [ ] ✅ "Discipline · Any" chip is shown but does not yet filter (deferred)
+
+### Table header row
+- [ ] ✅ Paper-2 background, IBM Plex Mono 10px uppercase ink-3 labels
+- [ ] ✅ Column headers: Name, Discipline · Rank, Role, Status
+- [ ] ✅ Header columns visually align with data rows
+
+### Member rows
+- [ ] ✅ Avatar: 32px circle, Noto Serif JP initials, paper-3 bg, hairline border
+- [ ] ✅ Name: IBM Plex Sans 14px w500 ink-1
+- [ ] ✅ Subtitle: IBM Plex Mono 11px ink-3 — format "N y · joined Mon YYYY"
+- [ ] ✅ Belt strip + rank label shown when member has an active enrolment
+- [ ] ✅ Kendo members show KendoRankChip (dashed border, 剣 prefix) instead of belt strip
+- [ ] ✅ Role badge matches profile type (Coach=crimson, Junior=tea, Adult=indigo, Parent=ochre)
+- [ ] ✅ Status badge reflects profile.registrationStatus (Active/Trial/Lapsed)
+- [ ] ✅ Row tap navigates to profile detail screen
+- [ ] ✅ Hairline divider between rows
+
+### Empty state
+- [ ] ✅ With active filters: "No members match your filters." + "Clear filters" button
+- [ ] ✅ Clear filters resets search, type chip, and status chip
+- [ ] ✅ Without filters (truly empty): "No members yet. Tap + to add the first one."
+
+### AppBar actions
+- [ ] ✅ "Export CSV" outlined button is present (no-op for now)
+- [ ] ✅ "+ Add member" crimson filled button navigates to create profile screen
