@@ -13,6 +13,7 @@ import '../../../domain/entities/enrollment.dart';
 import '../../../domain/entities/enums.dart';
 import '../../../domain/entities/grading_event.dart';
 import '../../../domain/entities/rank.dart';
+import '../../shared/widgets/rank_ladder_row.dart';
 
 class DisciplineDetailScreen extends ConsumerWidget {
   const DisciplineDetailScreen({super.key, required this.disciplineId});
@@ -55,6 +56,14 @@ class _DisciplineDetailView extends ConsumerStatefulWidget {
 
 class _DisciplineDetailViewState extends ConsumerState<_DisciplineDetailView> {
   bool _reordering = false;
+
+  Map<String, int> _computeHolderCounts(List<Enrollment> enrollments) {
+    final counts = <String, int>{};
+    for (final e in enrollments) {
+      counts[e.currentRankId] = (counts[e.currentRankId] ?? 0) + 1;
+    }
+    return counts;
+  }
 
   Future<void> _reorder(List<Rank> ranks, int oldIndex, int newIndex) async {
     if (newIndex > oldIndex) newIndex -= 1;
@@ -232,25 +241,81 @@ class _DisciplineDetailViewState extends ConsumerState<_DisciplineDetailView> {
 
                 // shrinkWrap so the rank list sizes to its content inside
                 // the outer SingleChildScrollView
+                final isKendo = discipline.name.toLowerCase().contains('kendo');
+                final holderCounts = _computeHolderCounts(
+                  ref
+                          .watch(
+                            enrollmentsForDisciplineProvider(discipline.id),
+                          )
+                          .asData
+                          ?.value ??
+                      [],
+                );
+
                 return ReorderableListView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: ranks.length,
                   onReorder: (oldIndex, newIndex) =>
                       _reorder(ranks, oldIndex, newIndex),
-                  itemBuilder: (context, i) => _RankTile(
-                    key: ValueKey(ranks[i].id),
-                    rank: ranks[i],
-                    onEdit: () => context.pushNamed(
-                      'adminRankEdit',
-                      pathParameters: {
-                        'disciplineId': discipline.id,
-                        'rankId': ranks[i].id,
-                      },
-                      extra: ranks[i],
-                    ),
-                    onDelete: () => _confirmDelete(context, ranks[i]),
-                  ),
+                  itemBuilder: (context, i) {
+                    final rank = ranks[i];
+                    return RankLadderRow(
+                      key: ValueKey(rank.id),
+                      rank: rank,
+                      position: i + 1,
+                      holderCount: holderCounts[rank.id],
+                      isKendo: isKendo,
+                      trailing: PopupMenuButton<_RankAction>(
+                        icon: const Icon(
+                          Icons.more_vert,
+                          color: AppColors.textSecondary,
+                          size: 18,
+                        ),
+                        onSelected: (action) {
+                          if (action == _RankAction.edit) {
+                            context.pushNamed(
+                              'adminRankEdit',
+                              pathParameters: {
+                                'disciplineId': discipline.id,
+                                'rankId': rank.id,
+                              },
+                              extra: rank,
+                            );
+                          }
+                          if (action == _RankAction.delete) {
+                            _confirmDelete(context, rank);
+                          }
+                        },
+                        itemBuilder: (_) => [
+                          const PopupMenuItem(
+                            value: _RankAction.edit,
+                            child: ListTile(
+                              leading: Icon(Icons.edit_outlined),
+                              title: Text('Edit'),
+                              contentPadding: EdgeInsets.zero,
+                              dense: true,
+                            ),
+                          ),
+                          PopupMenuItem(
+                            value: _RankAction.delete,
+                            child: ListTile(
+                              leading: Icon(
+                                Icons.delete_outline,
+                                color: AppColors.error,
+                              ),
+                              title: Text(
+                                'Delete',
+                                style: TextStyle(color: AppColors.error),
+                              ),
+                              contentPadding: EdgeInsets.zero,
+                              dense: true,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
                 );
               },
             ),
@@ -281,186 +346,7 @@ class _DisciplineDetailViewState extends ConsumerState<_DisciplineDetailView> {
   }
 }
 
-// ── Rank tile ──────────────────────────────────────────────────────────────
-
-class _RankTile extends StatelessWidget {
-  const _RankTile({
-    super.key,
-    required this.rank,
-    required this.onEdit,
-    required this.onDelete,
-  });
-
-  final Rank rank;
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      leading: _BeltSwatch(colourHex: rank.colourHex),
-      title: Text(
-        rank.name,
-        style: const TextStyle(fontWeight: FontWeight.w500),
-      ),
-      subtitle: Row(
-        children: [
-          _RankTypeChip(rank.rankType),
-          if (rank.monCount != null) ...[
-            const SizedBox(width: 6),
-            _MonCountBadge(rank.monCount!),
-          ],
-          if (rank.minAttendanceForGrading != null) ...[
-            const SizedBox(width: 6),
-            Text(
-              '${rank.minAttendanceForGrading} sessions min',
-              style: const TextStyle(
-                fontSize: 11,
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ],
-        ],
-      ),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          PopupMenuButton<_RankAction>(
-            icon: const Icon(Icons.more_vert, color: AppColors.textSecondary),
-            onSelected: (action) {
-              if (action == _RankAction.edit) onEdit();
-              if (action == _RankAction.delete) onDelete();
-            },
-            itemBuilder: (_) => [
-              const PopupMenuItem(
-                value: _RankAction.edit,
-                child: ListTile(
-                  leading: Icon(Icons.edit_outlined),
-                  title: Text('Edit'),
-                  contentPadding: EdgeInsets.zero,
-                  dense: true,
-                ),
-              ),
-              PopupMenuItem(
-                value: _RankAction.delete,
-                child: ListTile(
-                  leading: Icon(Icons.delete_outline, color: AppColors.error),
-                  title: Text(
-                    'Delete',
-                    style: TextStyle(color: AppColors.error),
-                  ),
-                  contentPadding: EdgeInsets.zero,
-                  dense: true,
-                ),
-              ),
-            ],
-          ),
-          // Drag handle (built into ReorderableListView)
-          const Icon(Icons.drag_handle, color: AppColors.textSecondary),
-        ],
-      ),
-    );
-  }
-}
-
 enum _RankAction { edit, delete }
-
-// ── Belt colour swatch ─────────────────────────────────────────────────────
-
-class _BeltSwatch extends StatelessWidget {
-  const _BeltSwatch({required this.colourHex});
-
-  final String? colourHex;
-
-  @override
-  Widget build(BuildContext context) {
-    final colour = _parseHex(colourHex);
-    return Container(
-      width: 32,
-      height: 32,
-      decoration: BoxDecoration(
-        color: colour ?? AppColors.surfaceVariant,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: Colors.black12),
-      ),
-      child: colour == null
-          ? const Icon(
-              Icons.format_color_reset,
-              size: 16,
-              color: AppColors.textSecondary,
-            )
-          : null,
-    );
-  }
-
-  static Color? _parseHex(String? hex) {
-    if (hex == null || hex.isEmpty) return null;
-    final clean = hex.replaceAll('#', '').trim();
-    if (clean.length != 6) return null;
-    final value = int.tryParse('FF$clean', radix: 16);
-    return value != null ? Color(value) : null;
-  }
-}
-
-// ── Rank-type chip ─────────────────────────────────────────────────────────
-
-class _RankTypeChip extends StatelessWidget {
-  const _RankTypeChip(this.type);
-
-  final RankType type;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: _colour(type).withAlpha(30),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Text(
-        _label(type),
-        style: TextStyle(
-          color: _colour(type),
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
-
-  String _label(RankType t) => switch (t) {
-    RankType.kyu => 'Kyu',
-    RankType.dan => 'Dan',
-    RankType.mon => 'Mon',
-    RankType.ungraded => 'Ungraded',
-  };
-
-  Color _colour(RankType t) => switch (t) {
-    RankType.kyu => AppColors.info,
-    RankType.dan => AppColors.primary,
-    RankType.mon => AppColors.success,
-    RankType.ungraded => AppColors.textSecondary,
-  };
-}
-
-// ── Mon count badge ────────────────────────────────────────────────────────
-
-class _MonCountBadge extends StatelessWidget {
-  const _MonCountBadge(this.count);
-
-  final int count;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: List.generate(
-        count,
-        (_) => const Icon(Icons.circle, size: 6, color: AppColors.accent),
-      ),
-    );
-  }
-}
 
 // ── Grading Events section ────────────────────────────────────────────────
 

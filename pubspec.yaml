@@ -35,6 +35,9 @@ dependencies:
   shared_preferences: ^2.3.2
   crypto: ^3.0.3
 
+  # Typography
+  google_fonts: ^6.2.1
+
   # Utilities
   equatable: ^2.0.5
   uuid: ^4.4.2
