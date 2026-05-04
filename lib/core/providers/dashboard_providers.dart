@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/entities/announcement.dart';
+import '../../domain/entities/attendance_record.dart';
 import '../../domain/entities/cash_payment.dart';
 import '../../domain/entities/enums.dart';
 import '../../domain/entities/grading_event.dart';
@@ -19,18 +20,24 @@ import 'repository_providers.dart';
 class MemberMetrics {
   const MemberMetrics({
     required this.activeCount,
+    required this.adultCount,
+    required this.juniorCount,
     required this.trialCount,
     required this.lapsedCount,
     required this.newThisMonth,
   });
 
   final int activeCount;
+  final int adultCount;
+  final int juniorCount;
   final int trialCount;
   final int lapsedCount;
   final int newThisMonth;
 
   static const zero = MemberMetrics(
     activeCount: 0,
+    adultCount: 0,
+    juniorCount: 0,
     trialCount: 0,
     lapsedCount: 0,
     newThisMonth: 0,
@@ -96,6 +103,7 @@ class CoachDisciplineSummary {
 
 final memberMetricsProvider = Provider<MemberMetrics>((ref) {
   final memberships = ref.watch(membershipListProvider).asData?.value ?? [];
+  final profiles = ref.watch(profileListProvider).asData?.value ?? [];
   final now = DateTime.now();
   final monthStart = DateTime(now.year, now.month, 1);
 
@@ -104,11 +112,15 @@ final memberMetricsProvider = Provider<MemberMetrics>((ref) {
   var lapsedCount = 0;
   var newThisMonth = 0;
 
+  // Track active member profile IDs for adult/junior split
+  final activeMemberProfileIds = <String>{};
+
   for (final m in memberships) {
     switch (m.status) {
       case MembershipStatus.active:
       case MembershipStatus.payt:
         activeCount++;
+        activeMemberProfileIds.addAll(m.memberProfileIds);
       case MembershipStatus.trial:
         trialCount++;
       case MembershipStatus.gracePeriod:
@@ -121,8 +133,23 @@ final memberMetricsProvider = Provider<MemberMetrics>((ref) {
     if (m.createdAt.isAfter(monthStart)) newThisMonth++;
   }
 
+  // Derive adult/junior split from profile types
+  var adultCount = 0;
+  var juniorCount = 0;
+  for (final p in profiles) {
+    if (activeMemberProfileIds.contains(p.id)) {
+      if (p.isJunior) {
+        juniorCount++;
+      } else if (p.isAdult) {
+        adultCount++;
+      }
+    }
+  }
+
   return MemberMetrics(
     activeCount: activeCount,
+    adultCount: adultCount,
+    juniorCount: juniorCount,
     trialCount: trialCount,
     lapsedCount: lapsedCount,
     newThisMonth: newThisMonth,
@@ -451,6 +478,137 @@ final coachDisciplineSummaryProvider = FutureProvider.autoDispose
         upcomingGradings: upcoming.take(3).toList(),
       );
     });
+
+// ── Coach remaining sessions this week ───────────────────────────────────────
+
+/// Count of sessions remaining this week (from now until Sunday) for the
+/// given discipline IDs. Uses getRecentSessions as a proxy because there is
+/// no range-future query; sessions for the current week are typically already
+/// persisted.
+final coachRemainingWeekSessionsProvider = FutureProvider.autoDispose
+    .family<int, List<String>>((ref, disciplineIds) async {
+      final repo = ref.read(attendanceRepositoryProvider);
+      final now = DateTime.now();
+      // Monday = weekday 1, Sunday = 7
+      final daysUntilSunday = 7 - now.weekday;
+      final weekEnd = DateTime(
+        now.year,
+        now.month,
+        now.day + daysUntilSunday + 1,
+      );
+      final sessions = await repo.getRecentSessions(100);
+      return sessions.where((s) {
+        if (!s.sessionDate.isBefore(weekEnd)) return false;
+        if (disciplineIds.isNotEmpty &&
+            !disciplineIds.contains(s.disciplineId)) {
+          return false;
+        }
+        // Parse startTime "HH:mm" to determine if session is still upcoming
+        final parts = s.startTime.split(':');
+        if (parts.length < 2) return false;
+        final sessionStart = DateTime(
+          s.sessionDate.year,
+          s.sessionDate.month,
+          s.sessionDate.day,
+          int.tryParse(parts[0]) ?? 0,
+          int.tryParse(parts[1]) ?? 0,
+        );
+        return sessionStart.isAfter(now);
+      }).length;
+    });
+
+// ── Coach discipline stats (enrolled / lapsed / PAYT) ─────────────────────────
+
+class CoachDisciplineStats {
+  const CoachDisciplineStats({
+    required this.enrolled,
+    required this.lapsed,
+    required this.payt,
+  });
+
+  final int enrolled;
+  final int lapsed;
+  final int payt;
+}
+
+final coachDisciplineStatsProvider = FutureProvider.autoDispose
+    .family<CoachDisciplineStats, String>((ref, disciplineId) async {
+      final enrollmentRepo = ref.read(enrollmentRepositoryProvider);
+      final memberships =
+          ref.read(membershipListProvider).asData?.value ?? <Membership>[];
+
+      final enrollments = await enrollmentRepo.getForDiscipline(disciplineId);
+      final enrolledProfileIds = enrollments.map((e) => e.studentId).toSet();
+
+      var lapsed = 0;
+      var payt = 0;
+
+      for (final m in memberships) {
+        final hasEnrolled = m.memberProfileIds.any(
+          (id) => enrolledProfileIds.contains(id),
+        );
+        if (!hasEnrolled) continue;
+        if (m.status == MembershipStatus.lapsed ||
+            m.status == MembershipStatus.expired) {
+          lapsed++;
+        } else if (m.status == MembershipStatus.payt) {
+          payt++;
+        }
+      }
+
+      return CoachDisciplineStats(
+        enrolled: enrollments.length,
+        lapsed: lapsed,
+        payt: payt,
+      );
+    });
+
+// ── Sessions this week ────────────────────────────────────────────────────────
+
+final sessionsThisWeekProvider =
+    FutureProvider.autoDispose<({int sessionCount, int checkInCount})>((
+      ref,
+    ) async {
+      final repo = ref.read(attendanceRepositoryProvider);
+      final now = DateTime.now();
+      final weekStart = now.subtract(Duration(days: now.weekday - 1));
+      final weekStartMidnight = DateTime(
+        weekStart.year,
+        weekStart.month,
+        weekStart.day,
+      );
+      final sessions = await repo.getRecentSessions(50);
+      final thisWeekSessions = sessions
+          .where((s) => s.sessionDate.isAfter(weekStartMidnight))
+          .toList();
+      final records = thisWeekSessions.isEmpty
+          ? <AttendanceRecord>[]
+          : await repo.getRecordsForPeriod(weekStartMidnight, now);
+      return (
+        sessionCount: thisWeekSessions.length,
+        checkInCount: records.length,
+      );
+    });
+
+// ── Upcoming grading ──────────────────────────────────────────────────────────
+
+final upcomingGradingProvider = FutureProvider.autoDispose<GradingEvent?>((
+  ref,
+) async {
+  final repo = ref.read(gradingEventRepositoryProvider);
+  final events = await repo.getAll();
+  final now = DateTime.now();
+  final upcoming =
+      events
+          .where(
+            (e) =>
+                e.status == GradingEventStatus.upcoming &&
+                e.eventDate.isAfter(now),
+          )
+          .toList()
+        ..sort((a, b) => a.eventDate.compareTo(b.eventDate));
+  return upcoming.isEmpty ? null : upcoming.first;
+});
 
 // ── Student portal helpers ────────────────────────────────────────────────────
 

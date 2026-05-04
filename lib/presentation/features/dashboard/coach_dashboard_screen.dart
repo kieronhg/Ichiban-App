@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -9,10 +11,11 @@ import '../../../core/providers/coach_profile_providers.dart';
 import '../../../core/providers/dashboard_providers.dart';
 import '../../../core/providers/discipline_providers.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../domain/entities/attendance_session.dart';
 import '../../../domain/entities/coach_profile.dart';
-import 'admin_drawer.dart';
 import '../../../domain/entities/enums.dart';
 import '../../../domain/entities/grading_event.dart';
+import 'admin_drawer.dart';
 
 class CoachDashboardScreen extends ConsumerWidget {
   const CoachDashboardScreen({super.key});
@@ -20,20 +23,18 @@ class CoachDashboardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final adminUser = ref.watch(currentAdminUserProvider);
+    final firstName = adminUser?.firstName ?? 'Coach';
     final disciplineIds = ref.watch(assignedDisciplineIdsProvider);
-    final coachProfile = adminUser != null
-        ? ref.watch(coachProfileProvider(adminUser.firebaseUid)).asData?.value
-        : null;
 
     return Scaffold(
       drawer: const AdminDrawer(),
       appBar: AppBar(
-        title: Text('Hi, ${adminUser?.firstName ?? 'Coach'}'),
+        title: Text(_greeting(firstName)),
         actions: [
           TextButton.icon(
             onPressed: () => context.pushNamed('adminMyProfile'),
             icon: const Icon(Icons.manage_accounts_outlined, size: 18),
-            label: const Text('My Profile'),
+            label: const Text('My profile'),
           ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.add_circle_outline),
@@ -59,102 +60,310 @@ class CoachDashboardScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // ── Today's sessions ────────────────────────────────────────────
-          _SectionLabel(label: "Today's sessions"),
-          const SizedBox(height: 8),
-          _TodaySessionsCard(disciplineIds: disciplineIds),
+          _CoachGreetingHeader(
+            disciplineIds: disciplineIds,
+            firstName: firstName,
+          ),
+          const SizedBox(height: 14),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              if (constraints.maxWidth >= 600) {
+                return _WideLayout(disciplineIds: disciplineIds);
+              }
+              return _NarrowLayout(disciplineIds: disciplineIds);
+            },
+          ),
+          const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
 
-          const SizedBox(height: 20),
+  String _greeting(String firstName) {
+    final hour = DateTime.now().hour;
+    final salutation = hour < 12
+        ? 'Good morning'
+        : hour < 17
+        ? 'Good afternoon'
+        : 'Good evening';
+    return '$salutation, $firstName';
+  }
+}
 
-          // ── Compliance ───────────────────────────────────────────────────
-          _SectionLabel(label: 'My compliance'),
-          const SizedBox(height: 8),
-          if (coachProfile != null)
-            _ComplianceCard(profile: coachProfile)
-          else
-            const _CompliancePlaceholder(),
+// ── Greeting header ───────────────────────────────────────────────────────────
 
-          const SizedBox(height: 20),
+class _CoachGreetingHeader extends ConsumerWidget {
+  const _CoachGreetingHeader({
+    required this.disciplineIds,
+    required this.firstName,
+  });
 
-          // ── Discipline summaries ─────────────────────────────────────────
-          if (disciplineIds.isNotEmpty) ...[
-            _SectionLabel(label: 'My disciplines'),
-            const SizedBox(height: 8),
-            ...disciplineIds.map(
-              (id) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _DisciplineSummaryCard(disciplineId: id),
+  final List<String> disciplineIds;
+  final String firstName;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final remainingAsync = ref.watch(
+      coachRemainingWeekSessionsProvider(disciplineIds),
+    );
+    final remaining = remainingAsync.asData?.value ?? 0;
+    final summaryText = remaining == 0
+        ? 'No more sessions this week.'
+        : remaining == 1
+        ? 'One session left this week.'
+        : '$remaining sessions left this week.';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          DateFormat('EEEE d MMMM · HH:mm').format(DateTime.now()),
+          style: const TextStyle(
+            fontSize: 10,
+            letterSpacing: 0.8,
+            color: AppColors.ink3,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Expanded(
+              child: Text(
+                summaryText,
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.w500,
+                  height: 1.1,
+                ),
               ),
             ),
+            const SizedBox(width: 12),
+            if (disciplineIds.isNotEmpty)
+              Wrap(
+                spacing: 6,
+                children: disciplineIds
+                    .map((id) => _DisciplineScopeTag(disciplineId: id))
+                    .toList(),
+              ),
           ],
+        ),
+      ],
+    );
+  }
+}
 
-          const SizedBox(height: 24),
+class _DisciplineScopeTag extends ConsumerWidget {
+  const _DisciplineScopeTag({required this.disciplineId});
+
+  final String disciplineId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final name =
+        ref.watch(disciplineProvider(disciplineId)).asData?.value?.name ??
+        disciplineId;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.paper2,
+        border: Border.all(color: AppColors.hairline),
+        borderRadius: BorderRadius.circular(2),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(
+              color: _disciplineColor(name),
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            name.toUpperCase(),
+            style: const TextStyle(
+              fontSize: 10,
+              letterSpacing: 0.8,
+              color: AppColors.ink2,
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
-// ── Today's sessions ──────────────────────────────────────────────────────────
+// ── Wide layout ───────────────────────────────────────────────────────────────
 
-class _TodaySessionsCard extends ConsumerWidget {
-  const _TodaySessionsCard({required this.disciplineIds});
+class _WideLayout extends ConsumerWidget {
+  const _WideLayout({required this.disciplineIds});
+
+  final List<String> disciplineIds;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(flex: 5, child: _LeftColumn(disciplineIds: disciplineIds)),
+        const SizedBox(width: 14),
+        Expanded(flex: 4, child: _RightColumn(disciplineIds: disciplineIds)),
+      ],
+    );
+  }
+}
+
+// ── Narrow layout ─────────────────────────────────────────────────────────────
+
+class _NarrowLayout extends ConsumerWidget {
+  const _NarrowLayout({required this.disciplineIds});
+
+  final List<String> disciplineIds;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Column(
+      children: [
+        _TodaySessionsPanel(disciplineIds: disciplineIds),
+        const SizedBox(height: 14),
+        _UpcomingGradingsPanel(disciplineIds: disciplineIds),
+        const SizedBox(height: 14),
+        _RightColumn(disciplineIds: disciplineIds),
+      ],
+    );
+  }
+}
+
+// ── Left column ───────────────────────────────────────────────────────────────
+
+class _LeftColumn extends StatelessWidget {
+  const _LeftColumn({required this.disciplineIds});
+
+  final List<String> disciplineIds;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        _TodaySessionsPanel(disciplineIds: disciplineIds),
+        const SizedBox(height: 14),
+        _UpcomingGradingsPanel(disciplineIds: disciplineIds),
+      ],
+    );
+  }
+}
+
+// ── Right column ──────────────────────────────────────────────────────────────
+
+class _RightColumn extends ConsumerWidget {
+  const _RightColumn({required this.disciplineIds});
+
+  final List<String> disciplineIds;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final adminUser = ref.watch(currentAdminUserProvider);
+    final coachProfile = adminUser != null
+        ? ref.watch(coachProfileProvider(adminUser.firebaseUid)).asData?.value
+        : null;
+
+    return Column(
+      children: [
+        _CompliancePanel(profile: coachProfile),
+        const SizedBox(height: 14),
+        _DisciplineSummaryPanel(disciplineIds: disciplineIds),
+        const SizedBox(height: 14),
+        _QuickActionsPanel(disciplineIds: disciplineIds),
+      ],
+    );
+  }
+}
+
+// ── Today's sessions panel ────────────────────────────────────────────────────
+
+class _TodaySessionsPanel extends ConsumerWidget {
+  const _TodaySessionsPanel({required this.disciplineIds});
 
   final List<String> disciplineIds;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final todayAsync = ref.watch(todayAllSessionsProvider);
-    return todayAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Text('Error: $e'),
-      data: (allSessions) {
-        final sessions = disciplineIds.isEmpty
-            ? allSessions
-            : allSessions
-                  .where((s) => disciplineIds.contains(s.disciplineId))
-                  .toList();
 
-        if (sessions.isEmpty) {
-          return Card(
-            elevation: 0,
-            color: AppColors.surface,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: const BorderSide(color: AppColors.surfaceVariant),
-            ),
-            child: const Padding(
-              padding: EdgeInsets.all(20),
-              child: Center(
-                child: Text(
-                  'No sessions scheduled today',
-                  style: TextStyle(color: AppColors.textSecondary),
-                ),
+    return _Panel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Today's sessions",
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    disciplineIds.isEmpty
+                        ? 'All disciplines'
+                        : 'Scoped to your disciplines',
+                    style: const TextStyle(
+                      fontSize: 10,
+                      letterSpacing: 0.5,
+                      color: AppColors.ink3,
+                    ),
+                  ),
+                ],
               ),
+              const _LiveIndicator(),
+            ],
+          ),
+          const SizedBox(height: 10),
+          const Divider(height: 1, color: AppColors.hairline),
+          todayAsync.when(
+            loading: () => const _SessionSkeleton(),
+            error: (e, _) => const Padding(
+              padding: EdgeInsets.all(16),
+              child: Text('Could not load sessions'),
             ),
-          );
-        }
+            data: (allSessions) {
+              final sessions = disciplineIds.isEmpty
+                  ? allSessions
+                  : allSessions
+                        .where((s) => disciplineIds.contains(s.disciplineId))
+                        .toList();
 
-        return Card(
-          elevation: 0,
-          color: AppColors.surface,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: const BorderSide(color: AppColors.surfaceVariant),
+              if (sessions.isEmpty) {
+                return _SessionEmptyState(
+                  onCreateTap: () => context.pushNamed('adminAttendanceCreate'),
+                );
+              }
+
+              // Sort by startTime ascending
+              sessions.sort((a, b) => a.startTime.compareTo(b.startTime));
+
+              return Column(
+                children: sessions.map((s) => _SessionRow(session: s)).toList(),
+              );
+            },
           ),
-          child: Column(
-            children: sessions.map((s) => _SessionTile(session: s)).toList(),
-          ),
-        );
-      },
+        ],
+      ),
     );
   }
 }
 
-class _SessionTile extends ConsumerWidget {
-  const _SessionTile({required this.session});
+// ── Session row ───────────────────────────────────────────────────────────────
 
-  final dynamic session;
+class _SessionRow extends ConsumerWidget {
+  const _SessionRow({required this.session});
+
+  final AttendanceSession session;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -168,341 +377,1108 @@ class _SessionTile extends ConsumerWidget {
     final recordsAsync = ref.watch(
       attendanceRecordsForSessionProvider(session.id),
     );
-    final attendeeCount = recordsAsync.asData?.value.length ?? 0;
+    final checkedIn = recordsAsync.asData?.value.length ?? 0;
 
-    return ListTile(
-      dense: true,
-      leading: const Icon(
-        Icons.fitness_center_outlined,
-        size: 20,
-        color: AppColors.primary,
+    final enrolledCount =
+        ref
+            .watch(coachDisciplineSummaryProvider(session.disciplineId))
+            .asData
+            ?.value
+            .activeMemberCount ??
+        0;
+
+    final now = DateTime.now();
+    final sessionStart = _parseTime(session.startTime, session.sessionDate);
+    final sessionEnd = _parseTime(session.endTime, session.sessionDate);
+    final minutesUntilStart = sessionStart.difference(now).inMinutes;
+    final isUpNext = minutesUntilStart > 0 && minutesUntilStart <= 60;
+    final isInProgress = now.isAfter(sessionStart) && now.isBefore(sessionEnd);
+    final isHighlighted = isUpNext || isInProgress;
+
+    final disciplineColor = _disciplineColor(disciplineName);
+    final fraction = enrolledCount > 0 ? checkedIn / enrolledCount : 0.0;
+
+    return Container(
+      decoration: isHighlighted
+          ? BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.ochre.withValues(alpha: 0.05),
+                  Colors.transparent,
+                ],
+              ),
+            )
+          : null,
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (isUpNext || isInProgress)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: _UpNextTag(
+                isInProgress: isInProgress,
+                minutesUntilStart: minutesUntilStart,
+                sessionStart: sessionStart,
+                now: now,
+              ),
+            ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Time column
+              SizedBox(
+                width: 72,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      session.startTime,
+                      style: TextStyle(
+                        fontFamily: 'IBM Plex Mono',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: isUpNext ? AppColors.ochre : AppColors.ink1,
+                        letterSpacing: 0.4,
+                      ),
+                    ),
+                    Text(
+                      '– ${session.endTime}',
+                      style: const TextStyle(
+                        fontFamily: 'IBM Plex Mono',
+                        fontSize: 10,
+                        color: AppColors.ink3,
+                        letterSpacing: 0.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Name + sub
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: disciplineColor,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            session.title ?? disciplineName,
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (session.notes != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        session.notes!,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.ink3,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Check-in count + progress bar
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  RichText(
+                    text: TextSpan(
+                      style: const TextStyle(
+                        fontFamily: 'IBM Plex Mono',
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.ink1,
+                      ),
+                      children: [
+                        TextSpan(
+                          text: '$checkedIn',
+                          style: const TextStyle(fontSize: 20, height: 1),
+                        ),
+                        if (enrolledCount > 0)
+                          TextSpan(
+                            text: ' / $enrolledCount',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: AppColors.ink3,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Container(
+                    width: 100,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.paper3,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                    child: FractionallySizedBox(
+                      widthFactor: fraction.clamp(0.0, 1.0),
+                      alignment: Alignment.centerLeft,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: fraction >= 0.9
+                              ? AppColors.ochre
+                              : AppColors.success,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          const Divider(height: 1, color: AppColors.hairline),
+        ],
       ),
-      title: Text(
-        disciplineName,
-        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-      ),
-      subtitle: Text(
-        '${session.startTime} – ${session.endTime}',
-        style: const TextStyle(fontSize: 12),
-      ),
-      trailing: _AttendancePill(count: attendeeCount),
-      onTap: () => context.pushNamed(
-        'attendanceSession',
-        pathParameters: {'sessionId': session.id},
-      ),
+    );
+  }
+
+  DateTime _parseTime(String timeStr, DateTime date) {
+    final parts = timeStr.split(':');
+    if (parts.length < 2) return date;
+    return DateTime(
+      date.year,
+      date.month,
+      date.day,
+      int.tryParse(parts[0]) ?? 0,
+      int.tryParse(parts[1]) ?? 0,
     );
   }
 }
 
-class _AttendancePill extends StatelessWidget {
-  const _AttendancePill({required this.count});
+class _UpNextTag extends StatelessWidget {
+  const _UpNextTag({
+    required this.isInProgress,
+    required this.minutesUntilStart,
+    required this.sessionStart,
+    required this.now,
+  });
 
-  final int count;
+  final bool isInProgress;
+  final int minutesUntilStart;
+  final DateTime sessionStart;
+  final DateTime now;
 
   @override
   Widget build(BuildContext context) {
+    final label = isInProgress
+        ? 'In progress · ${now.difference(sessionStart).inMinutes}m'
+        : 'Up next · ${minutesUntilStart}m';
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(20),
+        color: AppColors.ochre.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(2),
       ),
       child: Text(
-        '$count in',
+        label.toUpperCase(),
         style: const TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          color: AppColors.primary,
+          fontSize: 9,
+          letterSpacing: 0.8,
+          color: AppColors.ochre,
         ),
       ),
     );
   }
 }
 
-// ── Compliance card ───────────────────────────────────────────────────────────
+// ── Session empty state ───────────────────────────────────────────────────────
 
-class _ComplianceCard extends StatelessWidget {
-  const _ComplianceCard({required this.profile});
+class _SessionEmptyState extends StatelessWidget {
+  const _SessionEmptyState({required this.onCreateTap});
 
-  final CoachProfile profile;
+  final VoidCallback onCreateTap;
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      color: AppColors.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: AppColors.surfaceVariant),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 32),
+      child: Column(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: AppColors.paper2,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: AppColors.hairline,
+                style: BorderStyle.solid,
+              ),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              '空',
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(color: AppColors.ink3),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'No classes today.',
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(color: AppColors.ink2),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Set up next week\'s schedule from the Attendance section.',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 12, color: AppColors.ink3),
+          ),
+          const SizedBox(height: 12),
+          OutlinedButton(
+            onPressed: onCreateTap,
+            child: const Text('+ Create session'),
+          ),
+        ],
       ),
+    );
+  }
+}
+
+// ── Session skeleton ──────────────────────────────────────────────────────────
+
+class _SessionSkeleton extends StatelessWidget {
+  const _SessionSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [_SkeletonRow(), const SizedBox(height: 4), _SkeletonRow()],
+    );
+  }
+}
+
+class _SkeletonRow extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      child: Row(
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _Skel(width: 48, height: 14),
+              const SizedBox(height: 6),
+              _Skel(width: 36, height: 10),
+            ],
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _Skel(width: double.infinity, height: 16),
+                const SizedBox(height: 6),
+                _Skel(width: 160, height: 11),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              _Skel(width: 56, height: 22),
+              const SizedBox(height: 6),
+              _Skel(width: 100, height: 4),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Skel extends StatefulWidget {
+  const _Skel({required this.width, required this.height});
+
+  final double width;
+  final double height;
+
+  @override
+  State<_Skel> createState() => _SkelState();
+}
+
+class _SkelState extends State<_Skel> with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (context, child) {
+        return Container(
+          width: widget.width == double.infinity ? null : widget.width,
+          height: widget.height,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(3),
+            gradient: LinearGradient(
+              colors: const [
+                AppColors.paper2,
+                AppColors.paper3,
+                AppColors.paper2,
+              ],
+              stops: [
+                math.max(0.0, _ctrl.value - 0.3),
+                _ctrl.value,
+                math.min(1.0, _ctrl.value + 0.3),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ── Live indicator ────────────────────────────────────────────────────────────
+
+class _LiveIndicator extends StatefulWidget {
+  const _LiveIndicator();
+
+  @override
+  State<_LiveIndicator> createState() => _LiveIndicatorState();
+}
+
+class _LiveIndicatorState extends State<_LiveIndicator>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1600),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          width: 16,
+          height: 16,
+          child: AnimatedBuilder(
+            animation: _ctrl,
+            builder: (context, child) {
+              return Stack(
+                alignment: Alignment.center,
+                children: [
+                  // Pulsing ring
+                  Opacity(
+                    opacity: (1.0 - _ctrl.value).clamp(0.0, 1.0),
+                    child: Container(
+                      width: 7 + _ctrl.value * 9,
+                      height: 7 + _ctrl.value * 9,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: AppColors.success, width: 1),
+                      ),
+                    ),
+                  ),
+                  // Solid dot
+                  Container(
+                    width: 7,
+                    height: 7,
+                    decoration: const BoxDecoration(
+                      color: AppColors.success,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+        const SizedBox(width: 5),
+        const Text(
+          'LIVE',
+          style: TextStyle(
+            fontFamily: 'IBM Plex Mono',
+            fontSize: 10,
+            letterSpacing: 0.8,
+            color: AppColors.success,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Upcoming gradings panel ───────────────────────────────────────────────────
+
+class _UpcomingGradingsPanel extends ConsumerWidget {
+  const _UpcomingGradingsPanel({required this.disciplineIds});
+
+  final List<String> disciplineIds;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Gather upcoming gradings from all assigned disciplines
+    final allGradings = <GradingEvent>[];
+    for (final id in disciplineIds) {
+      final summary = ref
+          .watch(coachDisciplineSummaryProvider(id))
+          .asData
+          ?.value;
+      if (summary != null) allGradings.addAll(summary.upcomingGradings);
+    }
+    allGradings.sort((a, b) => a.eventDate.compareTo(b.eventDate));
+    final gradings = allGradings.take(3).toList();
+
+    return _Panel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Upcoming gradings',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 2),
+                  const Text(
+                    'NEXT 3 · YOUR DISCIPLINES',
+                    style: TextStyle(
+                      fontSize: 10,
+                      letterSpacing: 0.5,
+                      color: AppColors.ink3,
+                    ),
+                  ),
+                ],
+              ),
+              TextButton(
+                onPressed: () => context.pushNamed('adminGradingCreate'),
+                child: const Text('+ Create event'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          const Divider(height: 1, color: AppColors.hairline),
+          if (gradings.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 20),
+              child: Center(
+                child: Text(
+                  'No upcoming gradings',
+                  style: TextStyle(color: AppColors.ink3, fontSize: 13),
+                ),
+              ),
+            )
+          else
+            ...gradings.map(
+              (g) => _GradingRow(
+                event: g,
+                onTap: () => context.pushNamed(
+                  'adminGradingDetail',
+                  pathParameters: {'eventId': g.id},
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _GradingRow extends StatelessWidget {
+  const _GradingRow({required this.event, required this.onTap});
+
+  final GradingEvent event;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Row(
           children: [
-            _ComplianceRow(label: 'DBS', record: profile.dbs),
-            const Divider(height: 20),
-            _FirstAidRow(record: profile.firstAid),
+            // Calendar date block
+            Container(
+              width: 52,
+              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+              decoration: BoxDecoration(
+                color: AppColors.paper2,
+                border: Border.all(color: AppColors.hairline),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    DateFormat('EEE').format(event.eventDate).toUpperCase(),
+                    style: const TextStyle(
+                      fontFamily: 'IBM Plex Mono',
+                      fontSize: 9,
+                      letterSpacing: 0.8,
+                      color: AppColors.ink3,
+                    ),
+                  ),
+                  Text(
+                    DateFormat('dd').format(event.eventDate),
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w500,
+                      height: 1,
+                    ),
+                  ),
+                  Text(
+                    DateFormat('MMM').format(event.eventDate).toUpperCase(),
+                    style: const TextStyle(
+                      fontFamily: 'IBM Plex Mono',
+                      fontSize: 9,
+                      letterSpacing: 0.8,
+                      color: AppColors.ink3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 14),
+            // Title + subtitle
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    event.title ??
+                        'Grading — ${DateFormat('d MMM').format(event.eventDate)}',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    _statusLabel(event.status),
+                    style: const TextStyle(fontSize: 12, color: AppColors.ink3),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, size: 18, color: AppColors.ink3),
           ],
         ),
       ),
     );
   }
+
+  String _statusLabel(GradingEventStatus status) {
+    return switch (status) {
+      GradingEventStatus.upcoming => 'Upcoming',
+      GradingEventStatus.completed => 'Completed',
+      GradingEventStatus.cancelled => 'Cancelled',
+    };
+  }
 }
 
-class _CompliancePlaceholder extends StatelessWidget {
-  const _CompliancePlaceholder();
+// ── Compliance panel ──────────────────────────────────────────────────────────
+
+class _CompliancePanel extends StatelessWidget {
+  const _CompliancePanel({required this.profile});
+
+  final CoachProfile? profile;
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      color: AppColors.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: AppColors.surfaceVariant),
-      ),
-      child: const Padding(
-        padding: EdgeInsets.all(20),
-        child: Center(
-          child: Text(
-            'Compliance profile not found',
-            style: TextStyle(color: AppColors.textSecondary),
+    return _Panel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Your compliance',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 2),
+                  const Text(
+                    'PERSONAL — ONLY YOU CAN SEE THIS',
+                    style: TextStyle(
+                      fontSize: 10,
+                      letterSpacing: 0.5,
+                      color: AppColors.ink3,
+                    ),
+                  ),
+                ],
+              ),
+              TextButton(
+                onPressed: () => context.pushNamed('adminMyProfile'),
+                child: const Text(
+                  'Update',
+                  style: TextStyle(color: AppColors.ink3),
+                ),
+              ),
+            ],
           ),
-        ),
+          const SizedBox(height: 12),
+          if (profile == null)
+            const Text(
+              'Compliance profile not found',
+              style: TextStyle(color: AppColors.ink3, fontSize: 13),
+            )
+          else ...[
+            _ComplianceRow(
+              label: 'DBS check',
+              certName: profile!.dbs.certificateNumber != null
+                  ? 'Cert ••••${_lastFour(profile!.dbs.certificateNumber!)}'
+                  : null,
+              expiryDate: profile!.dbs.expiryDate,
+              status: _dbsComplianceStatus(profile!.dbs),
+              isPending: profile!.dbs.pendingVerification,
+              icon: Icons.shield_outlined,
+            ),
+            const SizedBox(height: 8),
+            _ComplianceRow(
+              label: 'First aid',
+              certName: profile!.firstAid.certificationName,
+              expiryDate: profile!.firstAid.expiryDate,
+              status: _firstAidComplianceStatus(profile!.firstAid),
+              isPending: profile!.firstAid.pendingVerification,
+              icon: Icons.medical_services_outlined,
+            ),
+            if (profile!.dbs.pendingVerification) ...[
+              const SizedBox(height: 8),
+              _PendingVerificationRow(),
+            ],
+          ],
+        ],
       ),
     );
   }
+
+  _ComplianceStatus _dbsComplianceStatus(DbsRecord dbs) {
+    if (dbs.status == DbsStatus.expired) return _ComplianceStatus.danger;
+    if (dbs.expiryDate != null) {
+      final days = dbs.expiryDate!.difference(DateTime.now()).inDays;
+      if (days < 0) return _ComplianceStatus.danger;
+      if (days < 60) return _ComplianceStatus.warn;
+    }
+    if (dbs.status == DbsStatus.notSubmitted) return _ComplianceStatus.pending;
+    return _ComplianceStatus.clear;
+  }
+
+  _ComplianceStatus _firstAidComplianceStatus(FirstAidRecord fa) {
+    if (fa.expiryDate != null) {
+      final days = fa.expiryDate!.difference(DateTime.now()).inDays;
+      if (days < 0) return _ComplianceStatus.danger;
+      if (days < 60) return _ComplianceStatus.warn;
+    }
+    if (fa.certificationName == null) return _ComplianceStatus.pending;
+    return _ComplianceStatus.clear;
+  }
 }
+
+enum _ComplianceStatus { clear, warn, danger, pending }
 
 class _ComplianceRow extends StatelessWidget {
-  const _ComplianceRow({required this.label, required this.record});
+  const _ComplianceRow({
+    required this.label,
+    required this.certName,
+    required this.expiryDate,
+    required this.status,
+    required this.isPending,
+    required this.icon,
+  });
 
   final String label;
-  final DbsRecord record;
+  final String? certName;
+  final DateTime? expiryDate;
+  final _ComplianceStatus status;
+  final bool isPending;
+  final IconData icon;
 
   @override
   Widget build(BuildContext context) {
-    final (color, statusLabel) = _dbsStatus(record);
-    return Row(
-      children: [
-        Text(
-          label,
-          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+    final (borderColor, iconBg, iconColor, badgeText, badgeBg, badgeFg) =
+        _style();
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.paper1,
+        borderRadius: BorderRadius.circular(4),
+        border: Border(
+          left: BorderSide(color: borderColor, width: 2),
+          top: const BorderSide(color: AppColors.hairline),
+          right: const BorderSide(color: AppColors.hairline),
+          bottom: const BorderSide(color: AppColors.hairline),
         ),
-        const SizedBox(width: 12),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: iconBg,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Icon(icon, size: 18, color: iconColor),
           ),
-          child: Text(
-            statusLabel,
-            style: TextStyle(
-              color: color,
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label.toUpperCase(),
+                  style: const TextStyle(
+                    fontSize: 10,
+                    letterSpacing: 0.8,
+                    color: AppColors.ink3,
+                  ),
+                ),
+                if (certName != null)
+                  Text(
+                    certName!,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                if (expiryDate != null)
+                  Text(
+                    _expiryText(expiryDate!),
+                    style: TextStyle(
+                      fontFamily: 'IBM Plex Mono',
+                      fontSize: 11,
+                      color: borderColor == AppColors.hairline
+                          ? AppColors.ink3
+                          : borderColor,
+                    ),
+                  ),
+              ],
             ),
           ),
-        ),
-        const Spacer(),
-        if (record.expiryDate != null)
-          Text(
-            'Exp: ${DateFormat('d MMM yyyy').format(record.expiryDate!)}',
-            style: TextStyle(
-              fontSize: 12,
-              color: _expiryColor(record.expiryDate!),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+            decoration: BoxDecoration(
+              color: badgeBg,
+              borderRadius: BorderRadius.circular(2),
+            ),
+            child: Text(
+              badgeText.toUpperCase(),
+              style: TextStyle(
+                fontFamily: 'IBM Plex Mono',
+                fontSize: 9,
+                letterSpacing: 0.8,
+                color: badgeFg,
+              ),
             ),
           ),
-      ],
+        ],
+      ),
     );
   }
 
-  (Color, String) _dbsStatus(DbsRecord r) {
-    return switch (r.status) {
-      DbsStatus.clear => (AppColors.success, 'Clear'),
-      DbsStatus.pending => (AppColors.warning, 'Pending'),
-      DbsStatus.expired => (AppColors.error, 'Expired'),
-      DbsStatus.notSubmitted => (AppColors.textSecondary, 'Not submitted'),
+  (Color, Color, Color, String, Color, Color) _style() {
+    return switch (status) {
+      _ComplianceStatus.clear => (
+        AppColors.hairline,
+        AppColors.successWash,
+        AppColors.success,
+        'Clear',
+        AppColors.successWash,
+        AppColors.success,
+      ),
+      _ComplianceStatus.warn => (
+        AppColors.ochre,
+        AppColors.ochreWash,
+        AppColors.ochre,
+        'Renew soon',
+        AppColors.ochreWash,
+        AppColors.ochre,
+      ),
+      _ComplianceStatus.danger => (
+        AppColors.error,
+        AppColors.errorWash,
+        AppColors.error,
+        'Action required',
+        AppColors.errorWash,
+        AppColors.error,
+      ),
+      _ComplianceStatus.pending => (
+        AppColors.hairline,
+        AppColors.paper3,
+        AppColors.ink2,
+        'Not recorded',
+        AppColors.paper3,
+        AppColors.ink2,
+      ),
     };
   }
 
-  Color _expiryColor(DateTime expiry) {
-    final diff = expiry.difference(DateTime.now()).inDays;
-    if (diff < 0) return AppColors.error;
-    if (diff < 30) return AppColors.warning;
-    return AppColors.textSecondary;
+  String _expiryText(DateTime d) {
+    final days = d.difference(DateTime.now()).inDays;
+    final formatted = DateFormat('d MMM yyyy').format(d);
+    if (days < 0) return 'Expired $formatted';
+    if (days < 60) return 'Expires $formatted · in $days days';
+    return 'Expires $formatted';
   }
 }
 
-class _FirstAidRow extends StatelessWidget {
-  const _FirstAidRow({required this.record});
-
-  final FirstAidRecord record;
-
+class _PendingVerificationRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final hasData =
-        record.certificationName != null || record.expiryDate != null;
-    return Row(
-      children: [
-        const Text(
-          'First Aid',
-          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.paper1,
+        borderRadius: BorderRadius.circular(4),
+        border: Border(
+          left: const BorderSide(color: AppColors.indigo, width: 2),
+          top: const BorderSide(color: AppColors.hairline),
+          right: const BorderSide(color: AppColors.hairline),
+          bottom: const BorderSide(color: AppColors.hairline),
         ),
-        const SizedBox(width: 12),
-        if (!hasData)
-          const Text(
-            'Not recorded',
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
-          )
-        else ...[
-          Expanded(
-            child: Text(
-              record.certificationName ?? '',
-              style: const TextStyle(fontSize: 13),
-              overflow: TextOverflow.ellipsis,
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: AppColors.indigo.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: const Icon(
+              Icons.access_time_outlined,
+              size: 16,
+              color: AppColors.indigo,
             ),
           ),
-          if (record.expiryDate != null)
-            Text(
-              'Exp: ${DateFormat('d MMM yyyy').format(record.expiryDate!)}',
-              style: TextStyle(
-                fontSize: 12,
-                color: _expiryColor(record.expiryDate!),
-              ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'PENDING VERIFICATION',
+                  style: TextStyle(
+                    fontSize: 10,
+                    letterSpacing: 0.8,
+                    color: AppColors.indigo,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'DBS update submitted — owner will verify within 48h',
+                  style: TextStyle(fontSize: 13, color: AppColors.ink2),
+                ),
+              ],
             ),
+          ),
         ],
-      ],
+      ),
     );
-  }
-
-  Color _expiryColor(DateTime expiry) {
-    final diff = expiry.difference(DateTime.now()).inDays;
-    if (diff < 0) return AppColors.error;
-    if (diff < 30) return AppColors.warning;
-    return AppColors.textSecondary;
   }
 }
 
-// ── Discipline summary card ───────────────────────────────────────────────────
+// ── Discipline summary panel ──────────────────────────────────────────────────
 
-class _DisciplineSummaryCard extends ConsumerWidget {
-  const _DisciplineSummaryCard({required this.disciplineId});
+class _DisciplineSummaryPanel extends ConsumerWidget {
+  const _DisciplineSummaryPanel({required this.disciplineIds});
+
+  final List<String> disciplineIds;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (disciplineIds.isEmpty) return const SizedBox.shrink();
+
+    return _Panel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Discipline summary',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 2),
+              const Text(
+                'MEMBERS IN YOUR DISCIPLINES',
+                style: TextStyle(
+                  fontSize: 10,
+                  letterSpacing: 0.5,
+                  color: AppColors.ink3,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          const Divider(height: 1, color: AppColors.hairline),
+          ...disciplineIds.map((id) => _DisciplineStatsRow(disciplineId: id)),
+        ],
+      ),
+    );
+  }
+}
+
+class _DisciplineStatsRow extends ConsumerWidget {
+  const _DisciplineStatsRow({required this.disciplineId});
 
   final String disciplineId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final disciplineName =
+    final name =
         ref.watch(disciplineProvider(disciplineId)).asData?.value?.name ??
         disciplineId;
-    final summaryAsync = ref.watch(
-      coachDisciplineSummaryProvider(disciplineId),
-    );
+    final statsAsync = ref.watch(coachDisciplineStatsProvider(disciplineId));
+    final stats = statsAsync.asData?.value;
 
-    return Card(
-      elevation: 0,
-      color: AppColors.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: AppColors.surfaceVariant),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(
-                  Icons.sports_martial_arts_outlined,
-                  size: 18,
-                  color: AppColors.primary,
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 12,
+                height: 12,
+                decoration: BoxDecoration(
+                  color: _disciplineColor(name),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  name,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              if (stats != null) ...[
+                _StatCol(
+                  value: '${stats.enrolled}',
+                  label: 'Enrolled',
+                  isWarning: false,
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  disciplineName,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 15,
-                  ),
+                _StatCol(
+                  value: '${stats.lapsed}',
+                  label: 'Lapsed',
+                  isWarning: stats.lapsed > 0,
                 ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            summaryAsync.when(
-              loading: () => const LinearProgressIndicator(minHeight: 2),
-              error: (e, _) => const Text('Could not load summary'),
-              data: (summary) => Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.people_outline,
-                        size: 16,
-                        color: AppColors.textSecondary,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        '${summary.activeMemberCount} active member${summary.activeMemberCount == 1 ? '' : 's'}',
-                        style: const TextStyle(fontSize: 13),
-                      ),
-                    ],
-                  ),
-                  if (summary.upcomingGradings.isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    ...summary.upcomingGradings.map(
-                      (g) => _UpcomingGradingRow(event: g),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ],
-        ),
+                const SizedBox(width: 8),
+                _StatCol(
+                  value: '${stats.payt}',
+                  label: 'PAYT',
+                  isWarning: stats.payt > 0,
+                ),
+              ] else
+                const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          const Divider(height: 1, color: AppColors.hairline),
+        ],
       ),
     );
   }
 }
 
-class _UpcomingGradingRow extends StatelessWidget {
-  const _UpcomingGradingRow({required this.event});
+class _StatCol extends StatelessWidget {
+  const _StatCol({
+    required this.value,
+    required this.label,
+    required this.isWarning,
+  });
 
-  final GradingEvent event;
+  final String value;
+  final String label;
+  final bool isWarning;
 
   @override
   Widget build(BuildContext context) {
-    final daysUntil = event.eventDate.difference(DateTime.now()).inDays;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
-      child: Row(
+    return SizedBox(
+      width: 52,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          const Icon(
-            Icons.military_tech_outlined,
-            size: 16,
-            color: AppColors.accent,
-          ),
-          const SizedBox(width: 6),
-          Expanded(
-            child: Text(
-              event.title ??
-                  'Grading — ${DateFormat('d MMM').format(event.eventDate)}',
-              style: const TextStyle(fontSize: 13),
+          Text(
+            value,
+            style: TextStyle(
+              fontFamily: 'IBM Plex Mono',
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: isWarning ? AppColors.ochre : AppColors.ink1,
             ),
           ),
           Text(
-            daysUntil == 0
-                ? 'Today'
-                : daysUntil == 1
-                ? 'Tomorrow'
-                : 'In $daysUntil days',
-            style: TextStyle(
-              fontSize: 12,
-              color: daysUntil <= 7
-                  ? AppColors.accent
-                  : AppColors.textSecondary,
+            label.toUpperCase(),
+            style: const TextStyle(
+              fontFamily: 'IBM Plex Mono',
+              fontSize: 9,
+              letterSpacing: 0.8,
+              color: AppColors.ink3,
             ),
           ),
         ],
@@ -511,22 +1487,132 @@ class _UpcomingGradingRow extends StatelessWidget {
   }
 }
 
-// ── Section label ─────────────────────────────────────────────────────────────
+// ── Quick actions panel ───────────────────────────────────────────────────────
 
-class _SectionLabel extends StatelessWidget {
-  const _SectionLabel({required this.label});
+class _QuickActionsPanel extends ConsumerWidget {
+  const _QuickActionsPanel({required this.disciplineIds});
 
-  final String label;
+  final List<String> disciplineIds;
 
   @override
-  Widget build(BuildContext context) {
-    return Text(
-      label,
-      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-        fontWeight: FontWeight.w700,
-        color: AppColors.textSecondary,
-        letterSpacing: 0.5,
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Get first discipline name for contextual "Mark attendance — X" label
+    final firstDisciplineName = disciplineIds.isNotEmpty
+        ? ref
+                  .watch(disciplineProvider(disciplineIds.first))
+                  .asData
+                  ?.value
+                  ?.name ??
+              'session'
+        : 'session';
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.ink1,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'QUICK ACTIONS',
+            style: TextStyle(
+              fontSize: 10,
+              letterSpacing: 0.8,
+              color: Color(0x8CF0E8D8),
+            ),
+          ),
+          const SizedBox(height: 10),
+          _QuickActionRow(
+            label: 'Mark attendance — $firstDisciplineName',
+            onTap: () => context.pushNamed('adminAttendanceCreate'),
+          ),
+          const SizedBox(height: 6),
+          _QuickActionRow(
+            label: 'Create grading event',
+            onTap: () => context.pushNamed('adminGradingCreate'),
+          ),
+          const SizedBox(height: 6),
+          _QuickActionRow(
+            label: 'Record PAYT payment',
+            onTap: () => context.pushNamed('adminPaymentsRecord'),
+          ),
+        ],
       ),
     );
   }
+}
+
+class _QuickActionRow extends StatelessWidget {
+  const _QuickActionRow({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(4),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.06),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(fontSize: 13, color: AppColors.paper0),
+            ),
+            Text(
+              '→',
+              style: TextStyle(color: AppColors.paper0.withValues(alpha: 0.5)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Shared panel shell ────────────────────────────────────────────────────────
+
+class _Panel extends StatelessWidget {
+  const _Panel({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppColors.paper0,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: AppColors.hairline),
+      ),
+      child: child,
+    );
+  }
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+String _lastFour(String s) => s.length > 4 ? s.substring(s.length - 4) : s;
+
+Color _disciplineColor(String name) {
+  final lower = name.toLowerCase();
+  if (lower.contains('karate')) return AppColors.discKarate;
+  if (lower.contains('judo')) return AppColors.discJudo;
+  if (lower.contains('jujitsu') || lower.contains('ju-jitsu')) {
+    return AppColors.discJujitsu;
+  }
+  if (lower.contains('aikido')) return AppColors.discAikido;
+  if (lower.contains('kendo')) return AppColors.discKendo;
+  return AppColors.accent;
 }

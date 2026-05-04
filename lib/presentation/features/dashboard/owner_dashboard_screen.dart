@@ -1,9 +1,9 @@
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/providers/admin_session_provider.dart';
 import '../../../core/providers/dashboard_providers.dart';
 import '../../../core/providers/kiosk_mode_provider.dart';
 import '../../../core/router/route_names.dart';
@@ -15,48 +15,31 @@ class OwnerDashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final metrics = ref.watch(memberMetricsProvider);
-    final financial = ref.watch(financialMetricsProvider);
-    final alerts = ref.watch(ownerAlertFlagsProvider);
+    final adminUser = ref.watch(currentAdminUserProvider);
+    // Derive a first name from the email local part as a friendly fallback
+    final emailLocal = adminUser?.email.split('@').first ?? '';
+    final firstName = emailLocal.isNotEmpty
+        ? emailLocal[0].toUpperCase() + emailLocal.substring(1)
+        : 'there';
+    final greeting = _greeting(firstName);
 
     return Scaffold(
       drawer: const AdminDrawer(),
       appBar: AppBar(
-        title: const Text('Dashboard'),
+        title: Text(greeting),
         actions: [
           IconButton(
             icon: const Icon(Icons.tablet_mac_outlined),
             tooltip: 'Activate Kiosk Mode',
             onPressed: () => _showActivateKioskDialog(context, ref),
           ),
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.add_circle_outline),
-            tooltip: 'Quick actions',
-            onSelected: (route) => context.pushNamed(route),
-            itemBuilder: (_) => const [
-              PopupMenuItem(
-                value: 'adminProfileCreate',
-                child: Text('Add member'),
-              ),
-              PopupMenuItem(
-                value: 'adminPaymentsRecord',
-                child: Text('Record payment'),
-              ),
-              PopupMenuItem(
-                value: 'adminAttendanceCreate',
-                child: Text('Create session'),
-              ),
-              PopupMenuItem(
-                value: 'adminSendAnnouncement',
-                child: Text('Send announcement'),
-              ),
-            ],
-          ),
         ],
       ),
       body: RefreshIndicator(
         onRefresh: () async {
           ref.invalidate(activityFeedProvider);
+          ref.invalidate(sessionsThisWeekProvider);
+          ref.invalidate(upcomingGradingProvider);
           ref.invalidate(membershipGrowthChartProvider);
           ref.invalidate(attendanceTrendChartProvider);
           ref.invalidate(gradingPassRateChartProvider);
@@ -64,90 +47,39 @@ class OwnerDashboardScreen extends ConsumerWidget {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            // ── Alert flags ───────────────────────────────────────────────
-            if (alerts.isNotEmpty) ...[
-              _AlertsCard(alerts: alerts),
-              const SizedBox(height: 16),
-            ],
+            _DateLabel(date: DateTime.now()),
+            const SizedBox(height: 10),
 
-            // ── Member metrics ────────────────────────────────────────────
-            _SectionLabel(label: 'Members'),
-            const SizedBox(height: 8),
-            _MetricsGrid(
-              children: [
-                _MetricTile(
-                  label: 'Active',
-                  value: '${metrics.activeCount}',
-                  icon: Icons.people_outline,
-                  color: AppColors.success,
-                ),
-                _MetricTile(
-                  label: 'Trial',
-                  value: '${metrics.trialCount}',
-                  icon: Icons.timer_outlined,
-                  color: AppColors.info,
-                ),
-                _MetricTile(
-                  label: 'Lapsed',
-                  value: '${metrics.lapsedCount}',
-                  icon: Icons.person_off_outlined,
-                  color: AppColors.error,
-                ),
-                _MetricTile(
-                  label: 'New this month',
-                  value: '${metrics.newThisMonth}',
-                  icon: Icons.person_add_outlined,
-                  color: AppColors.accent,
-                ),
-              ],
-            ),
+            // ── At-a-glance stat cards ─────────────────────────────────────
+            const _StatCardRow(),
 
-            const SizedBox(height: 20),
-
-            // ── Financial metrics ─────────────────────────────────────────
-            _SectionLabel(label: 'Finances'),
-            const SizedBox(height: 8),
-            _MetricsGrid(
-              children: [
-                _MetricTile(
-                  label: 'PAYT outstanding',
-                  value: '£${financial.paytOutstanding.toStringAsFixed(2)}',
-                  icon: Icons.warning_amber_outlined,
-                  color: AppColors.warning,
-                ),
-                _MetricTile(
-                  label: 'Cash this month',
-                  value:
-                      '£${financial.cashReceivedThisMonth.toStringAsFixed(2)}',
-                  icon: Icons.payments_outlined,
-                  color: AppColors.success,
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 20),
-
-            // ── Charts ────────────────────────────────────────────────────
-            _SectionLabel(label: 'Trends'),
-            const SizedBox(height: 8),
-            const _MembershipGrowthChart(),
             const SizedBox(height: 16),
-            const _AttendanceTrendChart(),
-            const SizedBox(height: 16),
-            const _GradingPassRateChart(),
 
-            const SizedBox(height: 20),
-
-            // ── Activity feed ─────────────────────────────────────────────
-            _SectionLabel(label: 'Recent activity'),
-            const SizedBox(height: 8),
-            const _ActivityFeed(),
+            // ── Main content: activity feed + right sidebar ────────────────
+            LayoutBuilder(
+              builder: (context, constraints) {
+                if (constraints.maxWidth >= 600) {
+                  return _WideLayout();
+                }
+                return const _NarrowLayout();
+              },
+            ),
 
             const SizedBox(height: 24),
           ],
         ),
       ),
     );
+  }
+
+  String _greeting(String firstName) {
+    final hour = DateTime.now().hour;
+    final salutation = hour < 12
+        ? 'Good morning'
+        : hour < 17
+        ? 'Good afternoon'
+        : 'Good evening';
+    return '$salutation, $firstName';
   }
 
   Future<void> _showActivateKioskDialog(
@@ -230,71 +162,216 @@ class OwnerDashboardScreen extends ConsumerWidget {
   }
 }
 
-// ── Alerts card ──────────────────────────────────────────────────────────────
+// ── Date label ───────────────────────────────────────────────────────────────
 
-class _AlertsCard extends StatelessWidget {
-  const _AlertsCard({required this.alerts});
+class _DateLabel extends StatelessWidget {
+  const _DateLabel({required this.date});
 
-  final List<DashboardAlert> alerts;
+  final DateTime date;
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      color: AppColors.error.withValues(alpha: 0.06),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: AppColors.error.withValues(alpha: 0.3)),
+    final label = 'At a glance · ${DateFormat('EEEE d MMMM').format(date)}';
+    return Text(
+      label,
+      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+        color: AppColors.ink3,
+        letterSpacing: 0.4,
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    );
+  }
+}
+
+// ── Stat card row ─────────────────────────────────────────────────────────────
+
+class _StatCardRow extends ConsumerWidget {
+  const _StatCardRow();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final metrics = ref.watch(memberMetricsProvider);
+    final sessionsAsync = ref.watch(sessionsThisWeekProvider);
+    final sessions = sessionsAsync.asData?.value;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth >= 500;
+        if (isWide) {
+          return Row(
+            children: [
+              Expanded(
+                child: _StatCard(
+                  label: 'Active members',
+                  value: '${metrics.activeCount}',
+                  subtitle: metrics.adultCount > 0 || metrics.juniorCount > 0
+                      ? '${metrics.adultCount} adults · ${metrics.juniorCount} juniors'
+                      : null,
+                  onTap: () {},
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _StatCard(
+                  label: 'Trials expiring',
+                  value: '${metrics.trialCount}',
+                  subtitle: 'Within 7 days',
+                  accentColor: metrics.trialCount > 0 ? AppColors.ochre : null,
+                  onTap: () {},
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _StatCard(
+                  label: 'Memberships lapsed',
+                  value: '${metrics.lapsedCount}',
+                  subtitle: metrics.lapsedCount > 0
+                      ? 'Action needed'
+                      : 'All clear',
+                  accentColor: metrics.lapsedCount > 0 ? AppColors.error : null,
+                  onTap: () {},
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _StatCard(
+                  label: 'Sessions this week',
+                  value: sessions != null ? '${sessions.sessionCount}' : '—',
+                  subtitle: sessions != null
+                      ? '${sessions.checkInCount} check-ins'
+                      : null,
+                  onTap: () {},
+                ),
+              ),
+            ],
+          );
+        }
+        // 2×2 grid on narrow screens
+        return Column(
           children: [
             Row(
               children: [
-                const Icon(
-                  Icons.flag_outlined,
-                  size: 18,
-                  color: AppColors.error,
+                Expanded(
+                  child: _StatCard(
+                    label: 'Active members',
+                    value: '${metrics.activeCount}',
+                    subtitle: metrics.adultCount > 0 || metrics.juniorCount > 0
+                        ? '${metrics.adultCount} adults · ${metrics.juniorCount} juniors'
+                        : null,
+                    onTap: () {},
+                  ),
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  '${alerts.length} alert${alerts.length == 1 ? '' : 's'} require attention',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.error,
-                    fontSize: 14,
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _StatCard(
+                    label: 'Trials expiring',
+                    value: '${metrics.trialCount}',
+                    subtitle: 'Within 7 days',
+                    accentColor: metrics.trialCount > 0
+                        ? AppColors.ochre
+                        : null,
+                    onTap: () {},
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            ...alerts.map(
-              (a) => Padding(
-                padding: const EdgeInsets.only(bottom: 6),
-                child: Row(
-                  children: [
-                    Icon(
-                      a.severity == AlertSeverity.error
-                          ? Icons.error_outline
-                          : Icons.warning_amber_outlined,
-                      size: 16,
-                      color: a.severity == AlertSeverity.error
-                          ? AppColors.error
-                          : AppColors.warning,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        a.message,
-                        style: const TextStyle(fontSize: 13),
-                      ),
-                    ),
-                  ],
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: _StatCard(
+                    label: 'Memberships lapsed',
+                    value: '${metrics.lapsedCount}',
+                    subtitle: metrics.lapsedCount > 0
+                        ? 'Action needed'
+                        : 'All clear',
+                    accentColor: metrics.lapsedCount > 0
+                        ? AppColors.error
+                        : null,
+                    onTap: () {},
+                  ),
                 ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _StatCard(
+                    label: 'Sessions this week',
+                    value: sessions != null ? '${sessions.sessionCount}' : '—',
+                    subtitle: sessions != null
+                        ? '${sessions.checkInCount} check-ins'
+                        : null,
+                    onTap: () {},
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _StatCard extends StatelessWidget {
+  const _StatCard({
+    required this.label,
+    required this.value,
+    this.subtitle,
+    this.accentColor,
+    this.onTap,
+  });
+
+  final String label;
+  final String value;
+  final String? subtitle;
+  final Color? accentColor;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.paper0,
+          borderRadius: BorderRadius.circular(6),
+          border: Border(
+            left: BorderSide(
+              color: accentColor ?? Colors.transparent,
+              width: accentColor != null ? 3 : 0,
+            ),
+            top: const BorderSide(color: AppColors.hairline),
+            right: const BorderSide(color: AppColors.hairline),
+            bottom: const BorderSide(color: AppColors.hairline),
+          ),
+        ),
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label.toUpperCase(),
+              style: const TextStyle(
+                fontSize: 10,
+                letterSpacing: 0.8,
+                fontWeight: FontWeight.w500,
+                color: AppColors.ink3,
               ),
             ),
+            const SizedBox(height: 4),
+            Text(
+              value,
+              style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                fontSize: 36,
+                height: 1,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            if (subtitle != null) ...[
+              const SizedBox(height: 2),
+              Text(
+                subtitle!,
+                style: const TextStyle(fontSize: 11, color: AppColors.ink3),
+              ),
+            ],
           ],
         ),
       ),
@@ -302,102 +379,106 @@ class _AlertsCard extends StatelessWidget {
   }
 }
 
-// ── Section label ────────────────────────────────────────────────────────────
+// ── Wide layout (≥600px) ──────────────────────────────────────────────────────
 
-class _SectionLabel extends StatelessWidget {
-  const _SectionLabel({required this.label});
-
-  final String label;
-
+class _WideLayout extends ConsumerWidget {
   @override
-  Widget build(BuildContext context) {
-    return Text(
-      label,
-      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-        fontWeight: FontWeight.w700,
-        color: AppColors.textSecondary,
-        letterSpacing: 0.5,
-      ),
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(flex: 2, child: _ActivityPanel()),
+        const SizedBox(width: 14),
+        Expanded(child: _Sidebar()),
+      ],
     );
   }
 }
 
-// ── Metrics grid ─────────────────────────────────────────────────────────────
+// ── Narrow layout (<600px) ────────────────────────────────────────────────────
 
-class _MetricsGrid extends StatelessWidget {
-  const _MetricsGrid({required this.children});
-
-  final List<Widget> children;
+class _NarrowLayout extends StatelessWidget {
+  const _NarrowLayout();
 
   @override
   Widget build(BuildContext context) {
-    return GridView.count(
-      crossAxisCount: 2,
-      crossAxisSpacing: 12,
-      mainAxisSpacing: 12,
-      childAspectRatio: 2.2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      children: children,
+    return Column(
+      children: [_Sidebar(), const SizedBox(height: 14), _ActivityPanel()],
     );
   }
 }
 
-class _MetricTile extends StatelessWidget {
-  const _MetricTile({
-    required this.label,
-    required this.value,
-    required this.icon,
-    required this.color,
-  });
+// ── Activity panel ────────────────────────────────────────────────────────────
 
-  final String label;
-  final String value;
-  final IconData icon;
-  final Color color;
-
+class _ActivityPanel extends ConsumerWidget {
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final feedAsync = ref.watch(activityFeedProvider);
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.surfaceVariant),
+        color: AppColors.paper0,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: AppColors.hairline),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      child: Row(
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, size: 18, color: color),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Recent activity',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 2),
+                  const Text(
+                    'LAST 10 ACTIONS',
+                    style: TextStyle(
+                      fontSize: 10,
+                      letterSpacing: 0.8,
+                      color: AppColors.ink3,
+                    ),
+                  ),
+                ],
+              ),
+              TextButton(onPressed: () {}, child: const Text('View all →')),
+            ],
           ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  value,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 18,
-                  ),
-                ),
-                Text(
-                  label,
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 11,
-                  ),
-                ),
-              ],
+          const SizedBox(height: 8),
+          feedAsync.when(
+            loading: () => const Center(
+              child: Padding(
+                padding: EdgeInsets.all(24),
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
             ),
+            error: (e, _) => const Center(
+              child: Padding(
+                padding: EdgeInsets.all(16),
+                child: Text('Could not load activity'),
+              ),
+            ),
+            data: (items) {
+              if (items.isEmpty) {
+                return const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Text(
+                    'No recent activity',
+                    style: TextStyle(color: AppColors.ink3),
+                  ),
+                );
+              }
+              return Column(
+                children: items
+                    .map((item) => _ActivityRow(item: item))
+                    .toList(),
+              );
+            },
           ),
         ],
       ),
@@ -405,313 +486,268 @@ class _MetricTile extends StatelessWidget {
   }
 }
 
-// ── Membership growth chart ───────────────────────────────────────────────────
+class _ActivityRow extends StatelessWidget {
+  const _ActivityRow({required this.item});
 
-class _MembershipGrowthChart extends ConsumerWidget {
-  const _MembershipGrowthChart();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final dataAsync = ref.watch(membershipGrowthChartProvider);
-    return _ChartCard(
-      title: 'Membership growth (6 months)',
-      child: dataAsync.when(
-        loading: () =>
-            const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-        error: (e, _) => const Center(child: Text('Could not load chart')),
-        data: (points) {
-          if (points.isEmpty) {
-            return const Center(child: Text('No data yet'));
-          }
-          final maxY =
-              points
-                  .map((p) => p.y)
-                  .reduce((a, b) => a > b ? a : b)
-                  .ceilToDouble() +
-              2;
-          return LineChart(
-            LineChartData(
-              minY: 0,
-              maxY: maxY,
-              gridData: const FlGridData(show: false),
-              borderData: FlBorderData(show: false),
-              titlesData: FlTitlesData(
-                leftTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    reservedSize: 28,
-                    getTitlesWidget: (v, _) => Text(
-                      v.toInt().toString(),
-                      style: const TextStyle(
-                        fontSize: 10,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ),
-                ),
-                bottomTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    getTitlesWidget: (v, _) {
-                      final now = DateTime.now();
-                      final month = DateTime(
-                        now.year,
-                        now.month - (5 - v.toInt()),
-                      );
-                      return Text(
-                        DateFormat('MMM').format(month),
-                        style: const TextStyle(
-                          fontSize: 10,
-                          color: AppColors.textSecondary,
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                rightTitles: const AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
-                ),
-                topTitles: const AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
-                ),
-              ),
-              lineBarsData: [
-                LineChartBarData(
-                  spots: points
-                      .map((p) => FlSpot(p.x.toDouble(), p.y))
-                      .toList(),
-                  isCurved: true,
-                  color: AppColors.primary,
-                  barWidth: 2.5,
-                  dotData: const FlDotData(show: false),
-                  belowBarData: BarAreaData(
-                    show: true,
-                    color: AppColors.primary.withValues(alpha: 0.1),
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-// ── Attendance trend chart ────────────────────────────────────────────────────
-
-class _AttendanceTrendChart extends ConsumerWidget {
-  const _AttendanceTrendChart();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final dataAsync = ref.watch(attendanceTrendChartProvider);
-    return _ChartCard(
-      title: 'Attendance (last 4 weeks)',
-      child: dataAsync.when(
-        loading: () =>
-            const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-        error: (e, _) => const Center(child: Text('Could not load chart')),
-        data: (points) {
-          if (points.isEmpty) {
-            return const Center(child: Text('No sessions yet'));
-          }
-          final maxY =
-              points
-                  .map((p) => p.y)
-                  .reduce((a, b) => a > b ? a : b)
-                  .ceilToDouble() +
-              2;
-          final now = DateTime.now();
-          return BarChart(
-            BarChartData(
-              minY: 0,
-              maxY: maxY,
-              gridData: const FlGridData(show: false),
-              borderData: FlBorderData(show: false),
-              titlesData: FlTitlesData(
-                leftTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    reservedSize: 28,
-                    getTitlesWidget: (v, _) => Text(
-                      v.toInt().toString(),
-                      style: const TextStyle(
-                        fontSize: 10,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ),
-                ),
-                bottomTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    getTitlesWidget: (v, _) {
-                      final weekStart = now.subtract(
-                        Duration(days: 28 - (v.toInt() * 7)),
-                      );
-                      return Text(
-                        'W${DateFormat('d/M').format(weekStart)}',
-                        style: const TextStyle(
-                          fontSize: 9,
-                          color: AppColors.textSecondary,
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                rightTitles: const AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
-                ),
-                topTitles: const AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
-                ),
-              ),
-              barGroups: points
-                  .map(
-                    (p) => BarChartGroupData(
-                      x: p.x,
-                      barRods: [
-                        BarChartRodData(
-                          toY: p.y,
-                          color: AppColors.accent,
-                          width: 20,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      ],
-                    ),
-                  )
-                  .toList(),
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-// ── Grading pass rate chart ───────────────────────────────────────────────────
-
-class _GradingPassRateChart extends ConsumerWidget {
-  const _GradingPassRateChart();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final dataAsync = ref.watch(gradingPassRateChartProvider);
-    return _ChartCard(
-      title: 'Grading outcomes (90 days)',
-      child: dataAsync.when(
-        loading: () =>
-            const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-        error: (e, _) => const Center(child: Text('Could not load chart')),
-        data: (points) {
-          if (points.isEmpty) {
-            return const Center(child: Text('No grading results recorded yet'));
-          }
-          final labels = ['Promoted', 'Failed', 'Absent'];
-          final colors = [
-            AppColors.success,
-            AppColors.error,
-            AppColors.warning,
-          ];
-          return Row(
-            children: [
-              Expanded(
-                child: BarChart(
-                  BarChartData(
-                    gridData: const FlGridData(show: false),
-                    borderData: FlBorderData(show: false),
-                    titlesData: FlTitlesData(
-                      bottomTitles: AxisTitles(
-                        sideTitles: SideTitles(
-                          showTitles: true,
-                          getTitlesWidget: (v, _) => Text(
-                            labels[v.toInt()],
-                            style: const TextStyle(
-                              fontSize: 10,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ),
-                      ),
-                      leftTitles: AxisTitles(
-                        sideTitles: SideTitles(
-                          showTitles: true,
-                          reservedSize: 28,
-                          getTitlesWidget: (v, _) => Text(
-                            v.toInt().toString(),
-                            style: const TextStyle(
-                              fontSize: 10,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ),
-                      ),
-                      rightTitles: const AxisTitles(
-                        sideTitles: SideTitles(showTitles: false),
-                      ),
-                      topTitles: const AxisTitles(
-                        sideTitles: SideTitles(showTitles: false),
-                      ),
-                    ),
-                    barGroups: points
-                        .map(
-                          (p) => BarChartGroupData(
-                            x: p.x,
-                            barRods: [
-                              BarChartRodData(
-                                toY: p.y,
-                                color: colors[p.x],
-                                width: 28,
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                            ],
-                          ),
-                        )
-                        .toList(),
-                  ),
-                ),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-}
-
-// ── Chart card wrapper ────────────────────────────────────────────────────────
-
-class _ChartCard extends StatelessWidget {
-  const _ChartCard({required this.title, required this.child});
-
-  final String title;
-  final Widget child;
+  final ActivityItem item;
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      color: AppColors.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: AppColors.surfaceVariant),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 9),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 40,
+            child: Text(
+              _formatTime(item.timestamp),
+              style: const TextStyle(
+                fontFamily: 'IBM Plex Mono',
+                fontSize: 10,
+                color: AppColors.ink3,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Container(
+            width: 6,
+            height: 6,
+            margin: const EdgeInsets.only(top: 5),
+            decoration: BoxDecoration(
+              color: _dotColor(item.icon),
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(item.title, style: const TextStyle(fontSize: 13)),
+                if (item.subtitle != null)
+                  Text(
+                    item.subtitle!,
+                    style: const TextStyle(fontSize: 12, color: AppColors.ink3),
+                  ),
+              ],
+            ),
+          ),
+        ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
+    );
+  }
+
+  String _formatTime(DateTime dt) {
+    final diff = DateTime.now().difference(dt);
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m';
+    if (diff.inHours < 24) return DateFormat('HH:mm').format(dt);
+    if (diff.inDays < 7) return '${diff.inDays}d';
+    return DateFormat('d MMM').format(dt);
+  }
+
+  Color _dotColor(IconData icon) {
+    if (icon == Icons.payments_outlined) return AppColors.tea;
+    if (icon == Icons.military_tech_outlined) return AppColors.crimson;
+    if (icon == Icons.campaign_outlined) return AppColors.indigo;
+    if (icon == Icons.card_membership_outlined) return AppColors.ochre;
+    return AppColors.ink3;
+  }
+}
+
+// ── Sidebar ───────────────────────────────────────────────────────────────────
+
+class _Sidebar extends ConsumerWidget {
+  const _Sidebar();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Column(
+      children: [
+        _AttentionPanel(),
+        const SizedBox(height: 12),
+        _QuickActionsPanel(),
+        const SizedBox(height: 12),
+        _UpcomingGradingPanel(),
+      ],
+    );
+  }
+}
+
+// ── Attention panel ───────────────────────────────────────────────────────────
+
+class _AttentionPanel extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final alerts = ref.watch(ownerAlertFlagsProvider);
+    if (alerts.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.paper0,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: AppColors.hairline),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'ATTENTION',
+            style: TextStyle(
+              fontSize: 10,
+              letterSpacing: 0.8,
+              color: AppColors.ink3,
+            ),
+          ),
+          const SizedBox(height: 10),
+          ...alerts.asMap().entries.map((entry) {
+            final isLast = entry.key == alerts.length - 1;
+            final alert = entry.value;
+            final isError = alert.severity == AlertSeverity.error;
+            return Column(
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: isError ? AppColors.crimson : AppColors.ochre,
+                        shape: BoxShape.circle,
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        isError ? '!' : '!',
+                        style: const TextStyle(
+                          color: AppColors.paper0,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        alert.message,
+                        style: const TextStyle(fontSize: 13),
+                      ),
+                    ),
+                  ],
+                ),
+                if (!isLast) ...[
+                  const SizedBox(height: 8),
+                  const Divider(height: 1),
+                  const SizedBox(height: 8),
+                ],
+              ],
+            );
+          }),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Quick actions panel ───────────────────────────────────────────────────────
+
+class _QuickActionsPanel extends StatelessWidget {
+  const _QuickActionsPanel();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.paper0,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: AppColors.hairline),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'QUICK ACTIONS',
+            style: TextStyle(
+              fontSize: 10,
+              letterSpacing: 0.8,
+              color: AppColors.ink3,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: _QuickActionTile(
+                  label: 'Members',
+                  action: 'Add',
+                  onTap: () => context.pushNamed('adminProfileCreate'),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _QuickActionTile(
+                  label: 'Payment',
+                  action: 'Record',
+                  onTap: () => context.pushNamed('adminPaymentsRecord'),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _QuickActionTile(
+                  label: 'Attendance',
+                  action: 'Mark',
+                  onTap: () => context.pushNamed('adminAttendanceCreate'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _QuickActionTile extends StatelessWidget {
+  const _QuickActionTile({
+    required this.label,
+    required this.action,
+    required this.onTap,
+  });
+
+  final String label;
+  final String action;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+        decoration: BoxDecoration(
+          color: AppColors.paper2,
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(color: AppColors.hairline),
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              title,
+              label.toUpperCase(),
               style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
-                color: AppColors.textSecondary,
+                fontSize: 9,
+                letterSpacing: 0.8,
+                color: AppColors.ink3,
               ),
             ),
-            const SizedBox(height: 16),
-            SizedBox(height: 160, child: child),
+            const SizedBox(height: 4),
+            Text(
+              action,
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+            ),
           ],
         ),
       ),
@@ -719,76 +755,70 @@ class _ChartCard extends StatelessWidget {
   }
 }
 
-// ── Activity feed ─────────────────────────────────────────────────────────────
+// ── Upcoming grading panel ────────────────────────────────────────────────────
 
-class _ActivityFeed extends ConsumerWidget {
-  const _ActivityFeed();
+class _UpcomingGradingPanel extends ConsumerWidget {
+  const _UpcomingGradingPanel();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final feedAsync = ref.watch(activityFeedProvider);
-    return feedAsync.when(
-      loading: () => const Center(
-        child: Padding(
-          padding: EdgeInsets.all(24),
-          child: CircularProgressIndicator(strokeWidth: 2),
-        ),
-      ),
-      error: (e, _) => const Center(child: Text('Could not load activity')),
-      data: (items) {
-        if (items.isEmpty) {
-          return const Center(
-            child: Padding(
-              padding: EdgeInsets.all(24),
-              child: Text(
-                'No recent activity',
-                style: TextStyle(color: AppColors.textSecondary),
-              ),
-            ),
-          );
-        }
-        return Card(
-          elevation: 0,
-          color: AppColors.surface,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: const BorderSide(color: AppColors.surfaceVariant),
+    final gradingAsync = ref.watch(upcomingGradingProvider);
+
+    return gradingAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (e, _) => const SizedBox.shrink(),
+      data: (event) {
+        if (event == null) return const SizedBox.shrink();
+        return Container(
+          decoration: BoxDecoration(
+            color: AppColors.paper0,
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(color: AppColors.hairline),
           ),
+          padding: const EdgeInsets.all(16),
           child: Column(
-            children: items.map((item) => _ActivityTile(item: item)).toList(),
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'UPCOMING GRADING',
+                style: TextStyle(
+                  fontSize: 10,
+                  letterSpacing: 0.8,
+                  color: AppColors.ink3,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                DateFormat('EEE dd MMM').format(event.eventDate),
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              if (event.title != null) ...[
+                const SizedBox(height: 2),
+                Text(
+                  event.title!,
+                  style: const TextStyle(fontSize: 13, color: AppColors.ink3),
+                ),
+              ],
+              const SizedBox(height: 10),
+              TextButton(
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                onPressed: () => context.pushNamed(
+                  'adminGradingDetail',
+                  pathParameters: {'eventId': event.id},
+                ),
+                child: const Text('Review shortlist →'),
+              ),
+            ],
           ),
         );
       },
     );
-  }
-}
-
-class _ActivityTile extends StatelessWidget {
-  const _ActivityTile({required this.item});
-
-  final ActivityItem item;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      dense: true,
-      leading: Icon(item.icon, size: 20, color: AppColors.primary),
-      title: Text(item.title, style: const TextStyle(fontSize: 13)),
-      subtitle: item.subtitle != null
-          ? Text(item.subtitle!, style: const TextStyle(fontSize: 12))
-          : null,
-      trailing: Text(
-        _formatTimestamp(item.timestamp),
-        style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
-      ),
-    );
-  }
-
-  String _formatTimestamp(DateTime dt) {
-    final diff = DateTime.now().difference(dt);
-    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-    if (diff.inHours < 24) return '${diff.inHours}h ago';
-    if (diff.inDays < 7) return '${diff.inDays}d ago';
-    return DateFormat('d MMM').format(dt);
   }
 }
