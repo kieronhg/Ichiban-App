@@ -26,12 +26,14 @@ class AppRadius {
   static const double sm = 4; // Buttons, inputs
   static const double md = 6; // Cards
   static const double lg = 10; // Bottom sheets, modals
+  static const double xl = 12; // Cards, summary tiles, dialogs
   static const double pill = 999; // Avatars, pill tags
 
   static BorderRadius get chipRadius => BorderRadius.circular(xs);
   static BorderRadius get buttonRadius => BorderRadius.circular(sm);
   static BorderRadius get cardRadius => BorderRadius.circular(md);
   static BorderRadius get sheetRadius => BorderRadius.circular(lg);
+  static BorderRadius get xlRadius => BorderRadius.circular(xl);
   static BorderRadius get pillRadius => BorderRadius.circular(pill);
 }
 

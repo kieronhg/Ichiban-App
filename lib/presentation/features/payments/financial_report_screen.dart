@@ -9,6 +9,8 @@ import '../../../core/providers/payments_providers.dart';
 import '../../../core/providers/profile_providers.dart';
 import '../../../core/router/route_names.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_text_styles.dart';
 import '../../../domain/entities/cash_payment.dart';
 import '../../../domain/entities/enums.dart';
 import '../../../domain/entities/payt_session.dart';
@@ -171,7 +173,7 @@ class _FinancialReportScreenState extends ConsumerState<FinancialReportScreen> {
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.s4),
         children: [
           _FilterBar(
             selectedRange: _range,
@@ -179,14 +181,14 @@ class _FinancialReportScreenState extends ConsumerState<FinancialReportScreen> {
             onRangeChanged: (r) => setState(() => _range = r),
             onMethodChanged: (m) => setState(() => _methodFilter = m),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: AppSpacing.s3),
           Text(
             _periodLabel(),
             style: Theme.of(
               context,
             ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.s3),
           SizedBox(
             height: 116,
             child: ListView(
@@ -231,22 +233,22 @@ class _FinancialReportScreenState extends ConsumerState<FinancialReportScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: AppSpacing.s5),
           _MonthlyRevenueChart(
             allPayments: allPayments,
             allSessions: allSessions,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.s4),
           if (methodTotals.isNotEmpty) ...[
             _MethodMixChart(
               methodTotals: methodTotals,
               totalCollected: totalCollected,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.s4),
           ],
           if (payments.isNotEmpty) ...[
             _PlanTypeBreakdown(payments: payments),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.s4),
           ],
           if (outstanding.isNotEmpty)
             _OutstandingSection(
@@ -260,7 +262,7 @@ class _FinancialReportScreenState extends ConsumerState<FinancialReportScreen> {
                 context.push(route);
               },
             ),
-          const SizedBox(height: 24),
+          const SizedBox(height: AppSpacing.s6),
         ],
       ),
     );
@@ -332,8 +334,8 @@ class _FilterBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Wrap(
-      spacing: 8,
-      runSpacing: 8,
+      spacing: AppSpacing.s2,
+      runSpacing: AppSpacing.s2,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         _ChipDropdown(
@@ -385,10 +387,7 @@ class _FilterBar extends StatelessWidget {
   }
 
   TextStyle _dropdownStyle(BuildContext context) =>
-      (Theme.of(context).textTheme.bodySmall ?? const TextStyle()).copyWith(
-        color: AppColors.textPrimary,
-        fontSize: 12,
-      );
+      AppTextStyles.labelMedium.copyWith(color: AppColors.textPrimary);
 }
 
 class _ChipDropdown extends StatelessWidget {
@@ -399,10 +398,10 @@ class _ChipDropdown extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       height: 32,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s3),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(color: AppColors.surfaceVariant),
       ),
       child: child,
@@ -439,10 +438,13 @@ class _SummaryCard extends StatelessWidget {
 
     return Container(
       width: 160,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.s4,
+        vertical: AppSpacing.s3,
+      ),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.xlRadius,
         border: border,
       ),
       child: Column(
@@ -451,31 +453,28 @@ class _SummaryCard extends StatelessWidget {
         children: [
           Text(
             label,
-            style: TextStyle(
-              fontSize: 11,
+            style: AppTextStyles.labelLarge.copyWith(
               fontWeight: FontWeight.w600,
               letterSpacing: 0.4,
               color: isDark
-                  ? Colors.white.withAlpha(153)
+                  ? AppColors.white.withAlpha(153)
                   : AppColors.textSecondary,
             ),
           ),
           const SizedBox(height: 5),
           Text(
             '£${amount.toStringAsFixed(2)}',
-            style: TextStyle(
-              fontSize: 20,
+            style: AppTextStyles.headlineMedium.copyWith(
               fontWeight: FontWeight.w700,
-              color: isDark ? Colors.white : effective,
+              color: isDark ? AppColors.white : effective,
             ),
           ),
           const SizedBox(height: 2),
           Text(
             subtitle,
-            style: TextStyle(
-              fontSize: 11,
+            style: AppTextStyles.labelLarge.copyWith(
               color: isDark
-                  ? Colors.white.withAlpha(127)
+                  ? AppColors.white.withAlpha(127)
                   : effective.withAlpha(180),
             ),
           ),
@@ -557,7 +556,7 @@ class _MonthlyRevenueChart extends StatelessWidget {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.s4),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -591,7 +590,7 @@ class _MonthlyRevenueChart extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.s4),
             SizedBox(
               height: 180,
               child: BarChart(
@@ -631,7 +630,7 @@ class _MonthlyRevenueChart extends StatelessWidget {
                             padding: const EdgeInsets.only(top: 4),
                             child: Text(
                               labels[i],
-                              style: TextStyle(
+                              style: AppTextStyles.labelLarge.copyWith(
                                 fontSize: 9,
                                 color: i == 11
                                     ? AppColors.accent
@@ -654,7 +653,9 @@ class _MonthlyRevenueChart extends StatelessWidget {
                         final total = memData[i] + paytData[i];
                         return BarTooltipItem(
                           '${labels[i]}\n£${total.toStringAsFixed(0)}',
-                          const TextStyle(color: Colors.white, fontSize: 11),
+                          AppTextStyles.labelLarge.copyWith(
+                            color: AppColors.white,
+                          ),
                         );
                       },
                     ),
@@ -705,7 +706,7 @@ class _MethodMixChart extends StatelessWidget {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.s4),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -721,7 +722,7 @@ class _MethodMixChart extends StatelessWidget {
                 context,
               ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.s4),
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
@@ -773,20 +774,21 @@ class _MethodMixChart extends StatelessWidget {
                               height: 10,
                               decoration: BoxDecoration(
                                 color: color,
-                                borderRadius: BorderRadius.circular(2),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.xs,
+                                ),
                               ),
                             ),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
                                 _methodLabel(e.key),
-                                style: const TextStyle(fontSize: 12),
+                                style: AppTextStyles.labelMedium,
                               ),
                             ),
                             Text(
                               '£${e.value.toStringAsFixed(0)} · $pct%',
-                              style: const TextStyle(
-                                fontSize: 12,
+                              style: AppTextStyles.labelMedium.copyWith(
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -832,7 +834,7 @@ class _PlanTypeBreakdown extends StatelessWidget {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.s4),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -842,7 +844,7 @@ class _PlanTypeBreakdown extends StatelessWidget {
                 context,
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.s3),
             ...byType.entries.map((e) {
               final frac = maxAmount > 0 ? e.value / maxAmount : 0.0;
               final color = _typeColors[e.key] ?? AppColors.textSecondary;
@@ -854,12 +856,12 @@ class _PlanTypeBreakdown extends StatelessWidget {
                       width: 96,
                       child: Text(
                         _typeLabel(e.key),
-                        style: const TextStyle(fontSize: 13),
+                        style: AppTextStyles.bodyMedium,
                       ),
                     ),
                     Expanded(
                       child: ClipRRect(
-                        borderRadius: BorderRadius.circular(2),
+                        borderRadius: BorderRadius.circular(AppRadius.xs),
                         child: LinearProgressIndicator(
                           value: frac.clamp(0.0, 1.0),
                           minHeight: 20,
@@ -873,9 +875,8 @@ class _PlanTypeBreakdown extends StatelessWidget {
                       width: 68,
                       child: Text(
                         '£${e.value.toStringAsFixed(0)}',
-                        style: const TextStyle(
+                        style: AppTextStyles.bodyMedium.copyWith(
                           fontWeight: FontWeight.w600,
-                          fontSize: 13,
                         ),
                         textAlign: TextAlign.right,
                       ),
@@ -908,7 +909,7 @@ class _OutstandingSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.s4),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -956,17 +957,16 @@ class _OutstandingSection extends StatelessWidget {
                             children: [
                               Text(
                                 name,
-                                style: const TextStyle(
-                                  fontSize: 13,
+                                style: AppTextStyles.bodyMedium.copyWith(
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
                               const SizedBox(height: 2),
                               Text(
                                 'PAYT · ${DateFormat('d MMM').format(s.sessionDate)}',
-                                style: const TextStyle(
-                                  fontSize: 11,
+                                style: AppTextStyles.labelLarge.copyWith(
                                   color: AppColors.textSecondary,
+                                  letterSpacing: 0,
                                 ),
                               ),
                             ],
@@ -991,9 +991,8 @@ class _OutstandingSection extends StatelessWidget {
                           width: 52,
                           child: Text(
                             '£${s.amount.toStringAsFixed(2)}',
-                            style: const TextStyle(
+                            style: AppTextStyles.bodyMedium.copyWith(
                               fontWeight: FontWeight.w600,
-                              fontSize: 13,
                             ),
                             textAlign: TextAlign.right,
                           ),
@@ -1008,7 +1007,7 @@ class _OutstandingSection extends StatelessWidget {
                             ),
                             minimumSize: const Size(0, 30),
                             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            textStyle: const TextStyle(fontSize: 11),
+                            textStyle: AppTextStyles.labelLarge,
                           ),
                           child: const Text('Mark paid'),
                         ),
@@ -1035,12 +1034,11 @@ class _PaytBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
         color: AppColors.success.withAlpha(30),
-        borderRadius: BorderRadius.circular(3),
+        borderRadius: BorderRadius.circular(AppRadius.xs),
       ),
-      child: const Text(
+      child: Text(
         'PAYT',
-        style: TextStyle(
-          fontSize: 10,
+        style: AppTextStyles.labelLarge.copyWith(
           fontWeight: FontWeight.w600,
           color: AppColors.success,
           letterSpacing: 0.4,
@@ -1068,13 +1066,15 @@ class _LegendItem extends StatelessWidget {
           height: 10,
           decoration: BoxDecoration(
             color: color,
-            borderRadius: BorderRadius.circular(2),
+            borderRadius: BorderRadius.circular(AppRadius.xs),
           ),
         ),
         const SizedBox(width: 4),
         Text(
           label,
-          style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+          style: AppTextStyles.labelLarge.copyWith(
+            color: AppColors.textSecondary,
+          ),
         ),
       ],
     );

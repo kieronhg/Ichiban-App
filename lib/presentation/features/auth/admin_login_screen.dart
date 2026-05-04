@@ -7,6 +7,8 @@ import '../../../core/providers/repository_providers.dart';
 import '../../../core/providers/student_auth_provider.dart';
 import '../../../core/router/route_names.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_text_styles.dart';
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 
@@ -185,7 +187,7 @@ class _BrandPanel extends StatelessWidget {
               style: TextStyle(
                 fontSize: 280,
                 fontWeight: FontWeight.w500,
-                color: Colors.white.withAlpha(10),
+                color: AppColors.white.withAlpha(10),
                 height: 0.8,
               ),
             ),
@@ -203,19 +205,20 @@ class _BrandPanel extends StatelessWidget {
 
           // Main content
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 56, horizontal: 48),
+            padding: const EdgeInsets.symmetric(
+              vertical: AppSpacing.s12,
+              horizontal: AppSpacing.s12,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Top: mark + name
                 _Mark(size: 44, fontSize: 22),
                 const SizedBox(height: 18),
-                const Text(
+                Text(
                   'Ichiban',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 32,
-                    fontWeight: FontWeight.w500,
+                  style: AppTextStyles.displayMedium.copyWith(
+                    color: AppColors.white,
                     letterSpacing: -0.3,
                     height: 1,
                   ),
@@ -223,10 +226,8 @@ class _BrandPanel extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text(
                   'MEANWOOD DOJO · EST. 2009',
-                  style: TextStyle(
-                    color: Colors.white.withAlpha(140),
-                    fontSize: 10,
-                    fontWeight: FontWeight.w400,
+                  style: AppTextStyles.labelLarge.copyWith(
+                    color: AppColors.white.withAlpha(140),
                     letterSpacing: 2,
                   ),
                 ),
@@ -234,11 +235,11 @@ class _BrandPanel extends StatelessWidget {
                 const Spacer(),
 
                 // Bottom: tagline + disciplines
-                const Text(
+                // TODO(design): fontSize 26 — pending confirmation, using displayMedium (32) as placeholder
+                Text(
                   'A working tool\nfor a working dojo.',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 26,
+                  style: AppTextStyles.displayMedium.copyWith(
+                    color: AppColors.white,
                     fontWeight: FontWeight.w400,
                     height: 1.25,
                     letterSpacing: -0.1,
@@ -247,9 +248,8 @@ class _BrandPanel extends StatelessWidget {
                 const SizedBox(height: 14),
                 Text(
                   'KARATE · JUDO · JUJITSU · AIKIDO · KENDO',
-                  style: TextStyle(
-                    color: Colors.white.withAlpha(115),
-                    fontSize: 10,
+                  style: AppTextStyles.labelLarge.copyWith(
+                    color: AppColors.white.withAlpha(115),
                     letterSpacing: 1.4,
                   ),
                 ),
@@ -291,7 +291,10 @@ class _FormPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       color: AppColors.warmPaper,
-      padding: const EdgeInsets.symmetric(vertical: 56, horizontal: 48),
+      padding: const EdgeInsets.symmetric(
+        vertical: AppSpacing.s12,
+        horizontal: AppSpacing.s12,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -300,10 +303,10 @@ class _FormPanel extends StatelessWidget {
           const SizedBox(height: 18),
 
           // Heading
-          const Text(
+          // TODO(design): fontSize 36 — pending confirmation, using displayMedium (32) as placeholder
+          Text(
             'Welcome back.',
-            style: TextStyle(
-              fontSize: 36,
+            style: AppTextStyles.displayMedium.copyWith(
               fontWeight: FontWeight.w600,
               letterSpacing: -0.4,
               height: 1.05,
@@ -313,13 +316,12 @@ class _FormPanel extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             'Sign in with your registered email address.',
-            style: TextStyle(
-              fontSize: 14,
+            style: AppTextStyles.bodyMedium.copyWith(
               color: AppColors.textSecondary,
               height: 1.45,
             ),
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: AppSpacing.s8),
 
           // Unrecognised account banner
           if (unrecognisedError != null) ...[
@@ -327,7 +329,7 @@ class _FormPanel extends StatelessWidget {
               title: 'Account not recognised',
               body: unrecognisedError!,
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: AppSpacing.s5),
           ],
 
           // Error banner
@@ -336,7 +338,7 @@ class _FormPanel extends StatelessWidget {
               title: 'We couldn\'t sign you in',
               body: state.errorMessage!,
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: AppSpacing.s5),
           ],
 
           // Fields
@@ -349,7 +351,7 @@ class _FormPanel extends StatelessWidget {
             onChanged: (_) => onChanged(),
             enabled: !state.isLoading,
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: AppSpacing.s5),
           _LabeledField(
             label: 'Password',
             controller: passwordController,
@@ -380,7 +382,7 @@ class _FormPanel extends StatelessWidget {
           ],
 
           // Actions
-          const SizedBox(height: 28),
+          const SizedBox(height: AppSpacing.s6),
           _SignInButton(onPressed: onSubmit, isLoading: state.isLoading),
           const SizedBox(height: 18),
           Row(
@@ -391,10 +393,9 @@ class _FormPanel extends StatelessWidget {
                   onTap: state.isLoading
                       ? null
                       : () => context.push(RouteNames.studentSignUp),
-                  child: const Text(
+                  child: Text(
                     'Create an account',
-                    style: TextStyle(
-                      fontSize: 13,
+                    style: AppTextStyles.bodyMedium.copyWith(
                       color: AppColors.crimson,
                       decoration: TextDecoration.underline,
                       decorationColor: AppColors.crimson,
@@ -404,10 +405,9 @@ class _FormPanel extends StatelessWidget {
               ),
               GestureDetector(
                 onTap: state.isLoading ? null : onForgotPassword,
-                child: const Text(
+                child: Text(
                   'Forgot password',
-                  style: TextStyle(
-                    fontSize: 13,
+                  style: AppTextStyles.bodyMedium.copyWith(
                     color: AppColors.crimson,
                     decoration: TextDecoration.underline,
                     decorationColor: AppColors.crimson,
@@ -420,18 +420,19 @@ class _FormPanel extends StatelessWidget {
           // Footer
           const Spacer(),
           Divider(color: AppColors.hairline.withAlpha(180), height: 1),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.s3),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
                 'Privacy policy v3.1',
-                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                style: AppTextStyles.labelMedium.copyWith(
+                  color: AppColors.textSecondary,
+                ),
               ),
               Text(
                 'v1.0.0 · Build 1',
-                style: TextStyle(
-                  fontSize: 10,
+                style: AppTextStyles.labelLarge.copyWith(
                   color: AppColors.textSecondary,
                   letterSpacing: 1.4,
                 ),
@@ -475,7 +476,7 @@ class _NarrowLogin extends StatelessWidget {
       backgroundColor: AppColors.warmPaper,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s6),
           child: ConstrainedBox(
             constraints: BoxConstraints(
               minHeight:
@@ -490,10 +491,10 @@ class _NarrowLogin extends StatelessWidget {
                   const SizedBox(height: 48),
                   _Mark(size: 36, fontSize: 18),
                   const SizedBox(height: 16),
-                  const Text(
+                  // TODO(design): fontSize 26 — pending confirmation, using displayMedium (32) as placeholder
+                  Text(
                     'Welcome back.',
-                    style: TextStyle(
-                      fontSize: 26,
+                    style: AppTextStyles.displayMedium.copyWith(
                       fontWeight: FontWeight.w600,
                       letterSpacing: -0.3,
                       height: 1.05,
@@ -503,26 +504,25 @@ class _NarrowLogin extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     'Sign in to continue.',
-                    style: TextStyle(
-                      fontSize: 13,
+                    style: AppTextStyles.bodyMedium.copyWith(
                       color: AppColors.textSecondary,
                     ),
                   ),
-                  const SizedBox(height: 28),
+                  const SizedBox(height: AppSpacing.s6),
 
                   if (unrecognisedError != null) ...[
                     _ErrorBanner(
                       title: 'Account not recognised',
                       body: unrecognisedError!,
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: AppSpacing.s5),
                   ],
                   if (state.errorMessage != null) ...[
                     _ErrorBanner(
                       title: 'We couldn\'t sign you in',
                       body: state.errorMessage!,
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: AppSpacing.s5),
                   ],
 
                   _LabeledField(
@@ -534,7 +534,7 @@ class _NarrowLogin extends StatelessWidget {
                     onChanged: (_) => onChanged(),
                     enabled: !state.isLoading,
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: AppSpacing.s5),
                   _LabeledField(
                     label: 'Password',
                     controller: passwordController,
@@ -563,18 +563,17 @@ class _NarrowLogin extends StatelessWidget {
                     const SizedBox(height: 6),
                     Text(
                       state.passwordError!,
-                      style: const TextStyle(
-                        fontSize: 12,
+                      style: AppTextStyles.labelMedium.copyWith(
                         color: AppColors.error,
                       ),
                     ),
                   ],
-                  const SizedBox(height: 28),
+                  const SizedBox(height: AppSpacing.s6),
                   _SignInButton(
                     onPressed: onSubmit,
                     isLoading: state.isLoading,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppSpacing.s4),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -583,10 +582,9 @@ class _NarrowLogin extends StatelessWidget {
                           onTap: state.isLoading
                               ? null
                               : () => context.push(RouteNames.studentSignUp),
-                          child: const Text(
+                          child: Text(
                             'Create an account',
-                            style: TextStyle(
-                              fontSize: 12,
+                            style: AppTextStyles.labelMedium.copyWith(
                               color: AppColors.crimson,
                               decoration: TextDecoration.underline,
                               decorationColor: AppColors.crimson,
@@ -597,10 +595,9 @@ class _NarrowLogin extends StatelessWidget {
                       const SizedBox(width: 20),
                       GestureDetector(
                         onTap: state.isLoading ? null : onForgotPassword,
-                        child: const Text(
+                        child: Text(
                           'Forgot password',
-                          style: TextStyle(
-                            fontSize: 12,
+                          style: AppTextStyles.labelMedium.copyWith(
                             color: AppColors.crimson,
                             decoration: TextDecoration.underline,
                             decorationColor: AppColors.crimson,
@@ -611,12 +608,11 @@ class _NarrowLogin extends StatelessWidget {
                   ),
 
                   const Spacer(),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: AppSpacing.s6),
                   Center(
                     child: Text(
                       'V1.0.0 · BUILD 1',
-                      style: TextStyle(
-                        fontSize: 9,
+                      style: AppTextStyles.labelLarge.copyWith(
                         color: AppColors.textSecondary,
                         letterSpacing: 1.4,
                       ),
@@ -687,20 +683,19 @@ class _ForgotPasswordDialogState extends ConsumerState<_ForgotPasswordDialog> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'RESET PASSWORD',
-            style: TextStyle(
-              fontSize: 10,
+            style: AppTextStyles.labelLarge.copyWith(
               fontWeight: FontWeight.w600,
               letterSpacing: 1.4,
               color: AppColors.crimson,
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
+          // TODO(design): fontSize 22 — pending confirmation, using headlineLarge (24) as placeholder
+          Text(
             'We\'ll send you a link.',
-            style: TextStyle(
-              fontSize: 22,
+            style: AppTextStyles.headlineLarge.copyWith(
               fontWeight: FontWeight.w600,
               letterSpacing: -0.3,
               color: AppColors.brandSurface,
@@ -709,9 +704,11 @@ class _ForgotPasswordDialogState extends ConsumerState<_ForgotPasswordDialog> {
           const SizedBox(height: 8),
           Text(
             'Enter the email you signed up with. The reset link expires in one hour.',
-            style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
+            ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: AppSpacing.s5),
           _LabeledField(
             label: 'Email',
             controller: _emailController,
@@ -721,7 +718,7 @@ class _ForgotPasswordDialogState extends ConsumerState<_ForgotPasswordDialog> {
             onSubmitted: (_) => _sendReset(state),
             enabled: !state.isLoading,
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: AppSpacing.s5),
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
@@ -743,7 +740,7 @@ class _ForgotPasswordDialogState extends ConsumerState<_ForgotPasswordDialog> {
                         height: 14,
                         child: CircularProgressIndicator(
                           strokeWidth: 1.5,
-                          color: Colors.white,
+                          color: AppColors.white,
                         ),
                       )
                     : const Text('Send reset link'),
@@ -765,10 +762,13 @@ class _ForgotPasswordDialogState extends ConsumerState<_ForgotPasswordDialog> {
   Widget _dialogShell({required Widget child}) {
     return Dialog(
       backgroundColor: AppColors.warmPaper,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(borderRadius: AppRadius.xlRadius),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 440),
-        child: Padding(padding: const EdgeInsets.all(32), child: child),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.s8),
+          child: child,
+        ),
       ),
     );
   }
@@ -794,10 +794,10 @@ class _ForgotSuccess extends StatelessWidget {
           child: const Icon(Icons.check, color: AppColors.success, size: 22),
         ),
         const SizedBox(height: 18),
-        const Text(
+        // TODO(design): fontSize 22 — pending confirmation, using headlineLarge (24) as placeholder
+        Text(
           'Check your inbox.',
-          style: TextStyle(
-            fontSize: 22,
+          style: AppTextStyles.headlineLarge.copyWith(
             fontWeight: FontWeight.w600,
             letterSpacing: -0.3,
             color: AppColors.brandSurface,
@@ -807,14 +807,13 @@ class _ForgotSuccess extends StatelessWidget {
         const SizedBox(height: 8),
         Text(
           'If we have an account for that email, a reset link is on its way. The link expires in one hour.',
-          style: TextStyle(
-            fontSize: 13,
+          style: AppTextStyles.bodyMedium.copyWith(
             color: AppColors.textSecondary,
             height: 1.45,
           ),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: AppSpacing.s6),
         SizedBox(
           width: double.infinity,
           child: OutlinedButton(
@@ -842,14 +841,14 @@ class _Mark extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         color: Colors.transparent,
-        border: Border.all(color: Colors.white.withAlpha(64), width: 1),
-        borderRadius: BorderRadius.circular(2),
+        border: Border.all(color: AppColors.white.withAlpha(64), width: 1),
+        borderRadius: BorderRadius.circular(AppRadius.xs),
       ),
       child: Center(
         child: Text(
           '壱',
           style: TextStyle(
-            color: Colors.white,
+            color: AppColors.white,
             fontSize: fontSize,
             fontWeight: FontWeight.w500,
           ),
@@ -871,7 +870,7 @@ class _SealStamp extends StatelessWidget {
       height: 64,
       decoration: BoxDecoration(
         border: Border.all(color: AppColors.crimson, width: 1.5),
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: BorderRadius.circular(AppRadius.xs),
       ),
       child: Stack(
         children: [
@@ -917,8 +916,7 @@ class _Eyebrow extends StatelessWidget {
       children: [
         Text(
           label.toUpperCase(),
-          style: TextStyle(
-            fontSize: 10,
+          style: AppTextStyles.labelLarge.copyWith(
             fontWeight: FontWeight.w400,
             letterSpacing: 2,
             color: AppColors.textSecondary,
@@ -961,7 +959,7 @@ class _LabeledField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fillColor = hasError
-        ? const Color(0xFF9A2E20).withAlpha(10)
+        ? AppColors.error.withAlpha(10)
         : AppColors.warmField;
     final borderColor = hasError ? AppColors.error : AppColors.hairline;
 
@@ -970,10 +968,7 @@ class _LabeledField extends StatelessWidget {
       children: [
         Text(
           label.toUpperCase(),
-          style: const TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.w500,
-            letterSpacing: 1.4,
+          style: AppTextStyles.labelLarge.copyWith(
             color: AppColors.textSecondary,
           ),
         ),
@@ -983,7 +978,7 @@ class _LabeledField extends StatelessWidget {
           decoration: BoxDecoration(
             color: fillColor,
             border: Border.all(color: borderColor),
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: AppRadius.buttonRadius,
           ),
           child: Row(
             children: [
@@ -1005,8 +1000,7 @@ class _LabeledField extends StatelessWidget {
                     isDense: true,
                     contentPadding: EdgeInsets.zero,
                   ),
-                  style: const TextStyle(
-                    fontSize: 15,
+                  style: AppTextStyles.bodyLarge.copyWith(
                     color: AppColors.brandSurface,
                   ),
                 ),
@@ -1037,7 +1031,7 @@ class _SignInButton extends StatelessWidget {
           backgroundColor: AppColors.brandSurface,
           foregroundColor: AppColors.warmPaper,
           disabledBackgroundColor: AppColors.brandSurface.withAlpha(160),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+          shape: RoundedRectangleBorder(borderRadius: AppRadius.buttonRadius),
           elevation: 0,
         ),
         child: isLoading
@@ -1049,25 +1043,31 @@ class _SignInButton extends StatelessWidget {
                     height: 14,
                     child: CircularProgressIndicator(
                       strokeWidth: 1.5,
-                      color: Colors.white.withAlpha(200),
+                      color: AppColors.white.withAlpha(200),
                     ),
                   ),
                   const SizedBox(width: 10),
-                  const Text(
+                  Text(
                     'Signing you in…',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+                    style: AppTextStyles.bodyLarge.copyWith(
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.warmPaper,
+                    ),
                   ),
                 ],
               )
-            : const Row(
+            : Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
                     'Sign in',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+                    style: AppTextStyles.bodyLarge.copyWith(
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.warmPaper,
+                    ),
                   ),
-                  SizedBox(width: 10),
-                  Icon(Icons.arrow_forward, size: 14),
+                  const SizedBox(width: 10),
+                  const Icon(Icons.arrow_forward, size: 14),
                 ],
               ),
       ),
@@ -1086,11 +1086,11 @@ class _ErrorBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF9A2E20).withAlpha(15),
+        color: AppColors.error.withAlpha(15),
         border: const Border(
           left: BorderSide(color: AppColors.error, width: 2),
         ),
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: AppRadius.buttonRadius,
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1103,8 +1103,7 @@ class _ErrorBanner extends StatelessWidget {
               children: [
                 Text(
                   title.toUpperCase(),
-                  style: const TextStyle(
-                    fontSize: 10,
+                  style: AppTextStyles.labelLarge.copyWith(
                     fontWeight: FontWeight.w600,
                     letterSpacing: 1.4,
                     color: AppColors.error,

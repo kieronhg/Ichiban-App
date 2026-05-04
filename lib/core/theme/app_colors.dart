@@ -77,6 +77,7 @@ class AppColors {
   static const Color brandSurface = ink1;
   static const Color warmPaper = paper0;
   static const Color warmField = paper1;
+  static const Color white = Color(0xFFFFFFFF);
 }
 
 class AppColorsDark {
