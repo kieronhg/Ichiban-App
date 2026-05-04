@@ -73,7 +73,15 @@ class AppTextStyles {
     color: AppColors.ink3,
   );
 
-  // ── Label · IBM Plex Mono ────────────────────────────────────
+  // ── Label · IBM Plex Sans ────────────────────────────────────
+  // 12 / 18 · w400 — footer text, dense secondary labels
+  static TextStyle get labelMedium => GoogleFonts.ibmPlexSans(
+    fontSize: 12,
+    fontWeight: FontWeight.w400,
+    height: 18 / 12,
+    color: AppColors.ink3,
+  );
+
   // 11 / 16 · w500 — form labels, eyebrow, chips, codes, prices
   static TextStyle get labelLarge => GoogleFonts.ibmPlexMono(
     fontSize: 11,
