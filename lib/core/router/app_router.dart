@@ -81,6 +81,7 @@ import '../../presentation/features/notifications/email_template_editor_screen.d
 import '../../presentation/features/notifications/email_template_list_screen.dart';
 import '../../presentation/features/notifications/send_announcement_screen.dart';
 import '../../presentation/features/profiles/profile_detail_screen.dart';
+import '../../presentation/features/profiles/add_member_wizard_screen.dart';
 import '../../presentation/features/profiles/profile_form_screen.dart';
 import '../../presentation/features/profiles/profile_list_screen.dart';
 import '../../presentation/features/profiles/student_profile_screen.dart';
@@ -252,7 +253,7 @@ class AppRouter {
           GoRoute(
             path: 'create',
             name: 'adminProfileCreate',
-            builder: (_, state) => const ProfileFormScreen(),
+            builder: (_, state) => const AddMemberWizardScreen(),
           ),
           GoRoute(
             path: ':id',
