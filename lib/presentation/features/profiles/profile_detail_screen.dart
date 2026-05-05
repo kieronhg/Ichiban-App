@@ -2,6 +2,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/providers/repository_providers.dart';
@@ -24,6 +25,7 @@ import '../../../domain/entities/grading_record.dart';
 import '../../../domain/entities/membership.dart';
 import '../../../domain/entities/payt_session.dart';
 import '../../../domain/entities/profile.dart';
+import '../../shared/widgets/member_avatar.dart';
 
 class ProfileDetailScreen extends ConsumerWidget {
   const ProfileDetailScreen({super.key, required this.profileId});
@@ -54,6 +56,8 @@ class ProfileDetailScreen extends ConsumerWidget {
   }
 }
 
+// ── Main view ────────────────────────────────────────────────────────────────
+
 class _ProfileDetailView extends ConsumerWidget {
   const _ProfileDetailView({required this.profile});
 
@@ -62,34 +66,88 @@ class _ProfileDetailView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return DefaultTabController(
-      length: 3,
+      length: 4,
       child: Scaffold(
         appBar: AppBar(
           title: Text(profile.fullName),
           actions: [
-            IconButton(
-              icon: const Icon(Icons.edit_outlined),
-              tooltip: 'Edit',
+            OutlinedButton(
+              onPressed: () => context.pushNamed('adminGrading'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.ink1,
+                side: const BorderSide(color: AppColors.hairline),
+                minimumSize: const Size(0, 32),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                textStyle: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              child: const Text('Add to grading'),
+            ),
+            const SizedBox(width: 8),
+            OutlinedButton(
+              onPressed: () =>
+                  context.pushNamed('adminPaymentsRecord', extra: profile.id),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.ink1,
+                side: const BorderSide(color: AppColors.hairline),
+                minimumSize: const Size(0, 32),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                textStyle: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              child: const Text('Record payment'),
+            ),
+            const SizedBox(width: 8),
+            FilledButton(
               onPressed: () => context.pushNamed(
                 'adminProfileEdit',
                 pathParameters: {'id': profile.id},
                 extra: profile,
               ),
+              style: FilledButton.styleFrom(
+                minimumSize: const Size(0, 32),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                textStyle: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              child: const Text('Edit'),
             ),
+            const SizedBox(width: 16),
           ],
-          bottom: const TabBar(
-            tabs: [
-              Tab(text: 'Personal'),
-              Tab(text: 'Disciplines & Grading'),
-              Tab(text: 'Payments'),
-            ],
-          ),
         ),
-        body: TabBarView(
+        body: Column(
           children: [
-            _PersonalTab(profile: profile, ref: ref),
-            _DisciplinesGradingTab(profile: profile),
-            _PaymentsTab(profileId: profile.id),
+            // Fixed profile hero — visible across all tabs
+            _ProfileHero(profile: profile),
+            // Tab bar — pinned below hero
+            Container(
+              color: AppColors.paper1,
+              child: const TabBar(
+                tabs: [
+                  Tab(text: 'Overview'),
+                  Tab(text: 'Membership'),
+                  Tab(text: 'Disciplines & Grading'),
+                  Tab(text: 'Payments'),
+                ],
+              ),
+            ),
+            // Scrollable tab content
+            Expanded(
+              child: TabBarView(
+                children: [
+                  _OverviewTab(profile: profile, ref: ref),
+                  _MembershipTab(profile: profile, ref: ref),
+                  _DisciplinesGradingTab(profile: profile),
+                  _PaymentsTab(profileId: profile.id),
+                ],
+              ),
+            ),
           ],
         ),
       ),
@@ -97,25 +155,510 @@ class _ProfileDetailView extends ConsumerWidget {
   }
 }
 
-// ── Personal tab ────────────────────────────────────────────────────────────
+// ── Profile hero ─────────────────────────────────────────────────────────────
 
-class _PersonalTab extends StatelessWidget {
-  const _PersonalTab({required this.profile, required this.ref});
+class _ProfileHero extends ConsumerWidget {
+  const _ProfileHero({required this.profile});
+
+  final Profile profile;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final enrollmentsAsync = ref.watch(
+      allEnrollmentsForStudentProvider(profile.id),
+    );
+    final attendanceAsync = ref.watch(
+      attendanceHistoryForStudentProvider(profile.id),
+    );
+
+    final activeEnrollments =
+        enrollmentsAsync.asData?.value.where((e) => e.isActive).toList() ?? [];
+
+    // Most recent attendance record
+    final allRecords = attendanceAsync.asData?.value ?? [];
+    final lastRecord = allRecords.isNotEmpty
+        ? allRecords.reduce(
+            (a, b) => a.sessionDate.isAfter(b.sessionDate) ? a : b,
+          )
+        : null;
+
+    final age = _calcAge(profile.dateOfBirth);
+    final dobLabel = DateFormat('d MMM yyyy').format(profile.dateOfBirth);
+    final joinedLabel = DateFormat(
+      'd MMM yyyy',
+    ).format(profile.registrationDate);
+
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: const BoxDecoration(
+        color: AppColors.paper2,
+        border: Border(bottom: BorderSide(color: AppColors.hairline)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Avatar
+          MemberAvatar(
+            initials: '${profile.firstName[0]}${profile.lastName[0]}',
+            size: AvatarSize.xl,
+          ),
+          const SizedBox(width: 24),
+
+          // Name + badges + belt strips
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Role + status badges
+                Row(
+                  children: [
+                    _RoleBadge(profile: profile),
+                    const SizedBox(width: 8),
+                    _StatusBadge(isActive: profile.isActive),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                // Display name
+                Text(
+                  profile.fullName,
+                  style: GoogleFonts.notoSerifJp(
+                    fontSize: 32,
+                    fontWeight: FontWeight.w500,
+                    height: 1.1,
+                    color: AppColors.ink1,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                // Age · DOB · joined
+                Text(
+                  '$age years · DOB $dobLabel · joined $joinedLabel',
+                  style: const TextStyle(fontSize: 13, color: AppColors.ink3),
+                ),
+                if (activeEnrollments.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 16,
+                    runSpacing: 8,
+                    children: activeEnrollments
+                        .map((e) => _BeltHeroChip(enrollment: e))
+                        .toList(),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(width: 24),
+
+          // Last check-in (right column)
+          if (lastRecord != null)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                const Text(
+                  'LAST CHECK-IN',
+                  style: TextStyle(
+                    fontFamily: 'IBM Plex Mono',
+                    fontSize: 10,
+                    letterSpacing: 0.14 * 10,
+                    color: AppColors.ink3,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _formatCheckInDate(lastRecord.sessionDate),
+                  style: GoogleFonts.notoSerifJp(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.ink1,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  _checkInMethodLabel(lastRecord.checkInMethod),
+                  style: const TextStyle(fontSize: 12, color: AppColors.ink3),
+                ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+
+  static int _calcAge(DateTime dob) {
+    final now = DateTime.now();
+    var age = now.year - dob.year;
+    if (now.month < dob.month ||
+        (now.month == dob.month && now.day < dob.day)) {
+      age--;
+    }
+    return age;
+  }
+
+  static String _formatCheckInDate(DateTime d) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final date = DateTime(d.year, d.month, d.day);
+    if (date == today) {
+      return 'Today · ${DateFormat('HH:mm').format(d)}';
+    }
+    return DateFormat('d MMM · HH:mm').format(d);
+  }
+
+  static String _checkInMethodLabel(CheckInMethod m) => switch (m) {
+    CheckInMethod.self => 'via tablet',
+    CheckInMethod.coach => 'via coach',
+  };
+}
+
+// ── Belt hero chip ────────────────────────────────────────────────────────────
+
+class _BeltHeroChip extends ConsumerWidget {
+  const _BeltHeroChip({required this.enrollment});
+
+  final Enrollment enrollment;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final disciplineAsync = ref.watch(
+      disciplineProvider(enrollment.disciplineId),
+    );
+    final ranksAsync = ref.watch(rankListProvider(enrollment.disciplineId));
+
+    final disciplineName =
+        disciplineAsync.asData?.value?.name ?? enrollment.disciplineId;
+    final rank = ranksAsync.asData?.value
+        .where((r) => r.id == enrollment.currentRankId)
+        .firstOrNull;
+    final rankName = rank?.name ?? '…';
+    final beltColor = _parseHex(rank?.colourHex);
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 32,
+          height: 10,
+          decoration: BoxDecoration(
+            color: beltColor ?? AppColors.ink2,
+            borderRadius: BorderRadius.circular(2),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x26000000),
+                offset: Offset(0, -1),
+                blurRadius: 0,
+              ),
+              BoxShadow(
+                color: Color(0x1FFFFFFF),
+                offset: Offset(0, 1),
+                blurRadius: 0,
+              ),
+            ],
+            border: beltColor == null
+                ? null
+                : beltColor == Colors.white
+                ? Border.all(color: AppColors.hairline)
+                : null,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Text(
+          '$rankName · $disciplineName',
+          style: const TextStyle(fontSize: 13, color: AppColors.ink1),
+        ),
+      ],
+    );
+  }
+
+  static Color? _parseHex(String? hex) {
+    if (hex == null || hex.length != 7) return null;
+    final value = int.tryParse('FF${hex.substring(1)}', radix: 16);
+    return value != null ? Color(value) : null;
+  }
+}
+
+// ── Role badge ────────────────────────────────────────────────────────────────
+
+class _RoleBadge extends StatelessWidget {
+  const _RoleBadge({required this.profile});
+
+  final Profile profile;
+
+  @override
+  Widget build(BuildContext context) {
+    final (label, bg, fg) = _roleStyle(profile);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(2),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontFamily: 'IBM Plex Mono',
+          fontSize: 10,
+          letterSpacing: 0.1 * 10,
+          fontWeight: FontWeight.w500,
+          color: fg,
+        ),
+      ),
+    );
+  }
+
+  static (String, Color, Color) _roleStyle(Profile p) {
+    if (p.isCoach) {
+      return ('COACH', AppColors.crimsonWash, AppColors.crimson);
+    }
+    if (p.isParentGuardian) {
+      return ('PARENT', AppColors.ochreWash, AppColors.ochre);
+    }
+    if (p.isJunior) {
+      return ('JUNIOR', AppColors.teaWash, AppColors.tea);
+    }
+    return ('ADULT', AppColors.indigoWash, AppColors.indigo);
+  }
+}
+
+// ── Status badge ─────────────────────────────────────────────────────────────
+
+class _StatusBadge extends StatelessWidget {
+  const _StatusBadge({required this.isActive});
+
+  final bool isActive;
+
+  @override
+  Widget build(BuildContext context) {
+    final (label, bg, fg) = isActive
+        ? ('ACTIVE', AppColors.successWash, AppColors.success)
+        : ('INACTIVE', AppColors.paper3, AppColors.ink3);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(2),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(
+              color: fg.withAlpha(153),
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontFamily: 'IBM Plex Mono',
+              fontSize: 10,
+              letterSpacing: 0.1 * 10,
+              fontWeight: FontWeight.w500,
+              color: fg,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Overview tab ─────────────────────────────────────────────────────────────
+
+class _OverviewTab extends StatelessWidget {
+  const _OverviewTab({required this.profile, required this.ref});
 
   final Profile profile;
   final WidgetRef ref;
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.all(16),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final wide = constraints.maxWidth > 700;
+
+        final leftColumn = _OverviewLeft(profile: profile);
+        final rightColumn = _OverviewRight(profile: profile, ref: ref);
+
+        if (wide) {
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(14),
+            child: IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(flex: 13, child: leftColumn),
+                  const SizedBox(width: 14),
+                  Expanded(flex: 10, child: rightColumn),
+                ],
+              ),
+            ),
+          );
+        }
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            children: [leftColumn, const SizedBox(height: 14), rightColumn],
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ── Overview — left column ────────────────────────────────────────────────────
+
+class _OverviewLeft extends StatelessWidget {
+  const _OverviewLeft({required this.profile});
+
+  final Profile profile;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasAllergies =
+        !profile.isAnonymised &&
+        profile.allergiesOrMedicalNotes != null &&
+        profile.allergiesOrMedicalNotes!.isNotEmpty;
+
+    return _Sheet(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Personal section
+          const _EyebrowLabel('Personal'),
+          const SizedBox(height: 16),
+          if (!profile.isAnonymised) ...[
+            _KvRow('Full name', profile.fullName),
+            _KvRow(
+              'DOB · age',
+              '${DateFormat('d MMM yyyy').format(profile.dateOfBirth)} · '
+                  '${_calcAge(profile.dateOfBirth)} years',
+            ),
+            if (profile.gender != null) _KvRow('Gender', profile.gender!),
+            _KvRow('Phone', profile.phone, mono: true),
+            _KvRow('Email', profile.email),
+            _KvRow('Address', _formatAddress(profile)),
+          ] else ...[
+            _KvRow(
+              'Profile types',
+              profile.profileTypes.map(_typeLabel).join(', '),
+            ),
+            _KvRow(
+              'Member since',
+              DateFormat('d MMMM yyyy').format(profile.registrationDate),
+            ),
+          ],
+
+          const _DottedDivider(),
+
+          // Emergency contact
+          const _EyebrowLabel('Emergency contact'),
+          const SizedBox(height: 16),
+          if (!profile.isAnonymised) ...[
+            _KvRow(
+              'Name',
+              '${profile.emergencyContactName} (${profile.emergencyContactRelationship})',
+            ),
+            _KvRow('Phone', profile.emergencyContactPhone, mono: true),
+          ] else ...[
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 4),
+              child: Text(
+                'Data erased.',
+                style: TextStyle(color: AppColors.ink3, fontSize: 14),
+              ),
+            ),
+          ],
+
+          const _DottedDivider(),
+
+          // Medical notes
+          Row(
+            children: [
+              const _EyebrowLabel('Medical notes'),
+              const SizedBox(width: 10),
+              _BadgeChip(
+                label: 'Sensitive',
+                bg: AppColors.ochreWash,
+                fg: AppColors.ochre,
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (hasAllergies)
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: AppColors.ochreWash,
+                border: const Border(
+                  left: BorderSide(color: AppColors.ochre, width: 2),
+                ),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                profile.allergiesOrMedicalNotes!,
+                style: const TextStyle(fontSize: 14, color: AppColors.ink1),
+              ),
+            )
+          else
+            const Text(
+              'No medical notes recorded.',
+              style: TextStyle(fontSize: 14, color: AppColors.ink3),
+            ),
+        ],
+      ),
+    );
+  }
+
+  static int _calcAge(DateTime dob) {
+    final now = DateTime.now();
+    var age = now.year - dob.year;
+    if (now.month < dob.month ||
+        (now.month == dob.month && now.day < dob.day)) {
+      age--;
+    }
+    return age;
+  }
+
+  static String _formatAddress(Profile p) => [
+    p.addressLine1,
+    if (p.addressLine2 != null) p.addressLine2!,
+    p.city,
+    p.county,
+    p.postcode,
+    p.country,
+  ].join(', ');
+
+  static String _typeLabel(ProfileType t) => switch (t) {
+    ProfileType.adultStudent => 'Adult Student',
+    ProfileType.juniorStudent => 'Junior Student',
+    ProfileType.coach => 'Coach',
+    ProfileType.parentGuardian => 'Parent / Guardian',
+  };
+}
+
+// ── Overview — right column ────────────────────────────────────────────────────
+
+class _OverviewRight extends StatelessWidget {
+  const _OverviewRight({required this.profile, required this.ref});
+
+  final Profile profile;
+  final WidgetRef ref;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
       children: [
-        // ── Status banners ────────────────────────────────────────────
+        // Status banners
         if (profile.requiresReConsent)
           _ReConsentBanner(profile: profile, ref: ref),
         if (profile.isAnonymised)
           _InfoBanner(
-            color: AppColors.textSecondary,
+            color: AppColors.ink3,
             icon: Icons.manage_accounts_outlined,
             message:
                 'Personal data erased'
@@ -129,218 +672,81 @@ class _PersonalTab extends StatelessWidget {
             message: 'This profile is inactive.',
           ),
 
-        // ── Identity ─────────────────────────────────────────────────
-        _SectionCard(
-          title: 'Personal',
-          children: [
-            if (!profile.isAnonymised) ...[
-              _DetailRow('First name', profile.firstName),
-              _DetailRow('Last name', profile.lastName),
-              _DetailRow(
-                'Date of birth',
-                DateFormat('d MMMM yyyy').format(profile.dateOfBirth),
-              ),
-              if (profile.gender != null) _DetailRow('Gender', profile.gender!),
-            ],
-            _DetailRow(
-              'Profile types',
-              profile.profileTypes.map(_typeLabel).join(', '),
-            ),
-            _DetailRow(
-              'Member since',
-              DateFormat('d MMMM yyyy').format(profile.registrationDate),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-
-        // ── Contact ──────────────────────────────────────────────────
-        if (!profile.isAnonymised) ...[
-          _SectionCard(
-            title: 'Contact',
-            children: [
-              _DetailRow('Phone', profile.phone),
-              _DetailRow('Email', profile.email),
-              _DetailRow('Address', _formatAddress(profile)),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          // ── Emergency contact ───────────────────────────────────────
-          _SectionCard(
-            title: 'Emergency Contact',
-            children: [
-              _DetailRow('Name', profile.emergencyContactName),
-              _DetailRow('Relationship', profile.emergencyContactRelationship),
-              _DetailRow('Phone', profile.emergencyContactPhone),
-            ],
-          ),
-          const SizedBox(height: 12),
-        ],
-
-        // ── Medical & consent ─────────────────────────────────────────
-        _SectionCard(
-          title: 'Medical & Consent',
-          children: [
-            _DetailRow(
-              'Photo / video consent',
-              profile.photoVideoConsent ? 'Given' : 'Not given',
-            ),
-            if (!profile.isAnonymised &&
-                profile.allergiesOrMedicalNotes != null &&
-                profile.allergiesOrMedicalNotes!.isNotEmpty)
-              _DetailRow(
-                'Allergies / medical notes',
-                profile.allergiesOrMedicalNotes!,
-              ),
-          ],
-        ),
-        const SizedBox(height: 12),
-
-        // ── Family links (juniors) ────────────────────────────────────
-        if (profile.isJunior) ...[
-          _SectionCard(
-            title: 'Family Links',
-            children: [
-              if (profile.parentProfileId != null)
-                _ProfileLinkRow(
-                  label: 'Parent / Guardian',
-                  profileId: profile.parentProfileId!,
-                  ref: ref,
-                ),
-              if (profile.secondParentProfileId != null)
-                _ProfileLinkRow(
-                  label: 'Second Parent / Guardian',
-                  profileId: profile.secondParentProfileId!,
-                  ref: ref,
-                ),
-              if (profile.payingParentId != null)
-                _ProfileLinkRow(
-                  label: 'Paying Parent',
-                  profileId: profile.payingParentId!,
-                  ref: ref,
-                ),
-            ],
-          ),
-          const SizedBox(height: 12),
-        ],
-
-        // ── Communication ─────────────────────────────────────────────
-        _SectionCard(
-          title: 'Communication Preferences',
-          children: [
-            _DetailRow(
-              'Billing & Payment',
-              profile.communicationPreferences.billingAndPaymentReminders
-                  ? 'On'
-                  : 'Off',
-            ),
-            _DetailRow(
-              'Grading',
-              profile.communicationPreferences.gradingNotifications
-                  ? 'On'
-                  : 'Off',
-            ),
-            _DetailRow(
-              'Trial Expiry',
-              profile.communicationPreferences.trialExpiryReminders
-                  ? 'On'
-                  : 'Off',
-            ),
-            _DetailRow(
-              'Announcements',
-              profile.communicationPreferences.generalDojoAnnouncements
-                  ? 'On'
-                  : 'Off',
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-
-        // ── Admin notes ───────────────────────────────────────────────
-        if (profile.notes != null && profile.notes!.isNotEmpty) ...[
-          _SectionCard(
-            title: 'Admin Notes',
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                child: Text(profile.notes!),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-        ],
-
-        // ── Membership summary ────────────────────────────────────────
+        // Membership summary
         _MembershipSummarySection(profileId: profile.id),
-        const SizedBox(height: 12),
+        const SizedBox(height: 14),
 
-        // ── Invite status ─────────────────────────────────────────────
-        if (!profile.isCoach && !profile.isParentGuardian) ...[
-          _InviteSection(profile: profile, ref: ref),
-          const SizedBox(height: 12),
-        ],
-
-        // ── Reset PIN ─────────────────────────────────────────────────
-        if (profile.pinHash != null && !profile.isAnonymised) ...[
-          OutlinedButton.icon(
-            icon: const Icon(Icons.pin_outlined),
-            label: const Text('Reset PIN'),
-            onPressed: () => _confirmResetPin(context, ref),
+        // Communication preferences
+        _Sheet(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const _EyebrowLabel('Communication preferences'),
+              const SizedBox(height: 12),
+              _CommPrefRow(
+                label: 'Billing reminders',
+                value:
+                    profile.communicationPreferences.billingAndPaymentReminders,
+              ),
+              _CommPrefRow(
+                label: 'Grading notifications',
+                value: profile.communicationPreferences.gradingNotifications,
+              ),
+              _CommPrefRow(
+                label: 'Trial expiry',
+                value: profile.communicationPreferences.trialExpiryReminders,
+              ),
+              _CommPrefRow(
+                label: 'General announcements',
+                value:
+                    profile.communicationPreferences.generalDojoAnnouncements,
+              ),
+            ],
           ),
-          const SizedBox(height: 12),
-        ],
+        ),
+        const SizedBox(height: 14),
 
-        // ── Deactivate ────────────────────────────────────────────────
-        if (profile.isActive)
-          OutlinedButton.icon(
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.error,
-              side: BorderSide(color: AppColors.error),
-            ),
-            icon: const Icon(Icons.person_off_outlined),
-            label: const Text('Deactivate Profile'),
-            onPressed: () => _confirmDeactivate(context, ref),
+        // Consent + GDPR
+        _Sheet(
+          topBorder: true,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const _EyebrowLabel('Consent'),
+              const SizedBox(height: 10),
+              const _ConsentRow(label: 'Data processing · v2.1 · 03 Feb 2023'),
+              const SizedBox(height: 6),
+              _ConsentRow(
+                label:
+                    'Photo & video consent · '
+                    '${DateFormat('d MMM yyyy').format(profile.registrationDate)}',
+                value: profile.photoVideoConsent,
+              ),
+              const _DottedDivider(padding: EdgeInsets.symmetric(vertical: 14)),
+              if (!profile.isAnonymised)
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.error,
+                      side: const BorderSide(color: AppColors.error),
+                      minimumSize: const Size.fromHeight(32),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      textStyle: const TextStyle(fontSize: 13),
+                    ),
+                    onPressed: () => _confirmAnonymise(context, ref),
+                    child: const Text('Anonymise profile (GDPR)'),
+                  ),
+                ),
+            ],
           ),
-
-        // ── Erase personal data ───────────────────────────────────────
-        if (!profile.isAnonymised) ...[
-          const SizedBox(height: 12),
-          OutlinedButton.icon(
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.error,
-              side: BorderSide(color: AppColors.error.withAlpha(120)),
-            ),
-            icon: const Icon(Icons.delete_forever_outlined),
-            label: const Text('Erase Personal Data'),
-            onPressed: () => _confirmAnonymise(context, ref),
-          ),
-        ],
-        const SizedBox(height: 24),
+        ),
       ],
     );
   }
-
-  String _formatAddress(Profile p) {
-    return [
-      p.addressLine1,
-      if (p.addressLine2 != null) p.addressLine2!,
-      p.city,
-      p.county,
-      p.postcode,
-      p.country,
-    ].join(', ');
-  }
-
-  String _typeLabel(ProfileType t) => switch (t) {
-    ProfileType.adultStudent => 'Adult Student',
-    ProfileType.juniorStudent => 'Junior Student',
-    ProfileType.coach => 'Coach',
-    ProfileType.parentGuardian => 'Parent / Guardian',
-  };
 
   Future<void> _confirmAnonymise(BuildContext context, WidgetRef ref) async {
     final proceed = await showDialog<bool>(
@@ -430,6 +836,102 @@ class _PersonalTab extends StatelessWidget {
         );
       }
     }
+  }
+}
+
+// ── Membership tab ───────────────────────────────────────────────────────────
+
+class _MembershipTab extends StatelessWidget {
+  const _MembershipTab({required this.profile, required this.ref});
+
+  final Profile profile;
+  final WidgetRef ref;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        // Full membership section
+        _MembershipSummarySection(profileId: profile.id),
+        const SizedBox(height: 12),
+
+        // Family links (juniors)
+        if (profile.isJunior) ...[
+          _SectionCard(
+            title: 'Family Links',
+            children: [
+              if (profile.parentProfileId != null)
+                _ProfileLinkRow(
+                  label: 'Parent / Guardian',
+                  profileId: profile.parentProfileId!,
+                  ref: ref,
+                ),
+              if (profile.secondParentProfileId != null)
+                _ProfileLinkRow(
+                  label: 'Second Parent / Guardian',
+                  profileId: profile.secondParentProfileId!,
+                  ref: ref,
+                ),
+              if (profile.payingParentId != null)
+                _ProfileLinkRow(
+                  label: 'Paying Parent',
+                  profileId: profile.payingParentId!,
+                  ref: ref,
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+        ],
+
+        // Invite status
+        if (!profile.isCoach && !profile.isParentGuardian) ...[
+          _InviteSection(profile: profile, ref: ref),
+          const SizedBox(height: 12),
+        ],
+
+        // Admin notes
+        if (profile.notes != null && profile.notes!.isNotEmpty) ...[
+          _SectionCard(
+            title: 'Admin Notes',
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                child: Text(profile.notes!),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+        ],
+
+        // Reset PIN
+        if (profile.pinHash != null && !profile.isAnonymised) ...[
+          OutlinedButton.icon(
+            icon: const Icon(Icons.pin_outlined),
+            label: const Text('Reset PIN'),
+            onPressed: () => _confirmResetPin(context, ref),
+          ),
+          const SizedBox(height: 12),
+        ],
+
+        // Deactivate
+        if (profile.isActive)
+          OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.error,
+              side: BorderSide(color: AppColors.error),
+            ),
+            icon: const Icon(Icons.person_off_outlined),
+            label: const Text('Deactivate Profile'),
+            onPressed: () => _confirmDeactivate(context, ref),
+          ),
+
+        const SizedBox(height: 24),
+      ],
+    );
   }
 
   Future<void> _confirmResetPin(BuildContext context, WidgetRef ref) async {
@@ -537,18 +1039,15 @@ class _DisciplinesGradingTab extends ConsumerWidget {
         final active = enrollments.where((e) => e.isActive).toList();
         final inactive = enrollments.where((e) => !e.isActive).toList();
 
-        // Build discipline name lookup
         final disciplineNames = <String, String>{
           for (final d in disciplinesAsync.asData?.value ?? []) d.id: d.name,
         };
 
-        // Group attendance records by discipline
         final attendanceRecords = attendanceAsync.asData?.value ?? [];
         final byDiscipline = <String, List<AttendanceRecord>>{};
         for (final r in attendanceRecords) {
           byDiscipline.putIfAbsent(r.disciplineId, () => []).add(r);
         }
-        // Sort each group newest first
         for (final list in byDiscipline.values) {
           list.sort((a, b) => b.sessionDate.compareTo(a.sessionDate));
         }
@@ -556,7 +1055,6 @@ class _DisciplinesGradingTab extends ConsumerWidget {
         return ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            // ── Active enrolments ─────────────────────────────────────
             _SectionCard(
               title: 'Active Enrolments',
               headerAction: FilledButton.icon(
@@ -596,7 +1094,6 @@ class _DisciplinesGradingTab extends ConsumerWidget {
             ),
             const SizedBox(height: 12),
 
-            // ── Inactive enrolments ───────────────────────────────────
             if (inactive.isNotEmpty)
               _SectionCard(
                 title: 'Inactive Enrolments',
@@ -622,7 +1119,6 @@ class _DisciplinesGradingTab extends ConsumerWidget {
               ),
             const SizedBox(height: 12),
 
-            // ── Attendance history ────────────────────────────────────
             _AttendanceHistorySection(
               byDiscipline: byDiscipline,
               disciplineNames: disciplineNames,
@@ -630,7 +1126,6 @@ class _DisciplinesGradingTab extends ConsumerWidget {
             ),
             const SizedBox(height: 12),
 
-            // ── Grading history ───────────────────────────────────────
             _GradingHistorySection(
               records: gradingRecordsAsync.asData?.value ?? [],
               disciplineNames: disciplineNames,
@@ -646,8 +1141,6 @@ class _DisciplinesGradingTab extends ConsumerWidget {
 
 // ── Payments tab ────────────────────────────────────────────────────────────
 
-/// A unified payment history for a single profile, combining CashPayments and
-/// PaytSessions, sorted newest-first.
 class _PaymentsTab extends ConsumerWidget {
   const _PaymentsTab({required this.profileId});
 
@@ -673,7 +1166,6 @@ class _PaymentsTab extends ConsumerWidget {
     final cashPayments = cashAsync.asData?.value ?? [];
     final paytSessions = paytAsync.asData?.value ?? [];
 
-    // Build a merged, sorted list of _PaymentEntry items
     final entries = <_PaymentEntry>[
       for (final c in cashPayments) _PaymentEntry.fromCash(c),
       for (final p in paytSessions) _PaymentEntry.fromPayt(p),
@@ -682,7 +1174,6 @@ class _PaymentsTab extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        // ── Outstanding balance banner (PAYT only) ───────────────────
         if (pendingCount > 0) ...[
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -716,8 +1207,6 @@ class _PaymentsTab extends ConsumerWidget {
           ),
           const SizedBox(height: 12),
         ],
-
-        // ── Payment list ─────────────────────────────────────────────
         if (entries.isEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 32),
@@ -733,9 +1222,268 @@ class _PaymentsTab extends ConsumerWidget {
             title: 'Payment History',
             children: entries.map((e) => _PaymentEntryRow(entry: e)).toList(),
           ),
-
         const SizedBox(height: 24),
       ],
+    );
+  }
+}
+
+// ── Overview sub-widgets ──────────────────────────────────────────────────────
+
+class _Sheet extends StatelessWidget {
+  const _Sheet({required this.child, this.topBorder = false});
+
+  final Widget child;
+  final bool topBorder;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: AppColors.paper0,
+        border: Border(
+          top: topBorder
+              ? const BorderSide(color: AppColors.ink1, width: 2)
+              : const BorderSide(color: AppColors.hairline),
+          left: const BorderSide(color: AppColors.hairline),
+          right: const BorderSide(color: AppColors.hairline),
+          bottom: const BorderSide(color: AppColors.hairline),
+        ),
+        borderRadius: BorderRadius.circular(6),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0F1C1B18),
+            blurRadius: 4,
+            offset: Offset(0, 2),
+          ),
+          BoxShadow(
+            color: Color(0x0F1C1B18),
+            blurRadius: 8,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: child,
+    );
+  }
+}
+
+class _EyebrowLabel extends StatelessWidget {
+  const _EyebrowLabel(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text.toUpperCase(),
+      style: const TextStyle(
+        fontFamily: 'IBM Plex Mono',
+        fontSize: 11,
+        letterSpacing: 0.14 * 11,
+        color: AppColors.ink3,
+        fontWeight: FontWeight.w400,
+      ),
+    );
+  }
+}
+
+class _DottedDivider extends StatelessWidget {
+  const _DottedDivider({this.padding});
+
+  final EdgeInsets? padding;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: padding ?? const EdgeInsets.symmetric(vertical: 20),
+      child: CustomPaint(
+        size: const Size(double.infinity, 1),
+        painter: _DottedLinePainter(),
+      ),
+    );
+  }
+}
+
+class _DottedLinePainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = AppColors.hairline
+      ..strokeWidth = 1
+      ..style = PaintingStyle.fill;
+    double x = 0;
+    while (x < size.width) {
+      canvas.drawCircle(Offset(x, 0), 1, paint);
+      x += 6;
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _KvRow extends StatelessWidget {
+  const _KvRow(this.label, this.value, {this.mono = false});
+
+  final String label;
+  final String value;
+  final bool mono;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 140,
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontFamily: 'IBM Plex Mono',
+                fontSize: 10,
+                letterSpacing: 0.14 * 10,
+                color: AppColors.ink3,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: 14,
+                fontFamily: mono ? 'IBM Plex Mono' : null,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CommPrefRow extends StatelessWidget {
+  const _CommPrefRow({required this.label, required this.value});
+
+  final String label;
+  final bool value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          Expanded(child: Text(label, style: const TextStyle(fontSize: 13))),
+          _ToggleIndicator(on: value),
+        ],
+      ),
+    );
+  }
+}
+
+class _ToggleIndicator extends StatelessWidget {
+  const _ToggleIndicator({required this.on});
+
+  final bool on;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 150),
+      width: 44,
+      height: 24,
+      decoration: BoxDecoration(
+        color: on ? AppColors.crimson : AppColors.paper3,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: on ? AppColors.crimsonInk : AppColors.hairline,
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(2),
+        child: Row(
+          mainAxisAlignment: on
+              ? MainAxisAlignment.end
+              : MainAxisAlignment.start,
+          children: [
+            Container(
+              width: 18,
+              height: 18,
+              decoration: BoxDecoration(
+                color: AppColors.paper0,
+                shape: BoxShape.circle,
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x1A1C1B18),
+                    blurRadius: 2,
+                    offset: Offset(0, 1),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ConsentRow extends StatelessWidget {
+  const _ConsentRow({required this.label, this.value = true});
+
+  final String label;
+  final bool value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          value ? '✓' : '✗',
+          style: TextStyle(
+            fontSize: 13,
+            color: value ? AppColors.success : AppColors.ink3,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(child: Text(label, style: const TextStyle(fontSize: 13))),
+      ],
+    );
+  }
+}
+
+class _BadgeChip extends StatelessWidget {
+  const _BadgeChip({required this.label, required this.bg, required this.fg});
+
+  final String label;
+  final Color bg;
+  final Color fg;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(2),
+      ),
+      child: Text(
+        label.toUpperCase(),
+        style: TextStyle(
+          fontFamily: 'IBM Plex Mono',
+          fontSize: 9,
+          letterSpacing: 0.1 * 9,
+          fontWeight: FontWeight.w500,
+          color: fg,
+        ),
+      ),
     );
   }
 }
@@ -767,14 +1515,13 @@ class _PaymentEntry {
       PaymentType.payt => 'PAYT',
       PaymentType.other => 'Other',
     };
-    final methodLabel = _methodLabel(c.paymentMethod);
     return _PaymentEntry(
       date: c.recordedAt,
       amount: c.amount,
       typeLabel: typeLabel,
       statusLabel: 'Paid',
       statusColor: AppColors.success,
-      methodLabel: methodLabel,
+      methodLabel: _methodLabel(c.paymentMethod),
       notes: c.notes,
     );
   }
@@ -785,14 +1532,13 @@ class _PaymentEntry {
       PaytPaymentStatus.paid => ('Paid', AppColors.success),
       PaytPaymentStatus.writtenOff => ('Written off', AppColors.textSecondary),
     };
-    final methodLabel = p.isPending ? '—' : _methodLabel(p.paymentMethod);
     return _PaymentEntry(
       date: p.sessionDate,
       amount: p.amount,
       typeLabel: 'PAYT session',
       statusLabel: statusLabel,
       statusColor: statusColor,
-      methodLabel: methodLabel,
+      methodLabel: p.isPending ? '—' : _methodLabel(p.paymentMethod),
       notes: p.writeOffReason ?? p.notes,
     );
   }
@@ -816,18 +1562,16 @@ class _PaymentEntryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dateLabel = DateFormat('d MMM yyyy').format(entry.date);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Row(
         children: [
-          // Date + type
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  dateLabel,
+                  DateFormat('d MMM yyyy').format(entry.date),
                   style: const TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 13,
@@ -836,7 +1580,7 @@ class _PaymentEntryRow extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   '${entry.typeLabel} · ${entry.methodLabel}',
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: AppColors.textSecondary,
                     fontSize: 12,
                   ),
@@ -845,7 +1589,7 @@ class _PaymentEntryRow extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     entry.notes!,
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: AppColors.textSecondary,
                       fontSize: 11,
                       fontStyle: FontStyle.italic,
@@ -858,7 +1602,6 @@ class _PaymentEntryRow extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          // Amount + status
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
@@ -935,7 +1678,6 @@ class _AttendanceHistorySection extends StatelessWidget {
       );
     }
 
-    // Sort discipline entries by name
     final sortedEntries = byDiscipline.entries.toList()
       ..sort((a, b) {
         final nameA = disciplineNames[a.key] ?? a.key;
@@ -957,7 +1699,10 @@ class _AttendanceHistorySection extends StatelessWidget {
           ),
           subtitle: Text(
             '$total session${total == 1 ? '' : 's'} attended',
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 12,
+            ),
           ),
           tilePadding: const EdgeInsets.symmetric(horizontal: 16),
           childrenPadding: EdgeInsets.zero,
@@ -988,7 +1733,7 @@ class _AttendanceHistorySection extends StatelessWidget {
                   ),
                   Text(
                     methodLabel,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 12,
                       color: AppColors.textSecondary,
                     ),
@@ -1045,7 +1790,6 @@ class _GradingHistorySection extends StatelessWidget {
       );
     }
 
-    // Group by discipline, sorted by discipline name
     final byDiscipline = <String, List<GradingRecord>>{};
     for (final r in records) {
       byDiscipline.putIfAbsent(r.disciplineId, () => []).add(r);
@@ -1072,7 +1816,10 @@ class _GradingHistorySection extends StatelessWidget {
           ),
           subtitle: Text(
             '${recs.length} promotion${recs.length == 1 ? '' : 's'}',
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 12,
+            ),
           ),
           tilePadding: const EdgeInsets.symmetric(horizontal: 16),
           childrenPadding: EdgeInsets.zero,
@@ -1095,7 +1842,6 @@ class _GradingRecordRow extends ConsumerWidget {
     final toRank = ranks
         .where((r) => r.id == record.rankAchievedId)
         .firstOrNull;
-    final dateLabel = DateFormat('d MMM yyyy').format(record.gradingDate);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
@@ -1130,7 +1876,7 @@ class _GradingRecordRow extends ConsumerWidget {
             ),
           ),
           Text(
-            dateLabel,
+            DateFormat('d MMM yyyy').format(record.gradingDate),
             style: const TextStyle(
               fontSize: 12,
               color: AppColors.textSecondary,
@@ -1174,10 +1920,8 @@ class _ActiveEnrolmentRow extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Row(
         children: [
-          // Belt swatch
           _BeltSwatch(colourHex: currentRank?.colourHex),
           const SizedBox(width: 12),
-          // Discipline + rank info
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1192,14 +1936,14 @@ class _ActiveEnrolmentRow extends ConsumerWidget {
                 const SizedBox(height: 2),
                 Text(
                   currentRank?.name ?? enrollment.currentRankId,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: AppColors.textSecondary,
                     fontSize: 12,
                   ),
                 ),
                 Text(
                   'Since ${DateFormat('d MMM yyyy').format(enrollment.enrollmentDate)}',
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: AppColors.textSecondary,
                     fontSize: 12,
                   ),
@@ -1207,7 +1951,6 @@ class _ActiveEnrolmentRow extends ConsumerWidget {
               ],
             ),
           ),
-          // Grading events shortcut
           TextButton(
             style: TextButton.styleFrom(
               foregroundColor: AppColors.accent,
@@ -1219,7 +1962,6 @@ class _ActiveEnrolmentRow extends ConsumerWidget {
             ),
             child: const Text('Grading', style: TextStyle(fontSize: 12)),
           ),
-          // Deactivate
           TextButton(
             style: TextButton.styleFrom(
               foregroundColor: AppColors.error,
@@ -1309,7 +2051,6 @@ class _InactiveEnrolmentRow extends ConsumerWidget {
           ranks.where((r) => r.id == enrollment.currentRankId).firstOrNull,
     );
 
-    // Flag when the stored rank no longer exists on the ladder
     final rankMissing =
         ranksAsync.hasValue &&
         ranksAsync.value!.isNotEmpty &&
@@ -1327,7 +2068,7 @@ class _InactiveEnrolmentRow extends ConsumerWidget {
               children: [
                 Text(
                   disciplineName,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 14,
                     color: AppColors.textSecondary,
@@ -1336,7 +2077,7 @@ class _InactiveEnrolmentRow extends ConsumerWidget {
                 const SizedBox(height: 2),
                 Text(
                   currentRank?.name ?? enrollment.currentRankId,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: AppColors.textSecondary,
                     fontSize: 12,
                   ),
@@ -1352,8 +2093,6 @@ class _InactiveEnrolmentRow extends ConsumerWidget {
               ],
             ),
           ),
-          // Reactivate — navigates into the enrol wizard which detects the
-          // inactive record and shows the reactivation confirmation.
           TextButton(
             style: TextButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -1371,7 +2110,7 @@ class _InactiveEnrolmentRow extends ConsumerWidget {
   }
 }
 
-// ── Belt swatch ──────────────────────────────────────────────────────────────
+// ── Belt swatch (circle) ─────────────────────────────────────────────────────
 
 class _BeltSwatch extends StatelessWidget {
   const _BeltSwatch({this.colourHex, this.muted = false});
@@ -1385,9 +2124,7 @@ class _BeltSwatch extends StatelessWidget {
     if (colourHex != null && colourHex!.length == 7) {
       final hex = colourHex!.replaceFirst('#', '');
       final value = int.tryParse('FF$hex', radix: 16);
-      if (value != null) {
-        swatchColor = Color(value);
-      }
+      if (value != null) swatchColor = Color(value);
     }
 
     return Container(
@@ -1407,7 +2144,7 @@ class _BeltSwatch extends StatelessWidget {
   }
 }
 
-// ── Invite section ─────────────────────────────────────────────────────────
+// ── Invite section ────────────────────────────────────────────────────────────
 
 class _InviteSection extends StatelessWidget {
   const _InviteSection({required this.profile, required this.ref});
@@ -1447,7 +2184,6 @@ class _InviteSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dateFormat = DateFormat('d MMM yyyy, HH:mm');
     final status = profile.inviteStatus;
 
     String statusLabel;
@@ -1508,7 +2244,7 @@ class _InviteSection extends StatelessWidget {
                     if (profile.inviteSentAt != null) ...[
                       const SizedBox(height: 4),
                       Text(
-                        'Sent: ${dateFormat.format(profile.inviteSentAt!)}',
+                        'Sent: ${DateFormat('d MMM yyyy, HH:mm').format(profile.inviteSentAt!)}',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: AppColors.textSecondary,
                         ),
@@ -1543,7 +2279,7 @@ class _InviteSection extends StatelessWidget {
   }
 }
 
-// ── Shared detail widgets ──────────────────────────────────────────────────
+// ── Section card (legacy-style, used in Disciplines & Grading / Payments) ────
 
 class _SectionCard extends StatelessWidget {
   const _SectionCard({
@@ -1701,7 +2437,7 @@ class _ReConsentBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 14),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: AppColors.warning.withAlpha(30),
@@ -1713,9 +2449,13 @@ class _ReConsentBanner extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.policy_outlined, color: AppColors.warning, size: 18),
+              const Icon(
+                Icons.policy_outlined,
+                color: AppColors.warning,
+                size: 18,
+              ),
               const SizedBox(width: 8),
-              Expanded(
+              const Expanded(
                 child: Text(
                   'Re-consent required',
                   style: TextStyle(
@@ -1760,7 +2500,7 @@ class _InfoBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 14),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
         color: color.withAlpha(25),
@@ -1781,7 +2521,7 @@ class _InfoBanner extends StatelessWidget {
   }
 }
 
-// ── Membership summary section ───────────────────────────────────────────────
+// ── Membership summary section ────────────────────────────────────────────────
 
 class _MembershipSummarySection extends ConsumerWidget {
   const _MembershipSummarySection({required this.profileId});
